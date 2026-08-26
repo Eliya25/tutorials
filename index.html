@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="מרכז הלמידה של אליה לפיתוח Backend, מערכות ו-AI">
+  <title>מרכז הלמידה של אליה</title>
+  <style>
+    :root {
+      --bg: #08111f;
+      --panel: #101c2d;
+      --panel-hover: #16263b;
+      --text: #eef4ff;
+      --muted: #9fb0c7;
+      --accent: #5eead4;
+      --accent-2: #60a5fa;
+      --border: rgba(255,255,255,.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 85% 0%, rgba(37,99,235,.22), transparent 32rem),
+        radial-gradient(circle at 10% 30%, rgba(20,184,166,.12), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      line-height: 1.6;
+    }
+    a { color: inherit; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 64px 0 38px; }
+    .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .04em; }
+    h1 { margin: 8px 0 12px; font-size: clamp(2.2rem, 6vw, 4.5rem); line-height: 1.05; }
+    .intro { max-width: 720px; margin: 0; color: var(--muted); font-size: 1.08rem; }
+    .stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .stat { border: 1px solid var(--border); border-radius: 999px; padding: 7px 13px; color: #d8e4f5; background: rgba(255,255,255,.035); }
+    section { margin: 26px 0 44px; }
+    .section-title { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .section-title h2 { margin: 0; font-size: 1.35rem; }
+    .line { height: 1px; flex: 1; background: var(--border); }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .card {
+      display: flex;
+      min-height: 158px;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+      text-decoration: none;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .card:hover, .card:focus-visible { transform: translateY(-3px); border-color: rgba(94,234,212,.55); background: var(--panel-hover); outline: none; }
+    .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+    .number { color: var(--accent); font: 700 .82rem ui-monospace, monospace; }
+    .arrow { color: var(--muted); font-size: 1.3rem; transition: transform .18s ease; }
+    .card:hover .arrow { transform: translateX(-4px); color: var(--accent); }
+    .card h3 { margin: 18px 0 4px; font-size: 1.15rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .92rem; }
+    .special { border-color: rgba(96,165,250,.35); }
+    .special .number { color: var(--accent-2); }
+    footer { padding: 10px 0 40px; text-align: center; color: var(--muted); font-size: .9rem; }
+    @media (max-width: 850px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) {
+      header { padding-top: 42px; }
+      .grid { grid-template-columns: 1fr; }
+      .card { min-height: 135px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="eyebrow">BACKEND LEARNING HUB</div>
+    <h1>מרכז הלמידה של אליה</h1>
+    <p class="intro">מדריכים מעשיים ומעמיקים לפיתוח Backend — מהיסודות של שפות ותשתיות ועד System Design, אבטחה ו־AI.</p>
+    <div class="stats"><span class="stat">16 מדריכים מקצועיים</span><span class="stat">2 מדריכי Claude</span><span class="stat">מתעדכן דרך GitHub</span></div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <div class="section-title"><h2>מסלול Backend</h2><span class="line"></span></div>
+      <div class="grid">
+        <a class="card" href="1.git-tutorial.html"><div class="top"><span class="number">01</span><span class="arrow">←</span></div><div><h3>Git ו־Workflow</h3><p>Version control, branches, PRs ועבודת צוות.</p></div></a>
+        <a class="card" href="2.javascript-tutorial.html"><div class="top"><span class="number">02</span><span class="arrow">←</span></div><div><h3>JavaScript</h3><p>היסודות, מנגנוני השפה וכתיבת קוד מודרני.</p></div></a>
+        <a class="card" href="3.typescript-tutorial.html"><div class="top"><span class="number">03</span><span class="arrow">←</span></div><div><h3>TypeScript</h3><p>Type system, generics ודפוסי עבודה בטוחים.</p></div></a>
+        <a class="card" href="4.nodejs-tutorial.html"><div class="top"><span class="number">04</span><span class="arrow">←</span></div><div><h3>Node.js</h3><p>Runtime, event loop ובניית שירותי Backend.</p></div></a>
+        <a class="card" href="5.nestjs-tutorial.html"><div class="top"><span class="number">05</span><span class="arrow">←</span></div><div><h3>NestJS</h3><p>ארכיטקטורה מודולרית ויישומי Production.</p></div></a>
+        <a class="card" href="14.django-tutorial.html"><div class="top"><span class="number">14</span><span class="arrow">←</span></div><div><h3>Django</h3><p>פיתוח Backend מלא באקוסיסטם של Python.</p></div></a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title"><h2>Data, Security & Architecture</h2><span class="line"></span></div>
+      <div class="grid">
+        <a class="card" href="6.sql-tutorial.html"><div class="top"><span class="number">06</span><span class="arrow">←</span></div><div><h3>SQL</h3><p>שאילתות, joins, indexing וביצועים.</p></div></a>
+        <a class="card" href="7.databases-tutorial.html"><div class="top"><span class="number">07</span><span class="arrow">←</span></div><div><h3>Databases לעומק</h3><p>מודלים, transactions, scaling ו־trade-offs.</p></div></a>
+        <a class="card" href="8.auth-tutorial.html"><div class="top"><span class="number">08</span><span class="arrow">←</span></div><div><h3>Authentication</h3><p>JWT, sessions, cookies ו־OAuth 2.0.</p></div></a>
+        <a class="card" href="9.networking-tutorial.html"><div class="top"><span class="number">09</span><span class="arrow">←</span></div><div><h3>Networking</h3><p>TCP/IP, DNS, HTTP והרשת מאחורי השירות.</p></div></a>
+        <a class="card" href="10.system-design-tutorial.html"><div class="top"><span class="number">10</span><span class="arrow">←</span></div><div><h3>System Design</h3><p>תכנון מערכות מבוזרות, אמינות וסקייל.</p></div></a>
+        <a class="card" href="15-data-structures-algorithms-tutorial.html"><div class="top"><span class="number">15</span><span class="arrow">←</span></div><div><h3>Data Structures & Algorithms</h3><p>מבני נתונים, אלגוריתמים ופתרון בעיות.</p></div></a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title"><h2>Systems, DevOps & AI</h2><span class="line"></span></div>
+      <div class="grid">
+        <a class="card" href="11.devops-tutorial.html"><div class="top"><span class="number">11</span><span class="arrow">←</span></div><div><h3>DevOps ותשתית</h3><p>Containers, CI/CD, cloud ועקרונות תפעול.</p></div></a>
+        <a class="card" href="12.systems-fundamentals-tutorial.html"><div class="top"><span class="number">12</span><span class="arrow">←</span></div><div><h3>Computer Systems</h3><p>CPU, memory, processes ו־concurrency.</p></div></a>
+        <a class="card" href="13.ai-backend-tutorial.html"><div class="top"><span class="number">13</span><span class="arrow">←</span></div><div><h3>AI למפתח Backend</h3><p>LLMs, RAG, Agents ושילוב AI במערכות.</p></div></a>
+        <a class="card" href="16-linux-tutorial.html"><div class="top"><span class="number">16</span><span class="arrow">←</span></div><div><h3>Linux למפתח Backend</h3><p>Shell, permissions, processes וניהול שרת.</p></div></a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title"><h2>עבודה עם Claude</h2><span class="line"></span></div>
+      <div class="grid">
+        <a class="card special" href="Claude-Cheat-Sheet.html"><div class="top"><span class="number">CHEAT SHEET</span><span class="arrow">←</span></div><div><h3>Claude Cheat Sheet</h3><p>פקודות ודפוסי עבודה שימושיים במקום אחד.</p></div></a>
+        <a class="card special" href="נוהל-עבודה-עם-Claude.html"><div class="top"><span class="number">WORKFLOW</span><span class="arrow">←</span></div><div><h3>נוהל עבודה עם Claude</h3><p>תהליך עבודה מסודר לפיתוח בעזרת Claude.</p></div></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">נבנה כמרכז ידע אישי ומתעדכן לאורך מסלול הלמידה.</footer>
+</body>
+</html>
