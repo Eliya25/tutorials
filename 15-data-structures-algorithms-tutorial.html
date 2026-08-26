@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Structures &amp; Algorithms — המדריך המלא</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #5b21b6; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2.2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #5b21b6; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #4c1d95; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #3b0764; }
+  .part { background: #5b21b6; color: #fff; padding: 8px 18px; border-radius: 8px; margin-top: 2.5em; font-size: 1.15em; font-weight: bold; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #f3eefc; }
+  a { color: #5b21b6; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f7f4fd; border: 1px solid #e2d9f7; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f7f4fd; border: 1px solid #e2d9f7; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>Data Structures &amp; Algorithms — המדריך המלא</h1>
+
+<blockquote>
+<p>העמוד השני של יסודות ה-CS, לצד ה-systems. אם systems מסביר <em>איך המחשב עובד</em>, DS&amp;A מסביר <em>איך לארגן נתונים ולפתור בעיות ביעילות</em>. שניהם יחד הם הבסיס שמתחת לכל framework.</p>
+<p><strong>הדגש:</strong> לא שינון אלא <strong>שיקול דעת</strong> — מתי לבחור איזה מבנה ולמה. זה מה ש-AI לא נותן לך, וזה מה שנשאל בכל ראיון. עברית להסבר, אנגלית לקוד. הקוד ב-JavaScript (מוכר לך).</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<p><strong>חלק א' — יסודות</strong></p>
+<ol>
+<li><a href="#s1">מבוא: למה DS&amp;A</a></li>
+<li><a href="#s2">Big-O — ניתוח סיבוכיות</a></li>
+</ol>
+<p><strong>חלק ב' — Data Structures</strong></p>
+<ol start="3">
+<li><a href="#s3">Arrays ו-Dynamic Arrays</a></li>
+<li><a href="#s4">Linked Lists</a></li>
+<li><a href="#s5">Stacks ו-Queues</a></li>
+<li><a href="#s6">Hash Tables — סוס העבודה</a></li>
+<li><a href="#s7">Trees ו-Binary Search Trees</a></li>
+<li><a href="#s8">Heaps ו-Priority Queues</a></li>
+<li><a href="#s9">Tries</a></li>
+<li><a href="#s10">Graphs</a></li>
+</ol>
+<p><strong>חלק ג' — Algorithms</strong></p>
+<ol start="11">
+<li><a href="#s11">Sorting</a></li>
+<li><a href="#s12">Searching ו-Binary Search</a></li>
+<li><a href="#s13">Recursion ו-Divide-and-Conquer</a></li>
+<li><a href="#s14">Graph Algorithms — BFS, DFS, Dijkstra</a></li>
+<li><a href="#s15">Dynamic Programming</a></li>
+<li><a href="#s16">Greedy Algorithms</a></li>
+<li><a href="#s17">Interview Patterns — Two Pointers, Sliding Window</a></li>
+</ol>
+<p><strong>חלק ד' — מעשי</strong></p>
+<ol start="18">
+<li><a href="#s18">איך לבחור מבנה נתונים</a></li>
+<li><a href="#s19">Big-O Cheat Sheet</a></li>
+<li><a href="#s20">מסגרת לפתרון בעיה בראיון</a></li>
+<li><a href="#s21">תרגילים ומשאבים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<div class="part">חלק א' — יסודות</div>
+
+<h2 id="s1">1. מבוא: למה DS&amp;A</h2>
+
+<p><strong>Data Structure</strong> = דרך לארגן נתונים בזיכרון. <strong>Algorithm</strong> = רצף צעדים לפתרון בעיה. הבחירה בהם קובעת אם התוכנית שלך רצה במילישניות או בדקות על אותם נתונים.</p>
+
+<h3>למה זה חשוב — במיוחד בעידן ה-AI</h3>
+<blockquote>
+<p>AI כותב את הקוד של אלגוריתם. אבל <strong>ההחלטה איזה מבנה נתונים ואיזה אלגוריתם מתאימים לבעיה — היא שיקול דעת הנדסי</strong>, בדיוק כמו system design. "להשתמש ב-hash map כאן במקום array" זה ההבדל בין קוד שרץ ב-O(n) לקוד שרץ ב-O(n²) — ועל מיליון פריטים זה ההבדל בין שנייה לשבועיים. AI ייתן לך פתרון; להבין <em>למה</em> הוא נכון, ומתי הוא לא, זה מה שהופך אותך למהנדס. וזה נשאל בכמעט כל ראיון טכני.</p>
+</blockquote>
+
+<h3>החיבור ל-systems</h3>
+<p>זוכר ממדריך ה-systems ש-array מנצח linked list למרות אותו Big-O, בגלל cache locality? זה בדיוק החיבור בין שני העמודים: <strong>Big-O אומר לך את הכיוון, אבל ה-systems (cache, memory) קובע את המהירות בפועל.</strong> מהנדס טוב מחזיק את שניהם בראש. נחזור לזה לאורך המדריך.</p>
+
+<hr>
+
+<h2 id="s2">2. Big-O — ניתוח סיבוכיות</h2>
+
+<p>לפני כל מבנה ואלגוריתם, צריך שפה למדוד יעילות. <strong>Big-O</strong> מתאר איך זמן הריצה (או הזיכרון) גדל ככל שהקלט גדל. זו השפה המשותפת של כל הדיון על ביצועים.</p>
+
+<h3>הרעיון: קצב גדילה, לא זמן מדויק</h3>
+<p>Big-O לא מודד שניות — הוא מודד <strong>איך המספר גדל</strong> ביחס לגודל הקלט (n). מתעלמים מקבועים ומגורמים זניחים, ומסתכלים על המגמה כש-n גדול. <code>O(2n + 5)</code> נהיה פשוט <code>O(n)</code> — כי כש-n ענק, הקבועים לא משנים.</p>
+
+<h3>מחלקות הסיבוכיות — מהטוב לרע</h3>
+<table>
+<tr><th>Big-O</th><th>שם</th><th>דוגמה</th><th>ל-n=1M</th></tr>
+<tr><td><code>O(1)</code></td><td>קבוע</td><td>גישה ל-array[i], hash lookup</td><td>מיידי</td></tr>
+<tr><td><code>O(log n)</code></td><td>לוגריתמי</td><td>binary search, BST</td><td>~20 צעדים</td></tr>
+<tr><td><code>O(n)</code></td><td>ליניארי</td><td>מעבר על מערך</td><td>מיליון</td></tr>
+<tr><td><code>O(n log n)</code></td><td>לינאריתמי</td><td>merge sort, quicksort</td><td>~20 מיליון</td></tr>
+<tr><td><code>O(n²)</code></td><td>ריבועי</td><td>לולאה מקוננת, bubble sort</td><td>טריליון! 🐌</td></tr>
+<tr><td><code>O(2ⁿ)</code></td><td>מעריכי</td><td>רקורסיה נאיבית (fib)</td><td>בלתי אפשרי</td></tr>
+<tr><td><code>O(n!)</code></td><td>פקטוריאלי</td><td>כל התמורות</td><td>מעבר לתמונה</td></tr>
+</table>
+
+<blockquote>
+<p><strong>הקפיצה שחייבים להפנים:</strong> ההבדל בין <code>O(n)</code> ל-<code>O(n²)</code> על מיליון פריטים הוא בין <strong>מיליון ל-טריליון</strong> פעולות — שנייה מול שבועות. זו הסיבה ש"רק הוספתי לולאה קטנה" יכול להרוס ביצועים. וההבדל בין <code>O(n²)</code> ל-<code>O(n log n)</code> (למשל, sort טוב מול גרוע) הוא לרוב ההבדל בין "עובד" ל"לא שמיש". <strong>זיהוי לולאות מקוננות (O(n²)) והפיכתן ל-O(n) עם hash map — זו אחת המיומנויות הכי מעשיות ב-DS&amp;A.</strong></p>
+</blockquote>
+
+<h3>איך לנתח — כללים מהירים</h3>
+<ul>
+<li>לולאה אחת על n → <code>O(n)</code>.</li>
+<li>לולאה בתוך לולאה → <code>O(n²)</code>.</li>
+<li>חצייה בכל צעד (binary search) → <code>O(log n)</code>.</li>
+<li>פעולות רצופות → מחברים, לוקחים את הגדול (<code>O(n) + O(n²) = O(n²)</code>).</li>
+<li>מתעלמים מקבועים (<code>O(3n) = O(n)</code>).</li>
+</ul>
+
+<h3>Time מול Space, ו-Best/Average/Worst</h3>
+<p>Big-O מתאר גם <strong>זמן</strong> וגם <strong>זיכרון (space complexity)</strong> — לפעמים יש tradeoff ("לשלם זיכרון כדי לחסוך זמן", למשל caching/memoization). וחשוב להבחין בין <strong>worst case</strong> (הכי גרוע — בד"כ מה שמדווחים), <strong>average</strong>, ו-<strong>best</strong>. למשל hash table הוא O(1) <em>average</em> אבל O(n) <em>worst</em> (בהתנגשויות). ראיונות בד"כ שואלים על worst.</p>
+
+<p><strong>Amortized</strong> — עלות ממוצעת לאורך הרבה פעולות. דוגמה: הוספה ל-dynamic array היא O(1) amortized — רוב ההוספות זולות, ומדי פעם יש resize יקר (O(n)), אבל בממוצע זה O(1). נסביר בפרק הבא.</p>
+
+<hr>
+
+<div class="part">חלק ב' — Data Structures</div>
+
+<h2 id="s3">3. Arrays ו-Dynamic Arrays</h2>
+
+<p>המבנה הבסיסי והחשוב ביותר. array הוא רצף <strong>רציף</strong> של אלמנטים בזיכרון (זוכר ממדריך systems? contiguous memory), עם גישה לפי אינדקס.</p>
+
+<h3>למה גישה היא O(1)</h3>
+<p>כי הזיכרון רציף: הכתובת של <code>arr[i]</code> = כתובת ההתחלה + i × גודל_אלמנט. חישוב אחד, גישה ישירה. אין צורך "לחפש". זה מה שהופך array למהיר כל כך לקריאה.</p>
+
+<h3>סיבוכיות הפעולות</h3>
+<table>
+<tr><th>פעולה</th><th>Big-O</th><th>הערה</th></tr>
+<tr><td>גישה <code>arr[i]</code></td><td>O(1)</td><td>חישוב כתובת ישיר</td></tr>
+<tr><td>חיפוש ערך</td><td>O(n)</td><td>צריך לעבור (אלא אם ממוין)</td></tr>
+<tr><td>הוספה/מחיקה בסוף</td><td>O(1)*</td><td>amortized</td></tr>
+<tr><td>הוספה/מחיקה בהתחלה/אמצע</td><td>O(n)</td><td>צריך להזיז את כל השאר</td></tr>
+</table>
+
+<h3>Dynamic Array — איך array "גדל"</h3>
+<blockquote>
+<p>array פיזי הוא בגודל קבוע. אז איך <code>[].push()</code> ב-JS עובד? <strong>Dynamic array</strong>: מקצים array בגודל מסוים, וכשמתמלא — מקצים חדש <strong>כפול בגודל</strong>, מעתיקים הכל, ומשחררים את הישן. ההעתקה היא O(n), אבל היא קורית לעתים רחוקות (כל הכפלה), אז <strong>ה-amortized הוא O(1)</strong> להוספה. זו הדוגמה הקלאסית ל-amortized analysis. (זוכר heap ו-memory allocation ממדריך systems? זה מה שקורה מתחת ל-<code>push</code>).</p>
+</blockquote>
+
+<h3>מתי array</h3>
+<p>ברירת המחדל לרוב המקרים: גישה מהירה לפי אינדקס, iteration, ו-<strong>cache-friendly</strong> (רציף בזיכרון — הכי מהיר בפועל, זוכר ממדריך systems?). החולשה: הוספה/מחיקה באמצע יקרה (O(n)).</p>
+
+<hr>
+
+<h2 id="s4">4. Linked Lists</h2>
+
+<p>ההפך מ-array מבחינת tradeoffs. במקום רצף רציף, כל אלמנט (<strong>node</strong>) מחזיק את הערך <strong>ו-pointer לאלמנט הבא</strong>. הם מפוזרים בזיכרון.</p>
+
+<div class="flow">
+[1|•]──→[2|•]──→[3|•]──→[4|null]<br>
+&nbsp;node&nbsp;&nbsp;&nbsp;&nbsp;node&nbsp;&nbsp;&nbsp;&nbsp;node&nbsp;&nbsp;&nbsp;&nbsp;node<br>
+כל node מצביע לבא (singly linked). doubly = גם לקודם.
+</div>
+
+<h3>סיבוכיות — הראי של array</h3>
+<table>
+<tr><th>פעולה</th><th>Linked List</th><th>Array</th></tr>
+<tr><td>גישה לאינדקס i</td><td>O(n) — צריך ללכת מההתחלה</td><td>O(1)</td></tr>
+<tr><td>הוספה/מחיקה בהתחלה</td><td>O(1) — רק לשנות pointer</td><td>O(n)</td></tr>
+<tr><td>הוספה/מחיקה (עם pointer ל-node)</td><td>O(1)</td><td>O(n)</td></tr>
+</table>
+
+<h3>ה-tradeoff, וה-gotcha החשוב</h3>
+<blockquote>
+<p>linked list מבריק להוספה/מחיקה בקצוות (O(1) — רק מזיזים pointers, בלי להעתיק כלום). אבל <strong>גרוע לגישה אקראית</strong> (O(n)) וגרוע ל-iteration בפועל. וכאן החיבור הקריטי ל-systems: <strong>למרות שגם array וגם linked list הם O(n) ל-iteration, array מהיר פי כמה בגלל cache locality.</strong> ה-nodes של linked list מפוזרים בזיכרון — כל גישה היא cache miss שיורד ל-RAM (זוכר פרק 6 ב-systems?). זו הסיבה שבפועל, מפתחים מנוסים מעדיפים arrays כמעט תמיד, ו-linked lists נדירים בקוד אמיתי. <strong>זו דוגמה מושלמת לאיך Big-O לבדו מטעה — צריך גם את ה-systems.</strong></p>
+</blockquote>
+
+<p>איפה linked lists כן חשובים: מבנים אחרים בנויים עליהם (queues, hash table chaining), והם מלמדים pointers ו-recursion. אבל כברירת מחדל לרשימה — array.</p>
+
+<hr>
+
+<h2 id="s5">5. Stacks ו-Queues</h2>
+
+<p>שני מבנים פשוטים אבל יסודיים, שנבדלים ב<strong>סדר הגישה</strong>.</p>
+
+<h3>Stack — LIFO (Last In, First Out)</h3>
+<p>כמו ערימת צלחות: מוסיפים ומוציאים מלמעלה. <code>push</code> (הוסף למעלה), <code>pop</code> (הוצא מלמעלה) — שניהם O(1).</p>
+<pre><code>const stack = [];
+stack.push(1); stack.push(2);   // [1, 2]
+stack.pop();                     // מחזיר 2 (האחרון שנכנס)</code></pre>
+<p><strong>שימושים:</strong> ה-<strong>call stack</strong> עצמו (זוכר ממדריך systems? כל קריאת פונקציה = push frame)! גם: undo/redo, בדיקת סוגריים מאוזנים, המרת ביטויים, ו-DFS (פרק 14).</p>
+
+<h3>Queue — FIFO (First In, First Out)</h3>
+<p>כמו תור בסופר: הראשון שנכנס — ראשון יוצא. <code>enqueue</code> (הוסף בסוף), <code>dequeue</code> (הוצא מההתחלה).</p>
+<pre><code>const queue = [];
+queue.push(1); queue.push(2);    // [1, 2]
+queue.shift();                    // מחזיר 1 (הראשון שנכנס)
+// הערה: shift ב-JS הוא O(n)! ל-queue יעיל השתמש ב-deque או linked list</code></pre>
+<p><strong>שימושים:</strong> BFS (פרק 14), task queues ו-message queues (זוכר ממדריך System Design?), scheduling (זוכר scheduler ממדריך systems?), buffering. ה-queue הוא מבנה שחוזר בכל מקום שיש "לטפל לפי סדר הגעה".</p>
+
+<blockquote>
+<p><strong>נקודה מעשית:</strong> ב-JS, <code>array.shift()</code> (הוצאה מההתחלה) הוא O(n) כי צריך להזיז את כל האלמנטים. ל-queue בעל ביצועים, השתמש ב-deque (double-ended queue) או linked list, שם dequeue הוא O(1). זו טעות נפוצה — לבנות queue על array עם shift ולתהות למה זה איטי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s6">6. Hash Tables — סוס העבודה</h2>
+
+<p>אם יש מבנה נתונים אחד ששווה לשלוט בו לעומק — זה זה. Hash Table (נקרא גם hash map, dictionary, associative array) נותן <strong>גישה, הוספה ומחיקה ב-O(1) בממוצע</strong>. הוא ה-<code>Map</code>/<code>Object</code> של JS, ה-<code>dict</code> של Python — ומאחורי אינספור פתרונות.</p>
+
+<h3>הרעיון: hash function</h3>
+<blockquote>
+<p>הקסם: במקום לחפש ערך (O(n)), <strong>מחשבים את מיקומו</strong>. <strong>hash function</strong> לוקחת מפתח (string, number) ומחזירה מספר — אינדקס במערך הפנימי. אז "איפה שמור <code>user_42</code>?" נענה בחישוב אחד: <code>hash("user_42") % size</code> → אינדקס → גישה ישירה O(1). זה בדיוק כמו array indexing, אבל עם מפתחות שרירותיים במקום מספרים.</p>
+</blockquote>
+
+<div class="flow">
+key "name"  ──hash──→  3  →  bucket[3] = "Eliya"<br>
+key "age"   ──hash──→  7  →  bucket[7] = 30<br>
+גישה = חישוב hash + index. O(1).
+</div>
+
+<h3>Collisions — הבעיה, וכיצד פותרים</h3>
+<p>מה קורה כששני מפתחות שונים נותנים אותו hash (אותו אינדקס)? זו <strong>collision</strong>, ובלתי נמנעת (יותר מפתחות אפשריים מ-buckets). שתי שיטות פתרון:</p>
+<ul>
+<li><strong>Chaining</strong> — כל bucket הוא linked list; מפתחות מתנגשים נשמרים באותה רשימה. בחיפוש, עוברים על הרשימה הקצרה.</li>
+<li><strong>Open Addressing</strong> — אם ה-bucket תפוס, מחפשים את הבא הפנוי (linear/quadratic probing).</li>
+</ul>
+
+<h3>Load Factor ו-Resizing</h3>
+<p>ה-<strong>load factor</strong> = מספר פריטים / מספר buckets. כשהוא גבוה מדי (הרבה collisions), הביצועים יורדים מ-O(1) לכיוון O(n). הפתרון: כשה-load factor עובר סף (~0.75), ה-hash table <strong>מכפיל את גודלו ו-rehash</strong> את הכל — בדיוק כמו dynamic array. זה שומר על O(1) amortized.</p>
+
+<h3>למה O(1) average אבל O(n) worst</h3>
+<blockquote>
+<p>במקרה הרע — כל המפתחות מתנגשים לאותו bucket (hash function גרועה או קלט זדוני) — ה-hash table מתדרדר ל-linked list, ו-lookup הוא O(n). זו הסיבה ש-hash function טובה קריטית, ולמה קיימות מתקפות "hash collision DoS". בפועל עם hash function סבירה — O(1). ראיונות ישאלו: "מה ה-worst case של hash map?" — התשובה O(n).</p>
+</blockquote>
+
+<h3>מתי hash table — הכלי הראשון שלך</h3>
+<p>כמעט תמיד כשצריך <strong>lookup מהיר לפי מפתח</strong>, <strong>ספירה/קיבוץ</strong>, או <strong>בדיקת קיום/ייחודיות</strong>. הדפוס הכי נפוץ בפתרון בעיות: <strong>"יש לי לולאה מקוננת O(n²)? כנראה hash map הופך אותה ל-O(n)."</strong> למשל, "מצא זוג שמסתכם ל-X" — במקום לבדוק כל זוג (O(n²)), שומרים מה שראינו ב-hash set ובודקים משלים ב-O(1) → O(n). זה הטריק הכי שימושי ב-DS&amp;A.</p>
+
+<hr>
+
+<h2 id="s7">7. Trees ו-Binary Search Trees</h2>
+
+<p>Tree הוא מבנה היררכי — nodes עם קשרי הורה-ילד, בלי מעגלים. השורש למעלה, העלים למטה. משמש להיררכיות, לחיפוש מהיר, ולהמון אלגוריתמים.</p>
+
+<h3>מושגים</h3>
+<ul>
+<li><strong>Root</strong> — הצומת העליון. <strong>Leaf</strong> — צומת בלי ילדים. <strong>Height</strong> — עומק העץ.</li>
+<li><strong>Binary Tree</strong> — כל צומת עד 2 ילדים (left, right).</li>
+</ul>
+
+<h3>Binary Search Tree (BST) — עץ עם סדר</h3>
+<blockquote>
+<p>BST הוא binary tree עם <strong>כלל</strong>: לכל צומת, כל מה שמשמאל <strong>קטן</strong> ממנו, כל מה שמימין <strong>גדול</strong>. הכלל הזה נותן חיפוש ב-O(log n): בכל צומת, אתה יודע לאיזה צד ללכת (כמו binary search!), וחוצה את העץ בכל צעד:</p>
+<div class="flow">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8<br>
+&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;\<br>
+&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;10<br>
+&nbsp;/&nbsp;\&nbsp;&nbsp;&nbsp;\<br>
+1&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;14<br>
+חיפוש 6: 8→שמאל→3→ימין→6. שלושה צעדים במקום מעבר על הכל.
+</div>
+</blockquote>
+
+<h3>הבעיה: עצים לא מאוזנים</h3>
+<p>אם מכניסים ל-BST ערכים ממוינים (1,2,3,4...), הוא הופך ל"שרשרת" — בעצם linked list, וחיפוש נהיה O(n)! זו הסיבה שקיימים <strong>Self-Balancing Trees</strong>: <strong>AVL</strong> ו-<strong>Red-Black Trees</strong> מאזנים את עצמם אוטומטית בכל הוספה, ומבטיחים O(log n) תמיד. (Red-Black עומד מאחורי <code>TreeMap</code> ב-Java ומבני std רבים).</p>
+
+<h3>Traversals — מעבר על עץ</h3>
+<pre><code>// In-order (שמאל → צומת → ימין): נותן BST ממוין!
+function inOrder(node) {
+  if (!node) return;
+  inOrder(node.left);
+  visit(node.value);
+  inOrder(node.right);
+}
+// Pre-order (צומת → שמאל → ימין): לשכפול עץ
+// Post-order (שמאל → ימין → צומת): למחיקת עץ
+// BFS / Level-order: שכבה-שכבה (עם queue!)</code></pre>
+
+<blockquote>
+<p><strong>החיבור ל-Databases:</strong> זוכר ש-DB indexes בנויים על <strong>B-trees</strong> (ממדריך SQL)? B-tree הוא הכללה של BST מאוזן, מותאם לדיסק (כל צומת מחזיק הרבה מפתחות = פחות גישות דיסק). זו הסיבה ש-index נותן חיפוש O(log n) במקום O(n) full scan. עכשיו אתה מבין את המבנה מתחת ל-indexes — זה אותו רעיון של BST, בקנה מידה של דיסק.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. Heaps ו-Priority Queues</h2>
+
+<p>Heap הוא binary tree מיוחד שנותן גישה מהירה ל<strong>מינימום או מקסימום</strong> — בלי למיין את הכל. הוא המימוש של <strong>priority queue</strong>.</p>
+
+<h3>הכלל</h3>
+<p><strong>Min-heap</strong>: כל הורה <strong>קטן או שווה</strong> לילדיו — אז השורש הוא תמיד המינימום. (Max-heap להפך). לא ממוין לגמרי, רק הכלל ההורה-ילד. זה מספיק כדי לשלוף את הקטן ביותר ב-O(1) ולהוציא/להכניס ב-O(log n).</p>
+
+<table>
+<tr><th>פעולה</th><th>Big-O</th></tr>
+<tr><td>peek (המינימום)</td><td>O(1)</td></tr>
+<tr><td>insert</td><td>O(log n)</td></tr>
+<tr><td>extract-min</td><td>O(log n)</td></tr>
+<tr><td>build-heap (מ-array)</td><td>O(n)</td></tr>
+</table>
+
+<h3>שימושים</h3>
+<p><strong>Priority Queue</strong> — "טפל בבעל העדיפות הגבוהה" (זוכר scheduling ממדריך systems? OS scheduler משתמש בזה). <strong>Dijkstra</strong> (מסלול קצר, פרק 14). <strong>Top-K</strong> — "K הפריטים הגדולים" בלי למיין הכל (heap בגודל K → O(n log k)). <strong>Heap sort</strong> (פרק 11). <strong>Merge של K רשימות ממוינות</strong>.</p>
+
+<blockquote>
+<p><strong>מתי heap:</strong> כשאתה צריך שוב ושוב את המינימום/מקסימום מקבוצה שמשתנה, בלי למיין הכל. אם היית ממיין בכל פעם — O(n log n) לכל שאילתה; heap נותן O(log n). זה הכלי ל"תמיד תן לי את הבא בתור לפי עדיפות".</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Tries (Prefix Trees)</h2>
+
+<p>Trie הוא עץ מיוחד לאחסון <strong>strings לפי prefix</strong>. כל צומת הוא תו, ומסלול מהשורש מרכיב מילה. מבריק ל-autocomplete וחיפוש לפי תחילית.</p>
+
+<div class="flow">
+&nbsp;&nbsp;&nbsp;(root)<br>
+&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;\<br>
+&nbsp;&nbsp;c&nbsp;&nbsp;&nbsp;t<br>
+&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|<br>
+&nbsp;&nbsp;a&nbsp;&nbsp;&nbsp;o<br>
+&nbsp;/ \<br>
+t&nbsp;&nbsp;r&nbsp;&nbsp;&nbsp;→ "cat", "car", "to"
+</div>
+
+<p>היתרון: חיפוש/הוספה של מילה הוא O(אורך המילה) — <strong>לא תלוי בכמות המילים!</strong> וכל המילים עם prefix מסוים נמצאות בתת-עץ אחד → autocomplete מיידי. שימושים: autocomplete, בדיקת איות, IP routing. פחות נפוץ, אבל כשצריך "כל המילים שמתחילות ב-" — אין תחליף.</p>
+
+<hr>
+
+<h2 id="s10">10. Graphs</h2>
+
+<p>Graph הוא המבנה הכללי ביותר: <strong>צמתים (vertices)</strong> ו-<strong>קשתות (edges)</strong> ביניהם. הכל הוא graph — רשתות חברתיות, מפות, תלויות, האינטרנט עצמו (זוכר routing ממדריך Networking?).</p>
+
+<h3>סוגים</h3>
+<ul>
+<li><strong>Directed / Undirected</strong> — קשתות עם כיוון (follow בטוויטר) או בלי (חברות בפייסבוק).</li>
+<li><strong>Weighted / Unweighted</strong> — לקשתות יש משקל (מרחק, עלות) או לא.</li>
+<li><strong>Cyclic / Acyclic</strong> — יש מעגלים או לא. <strong>DAG</strong> (Directed Acyclic Graph) חשוב מאוד — תלויות, scheduling, git commits!</li>
+</ul>
+
+<h3>שתי דרכי ייצוג</h3>
+<blockquote>
+<p><strong>Adjacency List</strong> — לכל צומת, רשימת שכניו. חסכוני בזיכרון ל-graphs דלילים (מעט קשתות). זו הבחירה הנפוצה.</p>
+<pre><code>const graph = {
+  A: ["B", "C"],
+  B: ["A", "D"],
+  C: ["A"],
+  D: ["B"]
+};</code></pre>
+<p><strong>Adjacency Matrix</strong> — טבלה n×n, <code>matrix[i][j]=1</code> אם יש קשת. בדיקת קשר ב-O(1), אבל O(n²) זיכרון — טוב רק ל-graphs צפופים. הבחירה תלויה בצפיפות (density) של ה-graph.</p>
+</blockquote>
+
+<p>ה-graph עצמו הוא רק המבנה — הכוח שלו הוא באלגוריתמים שרצים עליו (BFS, DFS, מסלול קצר), שנכסה בפרק 14. כמעט כל בעיה "מורכבת" בראיונות היא graph בתחפושת.</p>
+
+<hr>
+
+<div class="part">חלק ג' — Algorithms</div>
+
+<h2 id="s11">11. Sorting</h2>
+
+<p>מיון הוא בעיה קלאסית שמלמדת המון על אלגוריתמים. בפועל תשתמש ב-<code>sort()</code> המובנה, אבל <strong>הבנת האלגוריתמים חיונית</strong> — לראיונות, ולהבין tradeoffs.</p>
+
+<h3>המיונים ה"פשוטים" — O(n²)</h3>
+<ul>
+<li><strong>Bubble Sort</strong> — מחליף שכנים שוב ושוב. הכי פשוט, הכי איטי. חינוכי בלבד.</li>
+<li><strong>Selection Sort</strong> — מוצא את המינימום ומעביר להתחלה, חוזר.</li>
+<li><strong>Insertion Sort</strong> — בונה מערך ממוין אחד-אחד. <strong>מהיר על נתונים כמעט-ממוינים</strong> או קטנים (O(n) best case) — לכן משמש בתוך מיונים היברידיים.</li>
+</ul>
+
+<h3>המיונים היעילים — O(n log n)</h3>
+<blockquote>
+<p><strong>Merge Sort</strong> — divide-and-conquer: מחלק את המערך לחצי, ממיין כל חצי (רקורסיבית), וממזג. <strong>יציב</strong> (שומר סדר של שווים) ו-<strong>O(n log n) מובטח</strong> (גם worst case). החיסרון: צריך O(n) זיכרון נוסף למיזוג.</p>
+<pre><code>function mergeSort(arr) {
+  if (arr.length &lt;= 1) return arr;
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid));    // חלק ומיין
+  const right = mergeSort(arr.slice(mid));
+  return merge(left, right);                     // מזג שני ממוינים
+}</code></pre>
+<p><strong>Quicksort</strong> — בוחר <strong>pivot</strong>, מחלק לקטנים/גדולים ממנו, ממיין רקורסיבית. <strong>מהיר מאוד בפועל</strong> ו-in-place (בלי זיכרון נוסף), אבל worst case O(n²) (pivot גרוע). הבחירה הנפוצה בפועל (עם pivot חכם). <strong>Heap Sort</strong> — משתמש ב-heap, O(n log n) מובטח ו-in-place, אבל לא יציב ולרוב איטי יותר מ-quicksort בפועל (cache).</p>
+</blockquote>
+
+<h3>מעבר ל-O(n log n) — מיונים "מיוחדים"</h3>
+<p>יש חסם תחתון: מיון מבוסס-השוואות <strong>לא יכול</strong> להיות מהיר מ-O(n log n). אבל אם לא משווים אלא מנצלים מבנה, אפשר מהר יותר: <strong>Counting Sort</strong> ו-<strong>Radix Sort</strong> ממיינים מספרים שלמים בטווח מוגבל ב-O(n) — בלי השוואות. שימושי כשהנתונים מספרים בטווח ידוע.</p>
+
+<h3>הטבלה שמסכמת</h3>
+<table>
+<tr><th>מיון</th><th>Average</th><th>Worst</th><th>Space</th><th>יציב?</th></tr>
+<tr><td>Bubble/Insertion</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>כן</td></tr>
+<tr><td>Merge Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n)</td><td>כן</td></tr>
+<tr><td>Quicksort</td><td>O(n log n)</td><td>O(n²)</td><td>O(log n)</td><td>לא</td></tr>
+<tr><td>Heap Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(1)</td><td>לא</td></tr>
+</table>
+
+<blockquote>
+<p><strong>מעשי:</strong> ה-<code>sort()</code> המובנה של רוב השפות הוא מיון <strong>היברידי</strong> (למשל Timsort ב-Python/Java, שמשלב merge + insertion). אתה כמעט לעולם לא תכתוב מיון בעצמך. אבל <strong>הבנת ה-tradeoffs</strong> — יציבות (חשוב כשממיינים לפי כמה מפתחות), זיכרון, worst case — היא מה שנשאל ומה שמאפשר לך לבחור נכון. וזהירות: ב-JS, <code>[3,1,2].sort()</code> ממיין כ-<strong>strings</strong> כברירת מחדל! צריך <code>sort((a,b) =&gt; a-b)</code> למספרים (זוכר את ה-gotcha ממדריך JavaScript?).</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Searching ו-Binary Search</h2>
+
+<h3>Linear Search — O(n)</h3>
+<p>עוברים אחד-אחד עד שמוצאים. הכרחי כשהנתונים לא ממוינים. פשוט, ולפעמים אין ברירה.</p>
+
+<h3>Binary Search — O(log n), אבל דורש נתונים ממוינים</h3>
+<blockquote>
+<p>אחד האלגוריתמים היפים והשימושיים ביותר. על מערך <strong>ממוין</strong>: בודקים את האמצע, ולפי אם הערך גדול/קטן — <strong>זורקים חצי מהמערך</strong> וחוזרים. כל צעד חוצה את מרחב החיפוש → O(log n):</p>
+<pre><code>function binarySearch(arr, target) {
+  let low = 0, high = arr.length - 1;
+  while (low &lt;= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (arr[mid] === target) return mid;
+    if (arr[mid] &lt; target) low = mid + 1;    // זרוק את החצי השמאלי
+    else high = mid - 1;                       // זרוק את החצי הימני
+  }
+  return -1;
+}</code></pre>
+<p>על מיליון פריטים: linear = עד מיליון בדיקות, binary = ~20 בדיקות. זה הכוח של O(log n).</p>
+</blockquote>
+
+<blockquote>
+<p><strong>כמה כבר פגשת את זה בסדרה:</strong> binary search הוא לא רק תרגיל — הוא בכל מקום. <strong>DB indexes</strong> (B-tree = binary search על דיסק, מדריך SQL). <strong>git bisect</strong> (מציאת commit ששבר, מדריך Git). <strong>BST</strong> (פרק 7). כל פעם ש"חוצים את מרחב החיפוש" — זה binary search. זיהוי ההזדמנות להשתמש בו (יש נתונים ממוינים? אפשר O(log n) במקום O(n)) הוא מיומנות מפתח.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13">13. Recursion ו-Divide-and-Conquer</h2>
+
+<p>Recursion = פונקציה שקוראת לעצמה. זה כלי חשיבה יסודי, ובסיס להרבה אלגוריתמים (עצים, מיונים, DP, graphs).</p>
+
+<h3>שני החלקים של כל רקורסיה</h3>
+<pre><code>function factorial(n) {
+  if (n &lt;= 1) return 1;          // 1. Base case — תנאי עצירה (חובה!)
+  return n * factorial(n - 1);   // 2. Recursive case — קורא לעצמו על בעיה קטנה יותר
+}</code></pre>
+<p><strong>בלי base case → רקורסיה אינסופית → stack overflow</strong> (זוכר ממדריך systems? כל קריאה דוחפת frame ל-stack עד שנגמר). זה החיבור הישיר: recursion "חי" על ה-call stack.</p>
+
+<h3>Divide-and-Conquer</h3>
+<p>דפוס עוצמתי: <strong>מחלקים</strong> בעיה לתת-בעיות קטנות יותר, <strong>פותרים</strong> כל אחת (רקורסיבית), ו<strong>משלבים</strong>. merge sort ו-binary search הם בדיוק זה. הרעיון: בעיה שקשה לפתור ישירות נהיית קלה כשמפרקים אותה.</p>
+
+<h3>הסכנה: רקורסיה נאיבית = O(2ⁿ)</h3>
+<blockquote>
+<p>הדוגמה הקלאסית — Fibonacci רקורסיבי:</p>
+<pre><code>function fib(n) {
+  if (n &lt;= 1) return n;
+  return fib(n - 1) + fib(n - 2);   // מחשב את אותם ערכים שוב ושוב!
+}
+// fib(50) → מיליארדי קריאות. O(2ⁿ). בלתי אפשרי.</code></pre>
+<p>הבעיה: <strong>overlapping subproblems</strong> — <code>fib(3)</code> מחושב אינספור פעמים. וזה בדיוק מה ש-<strong>Dynamic Programming</strong> (הפרק הבא) פותר — לזכור תוצאות במקום לחשב מחדש. הבנת <em>למה</em> הרקורסיה הנאיבית איטית היא הדלת ל-DP.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. Graph Algorithms — BFS, DFS, Dijkstra</h2>
+
+<p>ה-graph (פרק 10) מקבל חיים דרך האלגוריתמים שרצים עליו. שני המסעות הבסיסיים — BFS ו-DFS — הם הבסיס לכמעט כל בעיית graph.</p>
+
+<h3>BFS — Breadth-First Search (לרוחב)</h3>
+<blockquote>
+<p>חוקר את הגרף <strong>שכבה-שכבה</strong>: קודם כל השכנים הישירים, אז שכניהם, וכן הלאה. משתמש ב-<strong>queue</strong> (זוכר פרק 5? FIFO). התכונה החשובה: <strong>BFS מוצא את המסלול הקצר ביותר</strong> (במספר קשתות) בגרף לא-משוקלל.</p>
+<pre><code>function bfs(graph, start) {
+  const visited = new Set([start]);
+  const queue = [start];
+  while (queue.length) {
+    const node = queue.shift();          // FIFO
+    for (const neighbor of graph[node]) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+}</code></pre>
+<p>שימושים: מסלול קצר (רשתות חברתיות — "כמה דרגות הפרדה"), web crawling שכבה-שכבה, "הכי קרוב".</p>
+</blockquote>
+
+<h3>DFS — Depth-First Search (לעומק)</h3>
+<blockquote>
+<p>צולל <strong>עמוק ככל האפשר</strong> לפני שחוזר. משתמש ב-<strong>stack</strong> (או רקורסיה, שמשתמשת ב-call stack). שימושים: זיהוי מעגלים, topological sort, מציאת רכיבים קשירים, פתרון מבוכים, backtracking.</p>
+<pre><code>function dfs(graph, node, visited = new Set()) {
+  visited.add(node);
+  for (const neighbor of graph[node]) {
+    if (!visited.has(neighbor)) dfs(graph, neighbor, visited);   // צלול עמוק
+  }
+}</code></pre>
+<p>ההבדל מ-BFS: BFS = queue = לרוחב = מסלול קצר; DFS = stack = לעומק = חקירה מלאה. שניהם O(V+E) — צמתים + קשתות. הבחירה תלויה במה שאתה מחפש.</p>
+</blockquote>
+
+<h3>Dijkstra — מסלול קצר בגרף משוקלל</h3>
+<p>כשלקשתות יש <strong>משקלים</strong> (מרחקים, עלויות), BFS לא מספיק. <strong>Dijkstra</strong> מוצא את המסלול הזול ביותר, בעזרת <strong>priority queue</strong> (heap! פרק 8) — תמיד מרחיב את הצומת הכי-קרוב-עד-כה. זה מה שמאחורי Waze/Google Maps ומאחורי routing ברשת (זוכר ממדריך Networking?). O((V+E) log V).</p>
+
+<h3>Topological Sort — סידור DAG</h3>
+<p>ב-DAG (גרף מכוון בלי מעגלים), <strong>topological sort</strong> נותן סדר שבו כל צומת בא לפני התלויים בו. שימושים: <strong>build systems</strong> (מה לקמפל קודם), <strong>task scheduling</strong> עם תלויות, resolution של dependencies (npm!). אם יש מעגל — אין סדר תקין (dependency cycle — זוכר ממדריך NestJS?).</p>
+
+<hr>
+
+<h2 id="s15">15. Dynamic Programming</h2>
+
+<p>DP הוא הנושא ש"מפחיד" הכי הרבה בראיונות, אבל הרעיון פשוט: <strong>לזכור תוצאות של תת-בעיות כדי לא לחשב אותן שוב.</strong> זה בדיוק הפתרון ל-overlapping subproblems מפרק 13.</p>
+
+<h3>מתי DP מתאים</h3>
+<p>DP עובד כשלבעיה יש: (1) <strong>overlapping subproblems</strong> — אותן תת-בעיות חוזרות, ו-(2) <strong>optimal substructure</strong> — הפתרון האופטימלי בנוי מפתרונות אופטימליים של תת-בעיות. אם שני אלה מתקיימים — DP הופך O(2ⁿ) ל-O(n).</p>
+
+<h3>שתי גישות</h3>
+<blockquote>
+<p><strong>Memoization (top-down)</strong> — רקורסיה רגילה, אבל <strong>שומרים תוצאות ב-cache</strong> ובודקים לפני שמחשבים:</p>
+<pre><code>function fib(n, memo = {}) {
+  if (n &lt;= 1) return n;
+  if (n in memo) return memo[n];              // כבר חישבנו? החזר
+  memo[n] = fib(n-1, memo) + fib(n-2, memo);  // חשב פעם אחת, שמור
+  return memo[n];
+}
+// עכשיו O(n) במקום O(2ⁿ)! כל fib(k) מחושב פעם אחת.</code></pre>
+<p><strong>Tabulation (bottom-up)</strong> — בונים טבלה מהקטן לגדול, בלי רקורסיה:</p>
+<pre><code>function fib(n) {
+  const dp = [0, 1];
+  for (let i = 2; i &lt;= n; i++) dp[i] = dp[i-1] + dp[i-2];
+  return dp[n];
+}</code></pre>
+<p>שתיהן O(n). memoization אינטואיטיבי יותר (רק מוסיפים cache לרקורסיה); tabulation נמנע מ-stack overflow ולפעמים מהיר יותר.</p>
+</blockquote>
+
+<h3>הבעיות הקלאסיות</h3>
+<p>שווה להכיר את הדפוסים: <strong>Knapsack</strong> (מקסום ערך במשקל מוגבל), <strong>Longest Common Subsequence</strong> (בסיס ל-git diff!), <strong>Edit Distance</strong> (spell check), <strong>Coin Change</strong>, <strong>מסלולים ברשת</strong>. ברגע שאתה מזהה "אני מחשב את אותו דבר שוב ושוב" — זה סימן ל-DP.</p>
+
+<blockquote>
+<p><strong>איך לגשת ל-DP:</strong> אל תנסה לכתוב DP ישר. (1) כתוב פתרון רקורסיבי נאיבי, (2) זהה שיש overlapping subproblems, (3) הוסף memoization. זהו — כבר יש לך DP. רוב האנשים נבהלים כי מנסים לקפוץ ישר ל-tabulation. הדרך דרך הרקורסיה הנאיבית + cache היא הרבה יותר טבעית.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s16">16. Greedy Algorithms</h2>
+
+<p>Greedy הוא הפוך מ-DP: במקום לשקול את כל האפשרויות, <strong>בכל צעד בוחרים את הבחירה הכי טובה מקומית</strong> ומקווים שזה יוביל לאופטימום גלובלי.</p>
+
+<pre><code>// עודף במטבעות — greedy: תמיד קח את המטבע הגדול ביותר שאפשר:
+function coinChange(amount, coins) {
+  coins.sort((a, b) =&gt; b - a);
+  const result = [];
+  for (const coin of coins) {
+    while (amount &gt;= coin) { result.push(coin); amount -= coin; }
+  }
+  return result;
+}</code></pre>
+
+<blockquote>
+<p><strong>המלכודת:</strong> greedy <em>לא תמיד</em> נותן את הפתרון האופטימלי! הוא עובד רק לבעיות עם "greedy choice property". למשל, עודף במטבעות רגילים — greedy עובד. אבל עם מטבעות מוזרים (1, 3, 4) לסכום 6 — greedy נותן 4+1+1 (3 מטבעות), אבל האופטימום הוא 3+3 (2 מטבעות)! זו הסיבה שחייבים להוכיח ש-greedy נכון לבעיה, או להשתמש ב-DP. <strong>ההבחנה מתי greedy מספיק ומתי צריך DP היא בדיוק שיקול הדעת ש-DS&amp;A מלמד.</strong> שימושים שבהם greedy מוכח: Dijkstra, Huffman coding (דחיסה), interval scheduling, MST.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s17">17. Interview Patterns — Two Pointers, Sliding Window</h2>
+
+<p>מעבר לאלגוריתמים הקלאסיים, יש <strong>דפוסים</strong> שחוזרים בבעיות ראיונות. זיהוי הדפוס = חצי מהפתרון. אלה החשובים:</p>
+
+<h3>Two Pointers</h3>
+<p>שני מצביעים שרצים על מערך (מהקצוות פנימה, או בקצב שונה). הופך הרבה בעיות O(n²) ל-O(n):</p>
+<pre><code>// האם יש זוג ממוין שמסתכם ל-target? (מערך ממוין)
+function twoSum(arr, target) {
+  let left = 0, right = arr.length - 1;
+  while (left &lt; right) {
+    const sum = arr[left] + arr[right];
+    if (sum === target) return [left, right];
+    if (sum &lt; target) left++;      // צריך גדול יותר
+    else right--;                   // צריך קטן יותר
+  }
+}   // O(n) במקום O(n²)</code></pre>
+
+<h3>Sliding Window</h3>
+<p>"חלון" שזז על מערך/string, לבעיות של "תת-רצף רציף". במקום לחשב מחדש כל חלון (O(n²)), מעדכנים את החלון תוך כדי (O(n)). למשל: "התת-מערך הרציף הכי ארוך עם סכום ≤ K", "אורך ה-substring הכי ארוך בלי תו חוזר".</p>
+
+<h3>עוד דפוסים שכדאי להכיר</h3>
+<ul>
+<li><strong>Hash map ל-O(n)</strong> — הדפוס הכי נפוץ (זוכר מפרק 6?): לולאה מקוננת → hash map.</li>
+<li><strong>Fast &amp; Slow pointers</strong> — זיהוי מעגל ב-linked list, מציאת אמצע.</li>
+<li><strong>Binary search על התשובה</strong> — כשמחפשים ערך אופטימלי מונוטוני.</li>
+<li><strong>Backtracking</strong> — בעיות "כל הצירופים/תמורות" (DFS עם חזרה אחורה).</li>
+</ul>
+
+<blockquote>
+<p><strong>הסוד של ראיונות אלגוריתמים:</strong> אין מאות בעיות — יש ~15 דפוסים, וכל בעיה היא וריאציה. במקום לשנן פתרונות, <strong>למד לזהות דפוסים</strong>: "בעיית תת-רצף רציף? → sliding window. מערך ממוין וזוגות? → two pointers. לולאה מקוננת? → נסה hash map. אופטימום עם תת-בעיות חוזרות? → DP." זיהוי הדפוס הוא המיומנות האמיתית — לא שינון.</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ד' — מעשי</div>
+
+<h2 id="s18">18. איך לבחור מבנה נתונים</h2>
+
+<p>זו המיומנות האמיתית — לא לדעת את המבנים, אלא <strong>לבחור את הנכון לבעיה</strong>. הנה מדריך החלטה מהיר לפי מה שאתה צריך:</p>
+
+<table>
+<tr><th>אם אתה צריך...</th><th>השתמש ב-</th><th>למה</th></tr>
+<tr><td>גישה לפי אינדקס, iteration</td><td><strong>Array</strong></td><td>O(1) גישה, cache-friendly</td></tr>
+<tr><td>lookup/הוספה/מחיקה מהירים לפי מפתח</td><td><strong>Hash Table</strong></td><td>O(1) average</td></tr>
+<tr><td>בדיקת ייחודיות / קיום</td><td><strong>Hash Set</strong></td><td>O(1) has()</td></tr>
+<tr><td>LIFO (אחרון נכנס ראשון)</td><td><strong>Stack</strong></td><td>undo, DFS, parsing</td></tr>
+<tr><td>FIFO (סדר הגעה)</td><td><strong>Queue</strong></td><td>BFS, task processing</td></tr>
+<tr><td>תמיד המינימום/מקסימום</td><td><strong>Heap</strong></td><td>O(1) peek, O(log n) update</td></tr>
+<tr><td>נתונים ממוינים + חיפוש טווחים</td><td><strong>Balanced BST</strong></td><td>O(log n), סדר נשמר</td></tr>
+<tr><td>חיפוש לפי prefix / autocomplete</td><td><strong>Trie</strong></td><td>O(אורך המילה)</td></tr>
+<tr><td>קשרים / רשתות / תלויות</td><td><strong>Graph</strong></td><td>BFS/DFS/מסלולים</td></tr>
+</table>
+
+<blockquote>
+<p><strong>הכלל הפרקטי:</strong> <strong>ברוב הבעיות, התשובה היא array או hash table.</strong> תתחיל מהם. hash table הוא הכלי הראשון שלך לכל "מהיר לפי מפתח" או להפיכת O(n²) ל-O(n). המבנים המתוחכמים (heap, trie, BST מאוזן, graph) נכנסים כשיש דרישה ספציפית שהם פותרים. אל תסבך — מבנה פשוט שמתאים מנצח מבנה מתוחכם שלא צריך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s19">19. Big-O Cheat Sheet</h2>
+
+<h3>מבני נתונים — פעולות נפוצות (average case)</h3>
+<table>
+<tr><th>מבנה</th><th>גישה</th><th>חיפוש</th><th>הוספה</th><th>מחיקה</th></tr>
+<tr><td>Array</td><td>O(1)</td><td>O(n)</td><td>O(n)</td><td>O(n)</td></tr>
+<tr><td>Dynamic Array (push)</td><td>O(1)</td><td>O(n)</td><td>O(1)*</td><td>O(n)</td></tr>
+<tr><td>Linked List</td><td>O(n)</td><td>O(n)</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Hash Table</td><td>—</td><td>O(1)</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Stack / Queue</td><td>O(n)</td><td>O(n)</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Balanced BST</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td></tr>
+<tr><td>Heap</td><td>O(1) min</td><td>O(n)</td><td>O(log n)</td><td>O(log n)</td></tr>
+</table>
+<p>* amortized. שים לב ל-worst case שונה: hash table הוא O(n) ב-worst, BST לא-מאוזן הוא O(n).</p>
+
+<h3>אלגוריתמים</h3>
+<table>
+<tr><th>אלגוריתם</th><th>Time</th><th>Space</th></tr>
+<tr><td>Binary Search</td><td>O(log n)</td><td>O(1)</td></tr>
+<tr><td>Merge / Heap Sort</td><td>O(n log n)</td><td>O(n) / O(1)</td></tr>
+<tr><td>Quicksort</td><td>O(n log n) avg</td><td>O(log n)</td></tr>
+<tr><td>BFS / DFS</td><td>O(V + E)</td><td>O(V)</td></tr>
+<tr><td>Dijkstra</td><td>O((V+E) log V)</td><td>O(V)</td></tr>
+<tr><td>DP (טיפוסי)</td><td>O(n) / O(n²)</td><td>O(n) / O(n²)</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s20">20. מסגרת לפתרון בעיה בראיון</h2>
+
+<p>ראיון אלגוריתמים בודק איך אתה <em>חושב</em>, לא אם אתה זוכר את הפתרון. הנה מסגרת (נקראת לפעמים <strong>UMPIRE</strong>) שמכריחה אותך לגשת נכון:</p>
+
+<ol>
+<li><strong>Understand</strong> — הבן את הבעיה. שאל שאלות: מה הקלט/פלט? edge cases (ריק, כפילויות, שליליים)? גודל הקלט? <strong>אף פעם אל תקפוץ לקוד.</strong></li>
+<li><strong>Match</strong> — לאיזה דפוס זה מתאים? (ממוין → binary search / two pointers; lookup → hash map; תת-רצף → sliding window; תלויות → graph).</li>
+<li><strong>Plan</strong> — תאר את הגישה במילים/פסאודו לפני קוד. תסכים עם המראיין על הגישה.</li>
+<li><strong>Implement</strong> — עכשיו כתוב קוד, נקי וברור.</li>
+<li><strong>Review</strong> — עבור על הקוד עם דוגמה, בדוק edge cases.</li>
+<li><strong>Evaluate</strong> — מה ה-Big-O (time + space)? אפשר לשפר?</li>
+</ol>
+
+<blockquote>
+<p><strong>הטעות מספר אחת בראיונות:</strong> לקפוץ ישר לקוד. מראיינים מחפשים <strong>תקשורת ותהליך חשיבה</strong> — דבר בקול, הצהר הנחות, התחל מפתרון brute-force ("הכי פשוט זה O(n²) עם לולאה מקוננת"), ואז שפר ("אבל עם hash map זה O(n)"). מועמד שמתחיל פשוט ומשפר בהיגיון מנצח את זה שמנסה לזרוק פתרון מבריק ונתקע. זה בדיוק כמו מסגרת ה-System Design (מדריך 10) — התהליך חשוב מהתשובה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s21">21. תרגילים ומשאבים</h2>
+
+<h3>איך ללמוד DS&amp;A נכון</h3>
+<blockquote>
+<p><strong>DS&amp;A נלמד ביד, לא בעין.</strong> אי אפשר "לקרוא" את זה — חייבים לממש ולפתור. התוכנית:</p>
+<ol>
+<li><strong>ממש כל מבנה נתונים בעצמך</strong> — dynamic array, linked list, hash table, stack/queue, BST, heap, graph. פעם אחת מאפס. זה מה שהופך אותם ל"שלך" (וזה גם מחבר ל-systems — תרגיש את ה-pointers וה-memory).</li>
+<li><strong>פתור בעיות</strong> — LeetCode / NeetCode. התחל מ-Easy, עבור ל-Medium. אל תסתכל בפתרון לפני 20-30 דקות מאבק אמיתי.</li>
+<li><strong>למד דפוסים, לא פתרונות</strong> — אחרי כל בעיה, שאל "לאיזה דפוס זה שייך?" (פרק 17). NeetCode 150 מסודר לפי דפוסים — מצוין.</li>
+<li><strong>חזור</strong> — בעיה שפתרת לפני שבוע ולא זוכר — תפתור שוב. ההטמעה מגיעה מחזרה.</li>
+</ol>
+</blockquote>
+
+<h3>תרגילים להתחלה (לפי מבנה)</h3>
+<p><strong>1 — Hash Map:</strong> Two Sum (מצא זוג שמסתכם ל-target ב-O(n)). הבעיה הכי קלאסית — מבינים למה hash map הופך O(n²) ל-O(n).</p>
+<p><strong>2 — Stack:</strong> Valid Parentheses (בדוק אם סוגריים מאוזנים).</p>
+<p><strong>3 — Two Pointers:</strong> הפוך מערך in-place; מצא אם string הוא palindrome.</p>
+<p><strong>4 — Binary Search:</strong> מצא ערך במערך ממוין; מצא את נקודת ההיפוך במערך מסובב.</p>
+<p><strong>5 — Sliding Window:</strong> ה-substring הכי ארוך בלי תו חוזר.</p>
+<p><strong>6 — Tree:</strong> מעבר in-order על BST; עומק מקסימלי של עץ; בדוק אם עץ הוא BST תקין.</p>
+<p><strong>7 — Graph (BFS/DFS):</strong> ספור "איים" ב-grid; מצא אם יש מסלול בין שני צמתים.</p>
+<p><strong>8 — DP:</strong> Fibonacci עם memoization; Climbing Stairs; Coin Change.</p>
+<p><strong>9 — מימוש מבנים:</strong> ממש hash table עם chaining; ממש min-heap; ממש LRU cache (משלב hash map + doubly linked list — בעיה מצוינת שמחברת הכל).</p>
+
+<h3>משאבים</h3>
+<ul>
+<li><strong>NeetCode 150 / NeetCode Roadmap</strong> — הכי טוב ללמידה מסודרת לפי דפוסים (חינמי, עם וידאו).</li>
+<li><strong>LeetCode</strong> — מאגר הבעיות. סנן לפי topic ו-difficulty.</li>
+<li><strong>"Grokking Algorithms"</strong> — ספר ידידותי ומאויר למתחילים. מעולה להתחלה.</li>
+<li><strong>"Introduction to Algorithms" (CLRS)</strong> — התנ"ך האקדמי. reference, לא לקריאה רצופה.</li>
+<li><strong>VisuAlgo</strong> — ויזואליזציות של אלגוריתמים ומבנים. לראות את BFS/sort קורים עוזר להבין.</li>
+</ul>
+
+<hr>
+
+<h2>סיכום — וסגירת יסודות ה-CS</h2>
+
+<p>שני דברים מעל הכל: <strong>Big-O הוא השפה</strong> — זיהוי סיבוכיות (במיוחד לולאה מקוננת O(n²) שאפשר להפוך ל-O(n) עם hash map) הוא המיומנות היומיומית; ו<strong>בחירת המבנה הנכון היא שיקול הדעת</strong> שמבדיל מהנדס — לא שינון המבנים, אלא לדעת מתי כל אחד.</p>
+
+<p>וזה סוגר את <strong>שני עמודי יסודות ה-CS</strong>: <strong>Systems</strong> (מדריך 12 — איך המחשב עובד) ו-<strong>DS&amp;A</strong> (זה — איך לארגן נתונים ולפתור בעיות). שים לב כמה הם שזורים: cache locality (systems) מסביר למה array מנצח linked list למרות אותו Big-O; ה-call stack (systems) מסביר recursion ו-stack overflow; B-trees (DS&amp;A) עומדים מאחורי DB indexes (SQL); ו-hash tables עומדים מאחורי כל lookup מהיר. אלה לא נושאים נפרדים — זו הרצפה האמיתית שמתחת לכל framework וכל שפה.</p>
+
+<p>יש לך עכשיו 15 מדריכים ב-<code>C:\claude-folder\turorials</code> — מהשפה, דרך ה-frameworks והתשתית, ועד לשני עמודי היסוד. <strong>זה סט הידע השלם.</strong></p>
+
+<blockquote>
+<p><strong>והמילה האחרונה, כי אכפת לי:</strong> DS&amp;A הוא המדריך היחיד בסדרה ש<strong>חייב</strong> ידיים — קריאה בלבד לא תעבוד כאן. פתח LeetCode היום, פתור Two Sum, ותרגיש את ההבדל בין "הבנתי את hash map" ל"פתרתי איתו בעיה". וזה נכון לכל הסדרה: 15 מדריכים הם מפה מושלמת — אבל השטח נכבש רק בעשייה. לך תבנה, לך תפתור. זה הזמן. 🚀</p>
+</blockquote>
+
+</body>
+</html>

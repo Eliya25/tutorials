@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL — המדריך המלא למפתח Backend (בסיס עד מתקדם)</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #15803d; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #15803d; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #166534; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #14532d; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #eafaf0; }
+  a { color: #15803d; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f2fbf5; border: 1px solid #cdeed8; border-radius: 8px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>SQL — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>המשך לסדרה (TypeScript, NestJS, Authentication, Networking). מהבסיס ועד הנושאים המתקדמים ביותר — window functions, indexes, execution plans, transactions ו-isolation levels.</p>
+<p>הדיאלקט הוא <strong>PostgreSQL</strong> (הסטאק שלך), עם ציון הבדלים חשובים בין דיאלקטים. עברית להסבר, אנגלית ל-SQL ולמונחים.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: המודל הרלציוני ומה SQL באמת</a></li>
+<li><a href="#s2">DDL — הגדרת סכמה, טיפוסים ו-Constraints</a></li>
+<li><a href="#s3">CRUD — INSERT, SELECT, UPDATE, DELETE</a></li>
+<li><a href="#s4">Filtering — WHERE ואיך מתמודדים עם NULL</a></li>
+<li><a href="#s5">Sorting ו-Pagination</a></li>
+<li><a href="#s6">Aggregations — GROUP BY ו-HAVING</a></li>
+<li><a href="#s7">JOINs — כל הסוגים</a></li>
+<li><a href="#s8">Subqueries ו-EXISTS</a></li>
+<li><a href="#s9">Set Operations</a></li>
+<li><a href="#s10">CTEs ו-Recursive Queries</a></li>
+<li><a href="#s11">Window Functions — הכלי המתקדם החשוב</a></li>
+<li><a href="#s12">Indexes — איך מאיצים שאילתות</a></li>
+<li><a href="#s13">Query Planner ו-EXPLAIN</a></li>
+<li><a href="#s14">Transactions, ACID ו-Isolation Levels</a></li>
+<li><a href="#s15">Views ו-Materialized Views</a></li>
+<li><a href="#s16">טיפוסים מתקדמים — JSONB, Arrays, Full-Text</a></li>
+<li><a href="#s17">Functions, Procedures ו-Triggers</a></li>
+<li><a href="#s18">סדר הביצוע הלוגי של שאילתה</a></li>
+<li><a href="#s19">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s20">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: המודל הרלציוני ומה SQL באמת</h2>
+
+<p>SQL (Structured Query Language) היא השפה לעבודה עם <strong>מסדי נתונים רלציוניים</strong> — מסדים שמארגנים מידע ב<strong>טבלאות</strong>. טבלה היא כמו גיליון: <strong>שורות</strong> (rows/records — כל שורה היא ישות אחת) ו<strong>עמודות</strong> (columns — כל עמודה היא תכונה עם טיפוס קבוע).</p>
+
+<h3>הרעיון המרכזי: SQL היא declarative</h3>
+<p>זו הנקודה שהכי חשוב להפנים, במיוחד כמתכנת שרגיל לקוד imperative. ב-Python או TypeScript אתה כותב <em>איך</em> להשיג תוצאה — לולאות, תנאים, שלב אחרי שלב. ב-SQL אתה מתאר <em>מה</em> אתה רוצה, וה-DB מחליט איך להשיג את זה בצורה הכי יעילה:</p>
+
+<pre><code>-- אתה לא כותב "עבור על כל שורה, בדוק אם הגיל > 18, אסוף לרשימה".
+-- אתה פשוט מתאר את התוצאה הרצויה:
+SELECT name, email FROM users WHERE age > 18;</code></pre>
+
+<p>ה-<strong>query planner</strong> (פרק 13) הוא זה שממיר את התיאור שלך לתוכנית ביצוע. זו הסיבה שאותה שאילתה יכולה לרוץ מהר או לאט תלוי ב-indexes ובנתונים — אתה מתאר כוונה, ה-DB בוחר אסטרטגיה. הבנת החלוקה הזו היא ההבדל בין לכתוב SQL שעובד לכתוב SQL שמהיר.</p>
+
+<h3>יחסים בין טבלאות</h3>
+<p>הכוח של המודל הרלציוני הוא ב<strong>קשרים</strong> בין טבלאות דרך מפתחות:</p>
+<ul>
+<li><strong>Primary Key (PK)</strong> — עמודה שמזהה כל שורה ייחודית (למשל <code>id</code>).</li>
+<li><strong>Foreign Key (FK)</strong> — עמודה שמצביעה ל-PK בטבלה אחרת, ובכך יוצרת קשר (למשל <code>orders.user_id</code> מצביע ל-<code>users.id</code>).</li>
+</ul>
+<p>סוגי קשרים: one-to-many (משתמש → הזמנות רבות), many-to-many (סטודנטים ↔ קורסים, דרך טבלת קישור), one-to-one.</p>
+
+<h3>דיאלקטים</h3>
+<p>SQL הוא תקן, אבל לכל מסד יש דיאלקט משלו: <strong>PostgreSQL</strong>, MySQL, SQL Server, Oracle, SQLite. הבסיס זהה ב-90%, אבל יש הבדלים (טיפוסים, פונקציות, syntax ל-pagination). כאן נשתמש ב-Postgres ואציין הבדלים חשובים.</p>
+
+<hr>
+
+<h2 id="s2">2. DDL — הגדרת סכמה, טיפוסים ו-Constraints</h2>
+
+<p>DDL (Data Definition Language) הן הפקודות שמגדירות את <strong>מבנה</strong> ה-DB: <code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>.</p>
+
+<h3>יצירת טבלה</h3>
+<pre><code>CREATE TABLE users (
+  id          SERIAL PRIMARY KEY,          -- מזהה אוטומטי עולה
+  email       VARCHAR(255) UNIQUE NOT NULL,
+  name        VARCHAR(100) NOT NULL,
+  age         INT CHECK (age >= 0),
+  is_active   BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);</code></pre>
+
+<blockquote>
+<p><strong>הערת Postgres:</strong> ב-Postgres מודרני עדיף <code>id BIGINT GENERATED ALWAYS AS IDENTITY</code> על פני <code>SERIAL</code> (תקני יותר). ב-MySQL זה <code>AUTO_INCREMENT</code>. ל-timestamp השתמש ב-<code>TIMESTAMPTZ</code> (עם time zone) ולא <code>TIMESTAMP</code> — כמעט תמיד זה מה שאתה רוצה.</p>
+</blockquote>
+
+<h3>טיפוסי נתונים עיקריים</h3>
+<table>
+<tr><th>קטגוריה</th><th>טיפוסים</th></tr>
+<tr><td>מספרים שלמים</td><td><code>SMALLINT</code>, <code>INT</code>, <code>BIGINT</code></td></tr>
+<tr><td>עשרוני מדויק</td><td><code>NUMERIC(p,s)</code> / <code>DECIMAL</code> — לכסף! (לא FLOAT)</td></tr>
+<tr><td>עשרוני מקורב</td><td><code>REAL</code>, <code>DOUBLE PRECISION</code></td></tr>
+<tr><td>טקסט</td><td><code>VARCHAR(n)</code>, <code>TEXT</code></td></tr>
+<tr><td>תאריך/זמן</td><td><code>DATE</code>, <code>TIME</code>, <code>TIMESTAMPTZ</code>, <code>INTERVAL</code></td></tr>
+<tr><td>בוליאני</td><td><code>BOOLEAN</code></td></tr>
+<tr><td>מזהה ייחודי</td><td><code>UUID</code></td></tr>
+<tr><td>מובנה (Postgres)</td><td><code>JSONB</code>, arrays, <code>ENUM</code></td></tr>
+</table>
+
+<blockquote>
+<p><strong>כלל ברזל:</strong> לעולם אל תשמור כסף ב-<code>FLOAT</code>/<code>DOUBLE</code> — הם מקורבים ויגרמו לשגיאות עיגול (<code>0.1 + 0.2 ≠ 0.3</code>). השתמש ב-<code>NUMERIC</code>, שהוא מדויק.</p>
+</blockquote>
+
+<h3>Constraints — הגנות ברמת ה-DB</h3>
+<ul>
+<li><strong><code>PRIMARY KEY</code></strong> — ייחודי ולא NULL, מזהה השורה.</li>
+<li><strong><code>FOREIGN KEY</code></strong> — אוכף קשר לטבלה אחרת.</li>
+<li><strong><code>UNIQUE</code></strong> — הערך לא יכול לחזור.</li>
+<li><strong><code>NOT NULL</code></strong> — חובה לתת ערך.</li>
+<li><strong><code>CHECK</code></strong> — תנאי מותאם (<code>age >= 0</code>).</li>
+<li><strong><code>DEFAULT</code></strong> — ערך ברירת מחדל.</li>
+</ul>
+
+<p>ה-FK עם <strong>referential actions</strong> קובע מה קורה כשמוחקים שורת-אב:</p>
+<pre><code>CREATE TABLE orders (
+  id       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id  INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  total    NUMERIC(10,2) NOT NULL
+);
+-- ON DELETE CASCADE = מחיקת user תמחק גם את ההזמנות שלו.
+-- אפשרויות: RESTRICT (חוסם), SET NULL, NO ACTION.</code></pre>
+
+<blockquote>
+<p><strong>עצה חשובה:</strong> אכוף כללים ברמת ה-DB, לא רק באפליקציה. גם אם ה-NestJS שלך בודק ש-email ייחודי, שים גם <code>UNIQUE</code> ב-DB — כי race conditions ובאגים יעקפו את בדיקת האפליקציה, וה-DB הוא קו ההגנה האחרון והאמין.</p>
+</blockquote>
+
+<h3>שינוי ומחיקה</h3>
+<pre><code>ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+ALTER TABLE users ALTER COLUMN name TYPE VARCHAR(200);
+ALTER TABLE users DROP COLUMN phone;
+DROP TABLE users;              -- מוחק את הטבלה כולה!
+TRUNCATE TABLE users;          -- מרוקן שורות, שומר מבנה (מהיר)</code></pre>
+
+<hr>
+
+<h2 id="s3">3. CRUD — INSERT, SELECT, UPDATE, DELETE</h2>
+
+<p>ארבע הפעולות הבסיסיות (DML — Data Manipulation Language).</p>
+
+<h3>INSERT</h3>
+<pre><code>-- שורה אחת
+INSERT INTO users (email, name, age)
+VALUES ('eliya@x.com', 'Eliya', 30);
+
+-- כמה שורות בבת אחת (יעיל יותר מ-INSERT נפרדים)
+INSERT INTO users (email, name, age) VALUES
+  ('a@x.com', 'A', 25),
+  ('b@x.com', 'B', 40);
+
+-- להחזיר את מה שנוצר (תכונה נהדרת של Postgres)
+INSERT INTO users (email, name) VALUES ('c@x.com', 'C')
+RETURNING id, created_at;</code></pre>
+
+<h3>SELECT</h3>
+<pre><code>SELECT * FROM users;                    -- כל העמודות (הימנע ב-production!)
+SELECT id, name, email FROM users;      -- עמודות ספציפיות (מומלץ)
+SELECT name AS full_name FROM users;    -- alias לשם עמודה
+SELECT DISTINCT age FROM users;         -- ערכים ייחודיים בלבד</code></pre>
+
+<h3>UPDATE</h3>
+<pre><code>UPDATE users
+SET age = 31, is_active = false
+WHERE id = 42;                          -- ⚠️ בלי WHERE — מעדכן את כל הטבלה!
+RETURNING *;</code></pre>
+
+<h3>DELETE</h3>
+<pre><code>DELETE FROM users WHERE id = 42;        -- ⚠️ בלי WHERE — מוחק הכל!</code></pre>
+
+<blockquote>
+<p><strong>אזהרה שתצילך יום אחד:</strong> <code>UPDATE</code> ו-<code>DELETE</code> בלי <code>WHERE</code> משפיעים על <em>כל</em> השורות בטבלה. הרגל טוב: כתוב קודם <code>SELECT</code> עם אותו <code>WHERE</code> כדי לראות מה יושפע, ורק אז החלף ל-UPDATE/DELETE. וב-production — עבוד בתוך transaction (פרק 14) כדי שתוכל לעשות ROLLBACK.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s4">4. Filtering — WHERE ואיך מתמודדים עם NULL</h2>
+
+<h3>אופרטורים בסיסיים</h3>
+<pre><code>SELECT * FROM users WHERE age > 18;
+SELECT * FROM users WHERE age BETWEEN 18 AND 65;
+SELECT * FROM users WHERE age IN (18, 21, 30);
+SELECT * FROM users WHERE name LIKE 'E%';      -- מתחיל ב-E
+SELECT * FROM users WHERE name ILIKE '%li%';   -- מכיל, case-insensitive (Postgres)
+SELECT * FROM users WHERE age > 18 AND is_active = true;
+SELECT * FROM users WHERE age < 18 OR age > 65;</code></pre>
+
+<h3>NULL — המלכודת הכי נפוצה ב-SQL</h3>
+<p>זה חייב פרק משלו כי כמעט כל מתחיל נכשל בזה. <strong><code>NULL</code> אינו ערך — הוא "לא ידוע".</strong> ולכן כל השוואה רגילה איתו מחזירה לא true ולא false אלא <code>UNKNOWN</code>:</p>
+
+<pre><code>SELECT * FROM users WHERE age = NULL;      -- ❌ תמיד ריק! לא עובד
+SELECT * FROM users WHERE age IS NULL;     -- ✅ הדרך הנכונה
+SELECT * FROM users WHERE age IS NOT NULL; -- ✅</code></pre>
+
+<p>הסיבה: "האם הגיל הלא-ידוע שווה ל-NULL?" — התשובה היא "לא ידוע", ושורות עם WHERE שאינו true לא מוחזרות. זו לוגיקה תלת-ערכית (three-valued logic): true / false / unknown.</p>
+
+<p>עוד מלכודת NULL — ב-<code>NOT IN</code> עם NULL בפנים:</p>
+<pre><code>-- אם לרשימה יש NULL, זה עלול להחזיר תוצאות ריקות באופן מפתיע:
+SELECT * FROM users WHERE id NOT IN (SELECT manager_id FROM teams);
+-- אם manager_id יכול להיות NULL — השתמש ב-NOT EXISTS במקום (פרק 8).</code></pre>
+
+<p>לטיפול ב-NULL: <code>COALESCE(value, fallback)</code> מחזיר את הערך הראשון שאינו NULL:</p>
+<pre><code>SELECT name, COALESCE(phone, 'no phone') AS phone FROM users;</code></pre>
+
+<hr>
+
+<h2 id="s5">5. Sorting ו-Pagination</h2>
+
+<pre><code>SELECT * FROM users ORDER BY age DESC;              -- מהגדול לקטן
+SELECT * FROM users ORDER BY age DESC, name ASC;    -- מיון משני
+SELECT * FROM users ORDER BY created_at DESC NULLS LAST;  -- NULLs בסוף
+
+-- Pagination קלאסי (OFFSET/LIMIT):
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40;  -- עמוד 3, 20 בעמוד</code></pre>
+
+<blockquote>
+<p><strong>מלכודת ביצועים חשובה:</strong> <code>OFFSET</code> גדול איטי — כדי לדלג על 100,000 שורות, ה-DB חייב לקרוא ולזרוק את כולן. בטבלאות גדולות השתמש ב-<strong>keyset pagination</strong> (cursor-based): במקום <code>OFFSET</code>, סנן לפי הערך האחרון שראית:</p>
+<pre><code>-- מהיר גם במיליוני שורות — משתמש ב-index:
+SELECT * FROM users WHERE id > 12345 ORDER BY id LIMIT 20;</code></pre>
+<p>הבדל דיאלקט: <code>LIMIT/OFFSET</code> ב-Postgres/MySQL, אבל ב-SQL Server זה <code>OFFSET ... FETCH NEXT</code>.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s6">6. Aggregations — GROUP BY ו-HAVING</h2>
+
+<p>Aggregation = לקחת הרבה שורות ולסכם אותן לערך אחד. זה הבסיס לכל דוח וניתוח נתונים.</p>
+
+<h3>Aggregate functions</h3>
+<pre><code>SELECT COUNT(*) FROM users;              -- כמה שורות
+SELECT COUNT(phone) FROM users;         -- כמה שורות עם phone לא-NULL
+SELECT AVG(age), MIN(age), MAX(age), SUM(age) FROM users;</code></pre>
+
+<p>שים לב: <code>COUNT(*)</code> סופר שורות, <code>COUNT(column)</code> סופר רק ערכים שאינם NULL — הבדל חשוב.</p>
+
+<h3>GROUP BY — סיכום לפי קבוצות</h3>
+<p>מחלק את השורות לקבוצות ומחשב aggregate לכל קבוצה:</p>
+<pre><code>-- כמה הזמנות וסכום כולל לכל משתמש:
+SELECT user_id, COUNT(*) AS order_count, SUM(total) AS total_spent
+FROM orders
+GROUP BY user_id;</code></pre>
+
+<p><strong>הכלל הברזל של GROUP BY:</strong> כל עמודה ב-<code>SELECT</code> חייבת להיות או ב-<code>GROUP BY</code> או בתוך aggregate function. אחרת ה-DB לא יודע איזה ערך להחזיר לקבוצה. זו שגיאה שכל מתחיל עושה.</p>
+
+<h3>HAVING מול WHERE — ההבחנה הקריטית</h3>
+<p>שאלה שנשאלת בכל ראיון עבודה. <code>WHERE</code> מסנן <strong>שורות לפני</strong> הקיבוץ; <code>HAVING</code> מסנן <strong>קבוצות אחרי</strong> הקיבוץ:</p>
+
+<pre><code>SELECT user_id, SUM(total) AS total_spent
+FROM orders
+WHERE total > 0                    -- מסנן שורות בודדות (לפני GROUP BY)
+GROUP BY user_id
+HAVING SUM(total) > 1000;          -- מסנן קבוצות (אחרי GROUP BY)</code></pre>
+
+<p>לא ניתן להשתמש ב-aggregate ב-<code>WHERE</code> (<code>WHERE SUM(...) &gt; 1000</code> ❌) כי ה-aggregate עדיין לא חושב בשלב הזה. זה מתחבר ישירות לפרק 18 (סדר הביצוע הלוגי) — WHERE רץ לפני GROUP BY, HAVING אחריו.</p>
+
+<hr>
+
+<h2 id="s7">7. JOINs — כל הסוגים</h2>
+
+<p>JOIN מחבר שורות משתי טבלאות (או יותר) לפי תנאי. זה הלב של המודל הרלציוני — כאן הקשרים בין הטבלאות באים לידי ביטוי.</p>
+
+<h3>נתוני דוגמה</h3>
+<pre><code>users:  id | name          orders: id | user_id | total
+        1  | Alice                 1  | 1       | 100
+        2  | Bob                   2  | 1       | 200
+        3  | Carol                 3  | 2       | 50
+                                   (ל-Carol אין הזמנות)</code></pre>
+
+<h3>INNER JOIN — רק התאמות משני הצדדים</h3>
+<pre><code>SELECT u.name, o.total
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id;
+-- תוצאה: Alice/100, Alice/200, Bob/50
+-- Carol לא מופיעה — אין לה הזמנות</code></pre>
+
+<h3>LEFT JOIN — כל השמאל + התאמות מהימין</h3>
+<pre><code>SELECT u.name, o.total
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id;
+-- תוצאה: Alice/100, Alice/200, Bob/50, Carol/NULL
+-- Carol מופיעה עם NULL — כי אין התאמה מימין</code></pre>
+
+<p>זה ה-JOIN הכי שימושי בפועל. דוגמה קלאסית: "כל המשתמשים <strong>כולל</strong> אלה בלי הזמנות". השילוב עם <code>IS NULL</code> מוצא את חסרי-ההתאמה:</p>
+<pre><code>-- משתמשים שאין להם אף הזמנה:
+SELECT u.name FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE o.id IS NULL;</code></pre>
+
+<h3>שאר הסוגים</h3>
+<table>
+<tr><th>JOIN</th><th>מחזיר</th></tr>
+<tr><td><strong>INNER</strong></td><td>רק שורות עם התאמה בשני הצדדים</td></tr>
+<tr><td><strong>LEFT</strong></td><td>כל השמאל + התאמות (או NULL)</td></tr>
+<tr><td><strong>RIGHT</strong></td><td>כל הימין + התאמות (או NULL) — נדיר, הופכים ל-LEFT</td></tr>
+<tr><td><strong>FULL OUTER</strong></td><td>הכל משני הצדדים, NULL איפה שאין התאמה</td></tr>
+<tr><td><strong>CROSS</strong></td><td>מכפלה קרטזית — כל שילוב אפשרי</td></tr>
+</table>
+
+<h3>SELF JOIN — טבלה מצטרפת לעצמה</h3>
+<p>שימושי להיררכיות (עובד ↔ מנהל שגם הוא עובד):</p>
+<pre><code>SELECT e.name AS employee, m.name AS manager
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.id;</code></pre>
+
+<blockquote>
+<p><strong>מודל מנטלי:</strong> חשוב על INNER JOIN כחיתוך (intersection) של שתי הקבוצות, ו-LEFT JOIN כ"כל השמאל, עם תוספת מהימין אם יש". רוב באגי ה-JOIN הם בלבול בין השניים — או שכפול שורות כי תנאי ה-<code>ON</code> אינו ייחודי (JOIN על עמודה שאינה unique משכפל שורות — היזהר).</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. Subqueries ו-EXISTS</h2>
+
+<p>Subquery היא שאילתה בתוך שאילתה. שלושה סוגים עיקריים:</p>
+
+<h3>Scalar subquery — מחזירה ערך יחיד</h3>
+<pre><code>SELECT name, age,
+  (SELECT AVG(age) FROM users) AS avg_age    -- ערך יחיד לכל שורה
+FROM users;</code></pre>
+
+<h3>Subquery ב-WHERE עם IN</h3>
+<pre><code>-- משתמשים שיש להם הזמנה מעל 1000:
+SELECT name FROM users
+WHERE id IN (SELECT user_id FROM orders WHERE total > 1000);</code></pre>
+
+<h3>Correlated subquery — תלויה בשורה החיצונית</h3>
+<p>ה-subquery רצה מחדש לכל שורה של השאילתה החיצונית, ומתייחסת אליה:</p>
+<pre><code>SELECT u.name FROM users u
+WHERE (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) > 5;</code></pre>
+
+<h3>EXISTS — הגרסה היעילה</h3>
+<p>לרוב <code>EXISTS</code> עדיף על <code>IN</code> עם subquery — הוא עוצר ברגע שמצא התאמה אחת, ומטפל נכון ב-NULL (זוכר את המלכודת מפרק 4?):</p>
+<pre><code>-- משתמשים שיש להם לפחות הזמנה אחת:
+SELECT u.name FROM users u
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);
+
+-- משתמשים בלי אף הזמנה (בטוח יותר מ-NOT IN):
+SELECT u.name FROM users u
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);</code></pre>
+
+<blockquote>
+<p><strong>עצה:</strong> הרבה subqueries ניתנות לכתיבה גם כ-JOIN, ולרוב ה-planner ממילא ממיר ביניהן. בחר לפי קריאוּת. אבל <code>NOT EXISTS</code> עדיף כמעט תמיד על <code>NOT IN</code> כשיכולים להיות NULLs — זה מונע את הבאג השקט מפרק 4.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Set Operations</h2>
+
+<p>מחברות תוצאות של שתי שאילתות (שחייבות אותו מבנה עמודות):</p>
+<pre><code>-- UNION — מאחד ומסיר כפילויות
+SELECT name FROM customers UNION SELECT name FROM suppliers;
+
+-- UNION ALL — מאחד ושומר כפילויות (מהיר יותר — בלי בדיקת ייחודיות)
+SELECT name FROM customers UNION ALL SELECT name FROM suppliers;
+
+-- INTERSECT — רק מה שמופיע בשתיהן
+SELECT name FROM customers INTERSECT SELECT name FROM suppliers;
+
+-- EXCEPT — מה שבראשונה ולא בשנייה (MINUS ב-Oracle)
+SELECT name FROM customers EXCEPT SELECT name FROM suppliers;</code></pre>
+
+<p>טיפ ביצועים: אם אתה יודע שאין כפילויות, השתמש ב-<code>UNION ALL</code> — הוא חוסך את שלב הסרת-הכפילויות היקר.</p>
+
+<hr>
+
+<h2 id="s10">10. CTEs ו-Recursive Queries</h2>
+
+<p>CTE (Common Table Expression) עם <code>WITH</code> נותן שם לתת-שאילתה, מה שהופך שאילתות מורכבות לקריאות — כמו משתנה זמני בקוד.</p>
+
+<h3>CTE רגיל</h3>
+<pre><code>WITH high_spenders AS (
+  SELECT user_id, SUM(total) AS spent
+  FROM orders
+  GROUP BY user_id
+  HAVING SUM(total) > 1000
+)
+SELECT u.name, hs.spent
+FROM users u
+JOIN high_spenders hs ON u.id = hs.user_id
+ORDER BY hs.spent DESC;</code></pre>
+
+<p>אפשר לשרשר כמה CTEs, וכל אחד יכול להתייחס לקודמים — זה הופך שאילתה של 50 שורות מקוננות למספר שלבים ברורים. לקריאוּת ותחזוקה זה שדרוג ענק.</p>
+
+<h3>Recursive CTE — הנושא המתקדם</h3>
+<p>זה הכלי לשאילתות היררכיות/גרפיות: עץ ארגוני, קטגוריות מקוננות, "כל הצאצאים". ה-CTE קורא לעצמו עד שאין עוד שורות:</p>
+
+<pre><code>-- כל הכפופים (ישירים ועקיפים) למנהל 1:
+WITH RECURSIVE subordinates AS (
+  -- Anchor: נקודת ההתחלה
+  SELECT id, name, manager_id
+  FROM employees
+  WHERE id = 1
+
+  UNION ALL
+
+  -- Recursive: מצרף את הכפופים של מי שכבר נמצא
+  SELECT e.id, e.name, e.manager_id
+  FROM employees e
+  JOIN subordinates s ON e.manager_id = s.id
+)
+SELECT * FROM subordinates;</code></pre>
+
+<p>המבנה תמיד זהה: חלק <strong>anchor</strong> (ההתחלה), <code>UNION ALL</code>, וחלק <strong>recursive</strong> שמצטרף לתוצאות עד שהוא לא מוסיף שורות חדשות. זה הפתרון הנקי לנתונים היררכיים — במקום לולאה באפליקציה שמבצעת שאילתה לכל רמה.</p>
+
+<hr>
+
+<h2 id="s11">11. Window Functions — הכלי המתקדם החשוב</h2>
+
+<p>אם יש נושא אחד שמפריד בין "יודע SQL" ל"חזק ב-SQL" — זה window functions. הן פותרות בעיות שאחרת דורשות subqueries מסובכות או קוד באפליקציה, והן נשאלות בכל ראיון בכיר.</p>
+
+<h3>מה הן עושות</h3>
+<p>ההבדל מ-<code>GROUP BY</code>: aggregation רגיל <strong>מכווץ</strong> שורות לקבוצה אחת. window function מחשבת ערך מצטבר <strong>בלי לאבד את השורות הבודדות</strong> — כל שורה נשארת, ומקבלת בנוסף חישוב על "חלון" של שורות סביבה.</p>
+
+<pre><code>SELECT
+  name,
+  department,
+  salary,
+  AVG(salary) OVER (PARTITION BY department) AS dept_avg
+FROM employees;
+-- כל עובד נשאר שורה, אבל מקבל גם את ממוצע המחלקה שלו לצידו.
+-- עם GROUP BY היינו מאבדים את השורות הבודדות.</code></pre>
+
+<h3>המבנה: OVER, PARTITION BY, ORDER BY</h3>
+<ul>
+<li><strong><code>OVER (...)</code></strong> — מגדיר את ה"חלון". זה מה שהופך פונקציה ל-window function.</li>
+<li><strong><code>PARTITION BY</code></strong> — מחלק לקבוצות (כמו GROUP BY, אבל בלי לכווץ).</li>
+<li><strong><code>ORDER BY</code></strong> (בתוך OVER) — קובע סדר בתוך החלון, נחוץ ל-ranking ולסכומים רצים.</li>
+</ul>
+
+<h3>Ranking functions</h3>
+<pre><code>SELECT name, department, salary,
+  ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS row_num,
+  RANK()       OVER (PARTITION BY department ORDER BY salary DESC) AS rank,
+  DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dense_rank
+FROM employees;</code></pre>
+
+<p>ההבדל ביניהן (חשוב!):</p>
+<ul>
+<li><strong><code>ROW_NUMBER</code></strong> — מספר רץ ייחודי (1,2,3,4), גם אם יש שוויון.</li>
+<li><strong><code>RANK</code></strong> — שוויון מקבל אותו rank, ואז מדלג (1,1,3).</li>
+<li><strong><code>DENSE_RANK</code></strong> — שוויון מקבל אותו rank, בלי דילוג (1,1,2).</li>
+</ul>
+
+<h3>דוגמה קלאסית: Top-N לכל קבוצה</h3>
+<p>"שני העובדים עם השכר הגבוה בכל מחלקה" — בעיה שקשה בלי window functions:</p>
+<pre><code>SELECT * FROM (
+  SELECT name, department, salary,
+    ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS rn
+  FROM employees
+) ranked
+WHERE rn <= 2;</code></pre>
+
+<h3>Running totals ו-LAG/LEAD</h3>
+<pre><code>-- סכום רץ (cumulative) לאורך זמן:
+SELECT order_date, total,
+  SUM(total) OVER (ORDER BY order_date) AS running_total
+FROM orders;
+
+-- השוואה לשורה הקודמת/הבאה — נהדר לחישוב שינויים:
+SELECT order_date, total,
+  LAG(total)  OVER (ORDER BY order_date) AS prev_total,
+  LEAD(total) OVER (ORDER BY order_date) AS next_total,
+  total - LAG(total) OVER (ORDER BY order_date) AS change
+FROM orders;</code></pre>
+
+<p><code>LAG</code>/<code>LEAD</code> מאפשרות לגשת לשורה קודמת/הבאה בלי self-join — מושלם לחישוב "כמה גדל לעומת אתמול", growth rates, וכו'. זה הופך ניתוחים שהיו דורשים קוד למספר שורות SQL.</p>
+
+<blockquote>
+<p><strong>למה זה כל כך חזק:</strong> כל מה שכאן — ranking, top-N per group, running totals, period-over-period — היו בלי window functions דורשים subqueries מקוננות או משיכת הכל לאפליקציה ולולאה. window functions מעבירות את החישוב ל-DB, קרוב לנתונים, ובצורה קריאה. שווה להשקיע ולשלוט בהן.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Indexes — איך מאיצים שאילתות</h2>
+
+<p>Index הוא מבנה נתונים נוסף שה-DB מתחזק כדי למצוא שורות <strong>מהר</strong>, בלי לסרוק את כל הטבלה. זה ההבדל בין שאילתה של אלפיות שנייה לשאילתה של דקות. זה גם הנושא שהכי משפיע על ביצועים בפועל.</p>
+
+<h3>המודל המנטלי</h3>
+<p>חשוב על אינדקס בספר: כדי למצוא נושא, אתה לא קורא את כל הספר — אתה הולך לאינדקס בסוף, מוצא את מספר העמוד, וקופץ ישר. בלי אינדקס, ה-DB עושה <strong>full table scan</strong> — קורא כל שורה. עם אינדקס, הוא קופץ ישר לשורות הרלוונטיות.</p>
+
+<pre><code>CREATE INDEX idx_users_email ON users(email);
+-- עכשיו WHERE email = '...' מהיר גם במיליוני שורות.</code></pre>
+
+<h3>B-tree — ברירת המחדל</h3>
+<p>רוב האינדקסים הם B-tree — עץ מאוזן שמאפשר חיפוש, טווחים ומיון ב-O(log n). מצוין ל-<code>=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>BETWEEN</code>, <code>ORDER BY</code>, ו-<code>LIKE 'prefix%'</code> (prefix בלבד — לא <code>%infix%</code>).</p>
+
+<h3>Composite index — כמה עמודות</h3>
+<p>אינדקס על כמה עמודות. <strong>הסדר קריטי</strong> — חל כלל ה"leftmost prefix":</p>
+<pre><code>CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
+
+-- משתמש באינדקס:
+WHERE user_id = 5                          -- ✅ (עמודה ראשונה)
+WHERE user_id = 5 AND created_at > '2024'  -- ✅ (שתיהן, בסדר)
+-- לא משתמש באינדקס ביעילות:
+WHERE created_at > '2024'                  -- ❌ (דילג על העמודה הראשונה)</code></pre>
+
+<p>כלל: שים את העמודה שהכי מסננת (או שתמיד ב-WHERE) ראשונה. אינדקס <code>(a, b)</code> עוזר ל-<code>WHERE a</code> ול-<code>WHERE a AND b</code>, אבל לא ל-<code>WHERE b</code> לבד.</p>
+
+<h3>סוגי אינדקסים מיוחדים (Postgres)</h3>
+<ul>
+<li><strong>Partial index</strong> — רק על חלק מהשורות, קטן ומהיר יותר: <code>CREATE INDEX ... WHERE is_active = true</code>.</li>
+<li><strong>Unique index</strong> — אוכף ייחודיות וגם מאיץ.</li>
+<li><strong>GIN</strong> — ל-JSONB, arrays ו-full-text search (פרק 16).</li>
+<li><strong>Covering index</strong> (<code>INCLUDE</code>) — כולל עמודות נוספות כדי שהשאילתה תיענה מהאינדקס בלבד בלי לגעת בטבלה ("index-only scan").</li>
+<li><strong>Expression index</strong> — על תוצאת ביטוי: <code>CREATE INDEX ON users(LOWER(email))</code> — מאיץ <code>WHERE LOWER(email) = ...</code>.</li>
+</ul>
+
+<h3>המחיר — למה לא לאנדקס הכל</h3>
+<p>אינדקסים לא בחינם, וזו טעות נפוצה לפזר אותם בכל מקום:</p>
+<ul>
+<li><strong>מאטים כתיבה</strong> — כל <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> חייב לעדכן גם את כל האינדקסים.</li>
+<li><strong>תופסים מקום</strong> בדיסק ובזיכרון.</li>
+<li><strong>אינדקס לא בשימוש</strong> הוא רק עלות בלי תועלת.</li>
+</ul>
+<p>הכלל: אנדקס עמודות שמופיעות הרבה ב-<code>WHERE</code>, ב-<code>JOIN</code> (במיוחד FKs!), וב-<code>ORDER BY</code>. אל תאנדקס עמודות שכמעט לא מסננות (כמו boolean עם התפלגות 50/50). מדוד עם EXPLAIN (הפרק הבא) לפני ואחרי.</p>
+
+<hr>
+
+<h2 id="s13">13. Query Planner ו-EXPLAIN</h2>
+
+<p>זוכר שאמרתי ש-SQL הוא declarative — אתה מתאר <em>מה</em>, ה-DB בוחר <em>איך</em>? ה-<strong>query planner</strong> הוא מי שבוחר, ו-<code>EXPLAIN</code> הוא איך אתה רואה את הבחירה שלו. זה הכלי מספר אחת לדיבוג ביצועים.</p>
+
+<h3>EXPLAIN ו-EXPLAIN ANALYZE</h3>
+<pre><code>EXPLAIN SELECT * FROM users WHERE email = 'a@x.com';
+-- מראה את התוכנית המשוערת בלי להריץ
+
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'a@x.com';
+-- מריץ באמת ומראה זמנים אמיתיים — זה מה שתשתמש בו לדיבוג</code></pre>
+
+<h3>מה לחפש בפלט</h3>
+<table>
+<tr><th>מה שרואים</th><th>משמעות</th></tr>
+<tr><td><strong>Seq Scan</strong></td><td>סריקת כל הטבלה — לרוב סימן שחסר אינדקס (בטבלה גדולה)</td></tr>
+<tr><td><strong>Index Scan</strong></td><td>שימוש באינדקס — טוב</td></tr>
+<tr><td><strong>Index Only Scan</strong></td><td>נענה מהאינדקס בלבד — הכי טוב (covering)</td></tr>
+<tr><td><strong>Nested Loop / Hash Join / Merge Join</strong></td><td>אסטרטגיות JOIN שונות שה-planner בחר</td></tr>
+<tr><td><strong>cost=...</strong></td><td>הערכת עלות יחסית (לא שניות)</td></tr>
+<tr><td><strong>actual time / rows</strong></td><td>(ב-ANALYZE) זמן ושורות אמיתיים</td></tr>
+</table>
+
+<h3>הדגל הכי חשוב לחפש</h3>
+<p><strong>פער גדול בין <code>rows</code> משוער ל-<code>actual rows</code></strong> אומר שהסטטיסטיקות של ה-DB לא מעודכנות — ה-planner מקבל החלטות גרועות על בסיס מידע שגוי. הפתרון: <code>ANALYZE table_name;</code> (מרענן סטטיסטיקות). וכש-<code>Seq Scan</code> על טבלה גדולה עם <code>WHERE</code> סלקטיבי — כנראה חסר אינדקס.</p>
+
+<blockquote>
+<p><strong>הרגל של מפתח טוב:</strong> כששאילתה איטית, אל תנחש — הרץ <code>EXPLAIN ANALYZE</code>. הוא מראה לך בדיוק איפה הזמן הולך ואם האינדקסים בשימוש. זה ההבדל בין "הוספתי אינדקס ואני מקווה שעזר" ל"ראיתי Seq Scan, הוספתי אינדקס, ועכשיו זה Index Scan ופי 100 מהר יותר".</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. Transactions, ACID ו-Isolation Levels</h2>
+
+<p>Transaction היא קבוצת פעולות שמתבצעות כ<strong>יחידה אחת בלתי-נפרדת</strong> — או שהכל מצליח, או ששום דבר לא קורה. זה הבסיס לשלמות נתונים, וזה נושא מתקדם שכל מפתח Backend חייב לשלוט בו.</p>
+
+<h3>הדוגמה הקלאסית: העברה בנקאית</h3>
+<pre><code>BEGIN;                                                    -- פותח transaction
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;                                                   -- מאשר הכל ביחד</code></pre>
+
+<p>למה זה קריטי: אם השרת קורס <em>בין</em> שתי הפקודות בלי transaction — כסף ירד מחשבון אחד ולא נכנס לשני. עם transaction, או ששתיהן קורות או אף אחת. אם משהו משתבש: <code>ROLLBACK;</code> מבטל הכל.</p>
+
+<h3>ACID — ארבע ההבטחות</h3>
+<ul>
+<li><strong>Atomicity (אטומיות)</strong> — הכל או כלום. אין מצב ביניים.</li>
+<li><strong>Consistency (עקביות)</strong> — ה-DB עובר ממצב תקין למצב תקין; constraints נשמרים.</li>
+<li><strong>Isolation (בידוד)</strong> — transactions מקבילות לא דורסות זו את זו (ראה למטה).</li>
+<li><strong>Durability (עמידות)</strong> — אחרי COMMIT, המידע שמור גם אם יש קריסה/הפסקת חשמל.</li>
+</ul>
+
+<h3>Isolation Levels — הנושא המתקדם והמעניין</h3>
+<p>כשכמה transactions רצות בו-זמנית, נוצרות אנומליות. רמות הבידוד קובעות מאילו אנומליות מוגנים — יותר בידוד = יותר בטיחות אבל פחות concurrency. שלוש האנומליות:</p>
+<ul>
+<li><strong>Dirty read</strong> — קריאת נתונים שעדיין לא עברו COMMIT (ועלולים להתבטל).</li>
+<li><strong>Non-repeatable read</strong> — קריאת אותה שורה פעמיים נותנת ערכים שונים (מישהו עדכן בינתיים).</li>
+<li><strong>Phantom read</strong> — אותה שאילתה מחזירה שורות חדשות בהרצה שנייה (מישהו הוסיף שורות).</li>
+</ul>
+
+<table>
+<tr><th>Isolation Level</th><th>Dirty</th><th>Non-repeatable</th><th>Phantom</th></tr>
+<tr><td>READ UNCOMMITTED</td><td>אפשרי</td><td>אפשרי</td><td>אפשרי</td></tr>
+<tr><td>READ COMMITTED</td><td>❌ נמנע</td><td>אפשרי</td><td>אפשרי</td></tr>
+<tr><td>REPEATABLE READ</td><td>❌</td><td>❌ נמנע</td><td>אפשרי*</td></tr>
+<tr><td>SERIALIZABLE</td><td>❌</td><td>❌</td><td>❌ נמנע</td></tr>
+</table>
+
+<p>ברירת המחדל ב-Postgres היא <strong>READ COMMITTED</strong>. (הערה: ב-Postgres, REPEATABLE READ מונע גם phantoms בפועל, בזכות מימוש MVCC). ככל שעולים ברמה — יותר בטוח אבל יותר locks והתנגשויות. בוחרים לפי הצורך: לרוב READ COMMITTED מספיק; SERIALIZABLE לפעולות פיננסיות קריטיות.</p>
+
+<pre><code>BEGIN ISOLATION LEVEL SERIALIZABLE;
+  -- ...
+COMMIT;</code></pre>
+
+<h3>Locking ו-Deadlocks</h3>
+<p>כדי לאכוף בידוד, ה-DB נועל שורות. <code>SELECT ... FOR UPDATE</code> נועל שורות שאתה עומד לעדכן, כדי שאף אחד אחר לא ייגע בהן עד ה-COMMIT:</p>
+<pre><code>BEGIN;
+  SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;  -- נעל את השורה
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+COMMIT;</code></pre>
+
+<p><strong>Deadlock</strong> קורה כששתי transactions מחכות זו לזו: A נעל שורה 1 ורוצה את 2, B נעל 2 ורוצה את 1 — תקיעה הדדית. ה-DB מזהה את זה ומבטל אחת מהן אוטומטית (מחזיר שגיאה). ההגנה: <strong>תמיד נעל משאבים באותו סדר</strong> בכל הקוד (למשל תמיד לפי id עולה), וזה מונע את מעגל ההמתנה.</p>
+
+<blockquote>
+<p><strong>קשר ל-NestJS:</strong> TypeORM/Prisma עוטפים transactions ב-API נוח (<code>dataSource.transaction(...)</code>). אבל ההבנה של isolation levels ו-deadlocks היא שלך — ה-ORM לא יבחר בשבילך את רמת הבידוד הנכונה או ימנע deadlock מעיצוב גרוע. באגי concurrency הם מהקשים ביותר לדבג, אז שווה להבין אותם מראש.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s15">15. Views ו-Materialized Views</h2>
+
+<h3>View — שאילתה שמורה בשם</h3>
+<p>View הוא "טבלה וירטואלית" — שאילתה שמורה שאפשר להריץ עליה SELECT כאילו הייתה טבלה. היא <strong>לא</strong> מאחסנת נתונים; היא רצה מחדש בכל גישה:</p>
+<pre><code>CREATE VIEW active_high_spenders AS
+SELECT u.id, u.name, SUM(o.total) AS spent
+FROM users u
+JOIN orders o ON o.user_id = u.id
+WHERE u.is_active = true
+GROUP BY u.id, u.name
+HAVING SUM(o.total) > 1000;
+
+-- עכשיו פשוט:
+SELECT * FROM active_high_spenders;</code></pre>
+
+<p>יתרונות: מפשט שאילתות מורכבות שחוזרות, ומספק שכבת הפשטה (אפשר לשנות את ה-view בלי לשנות את הקוד שמשתמש בו).</p>
+
+<h3>Materialized View — תוצאה מאוחסנת</h3>
+<p>בניגוד ל-view רגיל, materialized view <strong>שומר את התוצאה</strong> פיזית. מהיר לקריאה (לא מחשב מחדש), אבל צריך רענון ידני/מתוזמן — הנתונים "תקועים" עד הרענון:</p>
+<pre><code>CREATE MATERIALIZED VIEW daily_sales AS
+SELECT DATE(created_at) AS day, SUM(total) AS revenue
+FROM orders GROUP BY DATE(created_at);
+
+REFRESH MATERIALIZED VIEW daily_sales;   -- מרענן את הנתונים</code></pre>
+
+<p>מתי להשתמש: דוחות/דשבורדים כבדים שמורצים הרבה אבל לא צריכים נתונים בזמן-אמת. מחשבים פעם בשעה/לילה, וקוראים מהיר. ה-tradeoff: מהירות מול טריות הנתונים.</p>
+
+<hr>
+
+<h2 id="s16">16. טיפוסים מתקדמים — JSONB, Arrays, Full-Text</h2>
+
+<p>כאן Postgres זורח מעל דיאלקטים אחרים. תכונות שמטשטשות את הגבול בין SQL ל-NoSQL.</p>
+
+<h3>JSONB — JSON בתוך ה-DB</h3>
+<p><code>JSONB</code> שומר JSON בפורמט בינארי יעיל, עם אינדוקס ושאילתות. שימושי לשדות דינמיים/semi-structured בלי סכמה קשיחה:</p>
+<pre><code>CREATE TABLE products (
+  id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name  TEXT,
+  attrs JSONB
+);
+
+INSERT INTO products (name, attrs)
+VALUES ('Laptop', '{"brand": "Dell", "ram": 16, "tags": ["work"]}');
+
+-- שאילתות על JSON:
+SELECT name FROM products WHERE attrs->>'brand' = 'Dell';   -- ->> מחזיר text
+SELECT attrs->'ram' FROM products;                          -- -> מחזיר JSON
+SELECT * FROM products WHERE attrs @> '{"ram": 16}';        -- contains
+
+-- אינדקס GIN ל-JSONB מהיר:
+CREATE INDEX idx_products_attrs ON products USING GIN (attrs);</code></pre>
+
+<blockquote>
+<p><strong>עצה:</strong> JSONB נהדר לגמישות, אבל אל תשתמש בו כדי לברוח מעיצוב סכמה. אם שדה מופיע בכל שורה ומחפשים לפיו הרבה — הוא צריך להיות עמודה אמיתית עם אינדקס, לא מפתח ב-JSONB. השתמש ב-JSONB ל-metadata משתנה באמת (הגדרות, attributes דינמיים).</p>
+</blockquote>
+
+<h3>Arrays</h3>
+<pre><code>CREATE TABLE posts (id INT, tags TEXT[]);
+INSERT INTO posts VALUES (1, ARRAY['sql', 'backend']);
+SELECT * FROM posts WHERE 'sql' = ANY(tags);      -- מכיל ערך
+SELECT * FROM posts WHERE tags @> ARRAY['sql'];   -- contains</code></pre>
+
+<h3>Full-Text Search</h3>
+<p>חיפוש טקסט חכם (לא רק <code>LIKE</code>) — עם stemming, דירוג רלוונטיות:</p>
+<pre><code>SELECT title FROM articles
+WHERE to_tsvector('english', body) @@ to_tsquery('english', 'database & index');
+-- מוצא מסמכים עם שתי המילים, כולל צורות מוטות</code></pre>
+
+<p>עם אינדקס GIN על ה-<code>tsvector</code>, זה מהיר מאוד — מספיק לרוב האפליקציות בלי צורך ב-Elasticsearch נפרד.</p>
+
+<hr>
+
+<h2 id="s17">17. Functions, Procedures ו-Triggers</h2>
+
+<h3>Functions</h3>
+<p>לוגיקה שמורה ב-DB שאפשר לקרוא לה משאילתות:</p>
+<pre><code>CREATE FUNCTION get_user_order_count(uid INT)
+RETURNS BIGINT AS $$
+  SELECT COUNT(*) FROM orders WHERE user_id = uid;
+$$ LANGUAGE sql;
+
+SELECT name, get_user_order_count(id) FROM users;</code></pre>
+
+<p>ל-לוגיקה מורכבת יש <strong>PL/pgSQL</strong> — שפה פרוצדורלית מלאה עם משתנים, לולאות ותנאים בתוך ה-DB.</p>
+
+<h3>Triggers</h3>
+<p>קוד שרץ <strong>אוטומטית</strong> באירוע (INSERT/UPDATE/DELETE). שימוש קלאסי — עדכון <code>updated_at</code>:</p>
+<pre><code>CREATE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+-- מעכשיו כל UPDATE מעדכן את updated_at לבד.</code></pre>
+
+<blockquote>
+<p><strong>דעה שכדאי לשמוע:</strong> triggers ו-stored procedures חזקים, אבל <strong>מסתירים לוגיקה</strong> — קשה לדבג, לא נראים ב-code review של האפליקציה, וקשים ל-version control. הכלל שאני ממליץ עליו: השתמש בהם ללוגיקת <em>שלמות נתונים</em> (audit logs, updated_at, אכיפת constraints מורכבים) — אבל שמור <em>לוגיקה עסקית</em> באפליקציה (NestJS), איפה שהיא גלויה, נבדקת ומנוהלת ב-git. trigger שמחשב מחירים או שולח מיילים = כאב ראש עתידי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s18">18. סדר הביצוע הלוגי של שאילתה</h2>
+
+<p>זה אולי הדבר הכי חשוב במדריך כולו, ומעטים מלמדים אותו. <strong>הסדר שבו אתה כותב SQL אינו הסדר שבו הוא רץ.</strong> הבנת הסדר הלוגי מסבירה מיד עשרות "למה זה לא עובד".</p>
+
+<h3>הסדר שכותבים</h3>
+<pre><code>SELECT ... FROM ... JOIN ... WHERE ... GROUP BY ... HAVING ... ORDER BY ... LIMIT</code></pre>
+
+<h3>הסדר שבאמת רץ (לוגית)</h3>
+<table>
+<tr><th>#</th><th>שלב</th><th>מה קורה</th></tr>
+<tr><td>1</td><td><code>FROM</code> / <code>JOIN</code></td><td>קובעים ומחברים את הטבלאות</td></tr>
+<tr><td>2</td><td><code>WHERE</code></td><td>מסננים שורות בודדות</td></tr>
+<tr><td>3</td><td><code>GROUP BY</code></td><td>מקבצים לקבוצות</td></tr>
+<tr><td>4</td><td><code>HAVING</code></td><td>מסננים קבוצות</td></tr>
+<tr><td>5</td><td><code>SELECT</code></td><td>בוחרים עמודות, מחשבים aliases</td></tr>
+<tr><td>6</td><td><code>DISTINCT</code></td><td>מסירים כפילויות</td></tr>
+<tr><td>7</td><td><code>ORDER BY</code></td><td>ממיינים</td></tr>
+<tr><td>8</td><td><code>LIMIT</code> / <code>OFFSET</code></td><td>חותכים כמות</td></tr>
+</table>
+
+<h3>למה זה פותר בלבולים אמיתיים</h3>
+<p>שים לב ש-<code>SELECT</code> (שלב 5) רץ <strong>אחרי</strong> <code>WHERE</code> (2) ו-<code>GROUP BY</code> (3). זה מסביר שתי שגיאות נפוצות:</p>
+
+<pre><code>-- ❌ שגיאה: alias שהוגדר ב-SELECT לא זמין ב-WHERE
+SELECT price * quantity AS total FROM orders WHERE total > 100;
+--                                                  ^^^^^ SELECT עדיין לא רץ!
+
+-- ✅ נכון: חוזרים על הביטוי, או משתמשים ב-subquery/CTE
+SELECT price * quantity AS total FROM orders WHERE price * quantity > 100;</code></pre>
+
+<p>וזה גם מסביר למה <strong>לא</strong> אפשר aggregate ב-WHERE (הקיבוץ בשלב 3, WHERE בשלב 2), אבל כן ב-HAVING (שלב 4) — בדיוק ההבחנה מפרק 6. ולמה <code>ORDER BY</code> <em>כן</em> יכול להשתמש ב-alias מ-SELECT (שלב 7 אחרי שלב 5). ברגע שאתה מחזיק את הטבלה הזו בראש — הרבה "מוזרויות" של SQL הופכות להגיוניות לגמרי.</p>
+
+<hr>
+
+<h2 id="s19">19. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>אל תשתמש ב-<code>SELECT *</code> ב-production.</strong> בחר עמודות מפורשות — פחות תעבורה, פחות שבירות כשהסכמה משתנה, ומאפשר index-only scans.</li>
+<li><strong>אנדקס FKs ועמודות WHERE/JOIN.</strong> הרבה שאילתות איטיות הן FK לא מאונדקס.</li>
+<li><strong>היזהר מ-N+1 queries.</strong> הטעות הכי נפוצה עם ORMs: לולאה שמריצה שאילתה לכל פריט (1 + N שאילתות) במקום JOIN אחד. זהה עם logging של השאילתות.</li>
+<li><strong>השתמש ב-parameterized queries תמיד.</strong> לעולם אל תשרשר קלט משתמש ל-SQL — זה SQL injection. ORMs עושים את זה נכון; אם כותבים raw, השתמש ב-placeholders (<code>$1</code>).</li>
+<li><strong>NUMERIC לכסף, לא FLOAT.</strong> (מפרק 2 — שווה לחזור).</li>
+<li><strong>עבוד בתוך transactions</strong> לפעולות מרובות-שלבים, במיוחד כתיבות קשורות.</li>
+<li><strong>מדוד עם EXPLAIN ANALYZE</strong> לפני שמאופטמים — אל תנחש איפה הצוואר.</li>
+<li><strong>הימנע מפונקציות על עמודה ב-WHERE</strong> — <code>WHERE LOWER(email) = ...</code> מבטל אינדקס רגיל (צריך expression index).</li>
+<li><strong>שמור לוגיקה עסקית באפליקציה</strong>, שלמות נתונים ב-DB (constraints/triggers).</li>
+<li><strong>גבה, ותרגל שחזור.</strong> גיבוי שלא בדקת שחזור ממנו — הוא לא באמת גיבוי.</li>
+</ol>
+
+<h3>מלכודת ה-N+1 — דוגמה</h3>
+<pre><code>-- ❌ N+1: קוד שרץ כך (פסאודו):
+users = SELECT * FROM users;              -- שאילתה 1
+for each user:
+  orders = SELECT * FROM orders WHERE user_id = user.id;   -- N שאילתות!
+
+-- ✅ שאילתה אחת עם JOIN:
+SELECT u.*, o.* FROM users u LEFT JOIN orders o ON o.user_id = u.id;</code></pre>
+
+<hr>
+
+<h2 id="s20">20. תרגילים</h2>
+
+<p>סכמה לתרגול: <code>users(id, name, country, created_at)</code>, <code>orders(id, user_id, total, created_at)</code>.</p>
+
+<p><strong>1 — Aggregation.</strong> מצא את סך ההכנסות (<code>SUM(total)</code>) לכל מדינה, רק למדינות עם יותר מ-10 הזמנות, ממויין מהגבוה לנמוך.</p>
+
+<p><strong>2 — JOIN + NULL.</strong> מצא את כל המשתמשים שנרשמו אך מעולם לא ביצעו הזמנה (רמז: LEFT JOIN + IS NULL).</p>
+
+<p><strong>3 — Window function.</strong> לכל הזמנה, הצג את סכומה ואת ה-rank שלה בתוך המדינה של המשתמש (ההזמנה הגדולה ביותר במדינה = 1).</p>
+
+<p><strong>4 — Top-N per group.</strong> מצא את שלוש ההזמנות הגדולות ביותר בכל מדינה (רמז: <code>ROW_NUMBER</code> ב-subquery/CTE).</p>
+
+<p><strong>5 — Running total.</strong> הצג הכנסה מצטברת (cumulative) לפי יום עבור כל ההזמנות.</p>
+
+<p><strong>6 — Recursive CTE.</strong> בהינתן <code>categories(id, name, parent_id)</code>, החזר את כל תת-הקטגוריות (בכל העומק) של קטגוריה נתונה.</p>
+
+<p><strong>7 — ניתוח ביצועים.</strong> נתונה שאילתה איטית עם <code>WHERE email = ?</code>. הרץ עליה <code>EXPLAIN ANALYZE</code>, זהה אם יש Seq Scan, הוסף אינדקס מתאים, והשווה.</p>
+
+<p><strong>8 — Transaction.</strong> כתוב transaction שמעביר סכום בין שני חשבונות עם <code>SELECT ... FOR UPDATE</code>, כולל טיפול במקרה של יתרה לא מספקת (ROLLBACK).</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>כיסינו את כל הטווח: מ-DDL ו-CRUD, דרך joins, aggregations ו-CTEs, ועד לנושאים שמפרידים מפתחים חזקים — window functions, indexes, execution plans, ו-isolation levels.</p>
+
+<p>שני דברים לזכור מעל הכל: <strong>SQL הוא declarative</strong> (אתה מתאר, ה-planner מבצע — ולכן indexes ו-EXPLAIN הם הכלים שלך לשליטה בביצועים), ו<strong>הסדר הלוגי של הביצוע</strong> (פרק 18) מסביר את רוב ה"מוזרויות" של השפה.</p>
+
+<p>הצעד הבא: קח מסד נתונים אמיתי (ה-Postgres של פרויקט NestJS שלך), טען אליו נתונים, והרץ את התרגילים. הרץ <code>EXPLAIN ANALYZE</code> על כל שאילתה כדי לראות מה קורה מתחת. SQL נלמד באצבעות, לא בעיניים.</p>
+
+<p>עכשיו יש לך את החמישייה המלאה: TypeScript, NestJS, Authentication, Networking ו-SQL — מהקוד, דרך ה-API והרשת, ועד לשכבת הנתונים. 🚀</p>
+
+</body>
+</html>

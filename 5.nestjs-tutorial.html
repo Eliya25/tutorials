@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NestJS — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #e0234e; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #e0234e; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #a01838; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; }
+  th { background: #f2f4f7; }
+  a { color: #e0234e; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #fdf2f4; border: 1px solid #f3d3da; border-radius: 8px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>NestJS — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>המשך ישיר למדריך TypeScript. המדריך הזה מניח שאתה כבר שולט ב-TypeScript — decorators, generics, ו-dependency injection דרך parameter properties. אם משהו מזה מעורפל, חזור למדריך הקודם.</p>
+<p>ההסברים בעברית, הקוד והמונחים הטכניים באנגלית. כל פרק בונה על הקודם. הדרך הנכונה לעבור על זה: לפתוח פרויקט NestJS אמיתי לצד המדריך ולכתוב כל דבר תוך כדי קריאה.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מה זה NestJS ולמה הוא קיים</a></li>
+<li><a href="#s2">התקנה, ה-CLI ומבנה הפרויקט</a></li>
+<li><a href="#s3">Modules — לב הארכיטקטורה</a></li>
+<li><a href="#s4">Controllers — טיפול ב-requests</a></li>
+<li><a href="#s5">Providers ו-Services — הלוגיקה העסקית</a></li>
+<li><a href="#s6">Dependency Injection לעומק</a></li>
+<li><a href="#s7">DTOs ו-Validation</a></li>
+<li><a href="#s8">Pipes</a></li>
+<li><a href="#s9">Exception Filters — טיפול בשגיאות</a></li>
+<li><a href="#s10">Guards — אימות והרשאות</a></li>
+<li><a href="#s11">Interceptors</a></li>
+<li><a href="#s12">Middleware וסדר ה-Request Lifecycle</a></li>
+<li><a href="#s13">Configuration ו-Environment</a></li>
+<li><a href="#s14">Database — TypeORM ו-Prisma</a></li>
+<li><a href="#s15">Lifecycle Hooks ו-Async Providers</a></li>
+<li><a href="#s16">Testing</a></li>
+<li><a href="#s17">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s18">תרגיל מסכם</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מה זה NestJS ולמה הוא קיים</h2>
+
+<p>NestJS הוא <strong>framework ל-Backend על גבי Node.js</strong>, כתוב ב-TypeScript, שנותן לך ארכיטקטורה מובנית ודעתנית (opinionated) לבניית אפליקציות server-side. אם Express הוא ערכת לגו בלי הוראות, NestJS הוא הלגו עם ספר הוראות, מסגרת, ותאימות בין החלקים.</p>
+
+<h3>הבעיה ש-NestJS פותר</h3>
+<p>Express מדהים ומינימלי — אבל המינימליזם הזה הוא גם החיסרון. בפרויקט Express גדול כל צוות ממציא מבנה משלו: איפה שמים לוגיקה, איך מזריקים dependencies, איך מטפלים בשגיאות. התוצאה היא chaos ברגע שהפרויקט גדל.</p>
+
+<p>NestJS מביא <strong>מבנה אחיד</strong>: כל אפליקציה בנויה מ-modules, controllers ו-providers, עם dependency injection מובנה. שני מפתחים שמכירים NestJS יכולים לקפוץ לכל פרויקט NestJS ולהתמצא מיד. זה הערך המרכזי — לא ביצועים, אלא <strong>תחזוקתיות ועקביות בקנה מידה</strong>.</p>
+
+<h3>על מה NestJS בנוי</h3>
+<p>NestJS לא מחליף את Express — הוא <strong>עוטף</strong> אותו. כברירת מחדל הוא רץ על Express מתחת למכסה (ואפשר להחליף ל-Fastify לביצועים גבוהים יותר). כל מה שאתה יודע על HTTP, middleware ו-routing עדיין נכון — NestJS רק מארגן את זה.</p>
+
+<h3>שלושת עמודי התווך</h3>
+<ul>
+<li><strong>TypeScript-first</strong> — נבנה סביב TypeScript ו-decorators. כל מה שלמדת במדריך הקודם עובד כאן במלוא הכוח.</li>
+<li><strong>Dependency Injection</strong> — מערכת DI מובנית בהשראת Angular ו-Spring. אתה מצהיר מה אתה צריך, NestJS מספק את זה.</li>
+<li><strong>מודולריות</strong> — הקוד מחולק ל-modules עצמאיים שאפשר להרכיב ולעשות בהם שימוש חוזר.</li>
+</ul>
+
+<blockquote>
+<p><strong>המודל המנטלי החשוב ביותר:</strong> NestJS הוא בעצם <strong>מערכת של decorators ש-metadata שלהם מורכב על ידי ה-framework בזמן העלייה (bootstrap).</strong> אתה מתייג מחלקות (<code>@Controller</code>, <code>@Injectable</code>, <code>@Module</code>), ו-NestJS קורא את התיוגים ובונה מהם את כל הגרף של האפליקציה — routing, DI, lifecycle. כשתבין את זה, NestJS יפסיק להיראות כמו קסם.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s2">2. התקנה, ה-CLI ומבנה הפרויקט</h2>
+
+<h3>התקנת ה-CLI ויצירת פרויקט</h3>
+<p>ה-CLI של Nest הוא כלי מרכזי — הוא מייצר קוד, מריץ, ובונה. מתקינים אותו גלובלית:</p>
+
+<pre><code>npm install -g @nestjs/cli
+nest new my-app        # יוצר פרויקט חדש עם כל ההגדרות
+cd my-app
+npm run start:dev      # מריץ עם hot-reload</code></pre>
+
+<p>השרת עולה כברירת מחדל על <code>http://localhost:3000</code>.</p>
+
+<h3>מבנה פרויקט טיפוסי</h3>
+<pre><code>src/
+├── main.ts                 # נקודת הכניסה — bootstrap
+├── app.module.ts           # ה-root module
+├── app.controller.ts
+├── app.service.ts
+└── users/                  # feature module
+    ├── users.module.ts
+    ├── users.controller.ts
+    ├── users.service.ts
+    ├── dto/
+    │   ├── create-user.dto.ts
+    │   └── update-user.dto.ts
+    └── entities/
+        └── user.entity.ts</code></pre>
+
+<p>הדפוס: <strong>כל feature מקבל תיקייה משלו עם module, controller, service ו-DTOs.</strong> זה מה שה-CLI מייצר, וכדאי להיצמד אליו.</p>
+
+<h3>נקודת הכניסה — main.ts</h3>
+<pre><code>import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  await app.listen(3000);
+}
+bootstrap();</code></pre>
+
+<p><code>NestFactory.create(AppModule)</code> לוקח את ה-root module, קורא את כל ה-metadata של ה-decorators, בונה את כל גרף ה-DI, ומחזיר אפליקציה מוכנה. זו נקודת ההרכבה של הכל.</p>
+
+<h3>ייצור קוד עם ה-CLI</h3>
+<p>במקום לכתוב boilerplate ידנית, ה-CLI מייצר feature שלם:</p>
+<pre><code>nest generate module users        # או: nest g module users
+nest generate controller users    # nest g controller users
+nest generate service users       # nest g service users
+
+# או הכל ביחד — CRUD מלא עם DTOs:
+nest generate resource users      # nest g resource users</code></pre>
+
+<p><code>nest g resource</code> הוא הדרך המהירה — הוא מייצר module, controller, service, entity ו-DTOs, וגם מחווט אותם יחד. השתמש בו כנקודת פתיחה לכל feature.</p>
+
+<hr>
+
+<h2 id="s3">3. Modules — לב הארכיטקטורה</h2>
+
+<p>Module הוא יחידת הארגון הבסיסית של NestJS. כל אפליקציה היא <strong>עץ של modules</strong> שמתחיל ב-root module יחיד. אם לא הבנת modules, לא הבנת NestJS.</p>
+
+<h3>מבנה של module</h3>
+<pre><code>import { Module } from "@nestjs/common";
+import { UsersController } from "./users.controller";
+import { UsersService } from "./users.service";
+
+@Module({
+  controllers: [UsersController],   // מי מטפל ב-HTTP requests
+  providers: [UsersService],        // מה זמין להזרקה בתוך ה-module
+  exports: [UsersService],          // מה ה-module חושף ל-modules אחרים
+  imports: [],                      // אילו modules אחרים ה-module הזה צריך
+})
+export class UsersModule {}</code></pre>
+
+<p>ארבעת המפתחות של <code>@Module</code> הם כל מה שצריך להבין:</p>
+<ul>
+<li><strong><code>controllers</code></strong> — ה-controllers ששייכים ל-module הזה (מטפלים ב-routes).</li>
+<li><strong><code>providers</code></strong> — ה-services וכל דבר שאפשר להזריק, זמינים <em>בתוך</em> ה-module.</li>
+<li><strong><code>imports</code></strong> — modules אחרים שה-module הזה צריך את ה-exports שלהם.</li>
+<li><strong><code>exports</code></strong> — אילו providers ה-module חושף החוצה, כדי ש-modules אחרים שמייבאים אותו יוכלו להשתמש בהם.</li>
+</ul>
+
+<h3>עקרון ה-encapsulation — הנקודה הקריטית</h3>
+<p>זו הנקודה שהכי מבלבלת מתחילים ב-NestJS. <strong>provider זמין להזרקה רק בתוך ה-module שמצהיר עליו — אלא אם הוא ב-<code>exports</code>.</strong></p>
+
+<p>אם <code>UsersModule</code> מגדיר <code>UsersService</code> ולא מייצא אותו, ואז <code>OrdersModule</code> מנסה להזריק <code>UsersService</code> — תקבל שגיאת DI. הפתרון: <code>UsersModule</code> חייב לעשות <code>exports: [UsersService]</code>, ו-<code>OrdersModule</code> חייב לעשות <code>imports: [UsersModule]</code>.</p>
+
+<pre><code>// orders.module.ts
+@Module({
+  imports: [UsersModule],           // מייבא כדי לקבל גישה ל-UsersService
+  controllers: [OrdersController],
+  providers: [OrdersService],
+})
+export class OrdersModule {}</code></pre>
+
+<p>חשוב על זה כמו על <code>public</code>/<code>private</code>: <code>providers</code> הם private ל-module, <code>exports</code> הופכים אותם ל-public. זה בדיוק אותו רעיון של encapsulation שהכרת ב-classes.</p>
+
+<h3>ה-root module</h3>
+<pre><code>@Module({
+  imports: [UsersModule, OrdersModule, AuthModule],
+})
+export class AppModule {}</code></pre>
+
+<p>ה-<code>AppModule</code> בדרך כלל רק מייבא את כל ה-feature modules ומחבר הכל ביחד.</p>
+
+<h3>Global modules</h3>
+<p>לפעמים module נחוץ בכל מקום (למשל config או logging). במקום לייבא אותו בכל module, מסמנים אותו <code>@Global()</code>:</p>
+<pre><code>@Global()
+@Module({
+  providers: [ConfigService],
+  exports: [ConfigService],
+})
+export class ConfigModule {}</code></pre>
+
+<blockquote>
+<p><strong>המלצה:</strong> השתמש ב-<code>@Global()</code> במשורה. הוא נוח אבל שובר את השקיפות — קשה לדעת מאיפה provider מגיע. שמור אותו ל-cross-cutting concerns אמיתיים (config, database) ולא כדרך לעקוף ניהול imports נכון.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s4">4. Controllers — טיפול ב-requests</h2>
+
+<p>Controller אחראי על <strong>קבלת HTTP requests והחזרת responses</strong>. הוא השכבה הדקה בין העולם החיצון ללוגיקה שלך. הכלל: controllers צריכים להיות <strong>דקים</strong> — הם רק מנתבים, מוציאים פרמטרים, ומעבירים ל-service. שום לוגיקה עסקית לא יושבת ב-controller.</p>
+
+<h3>Controller בסיסי</h3>
+<pre><code>import { Controller, Get, Post, Body, Param } from "@nestjs/common";
+import { UsersService } from "./users.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+
+@Controller("users")               // הבסיס: כל ה-routes מתחילים ב-/users
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get()                           // GET /users
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Get(":id")                      // GET /users/:id
+  findOne(@Param("id") id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Post()                          // POST /users
+  create(@Body() dto: CreateUserDto) {
+    return this.usersService.create(dto);
+  }
+}</code></pre>
+
+<p>שים לב: ה-<code>@Controller("users")</code> קובע prefix לכל ה-routes, וכל method decorator (<code>@Get</code>, <code>@Post</code>) מגדיר את שאר הנתיב. אם method מחזיר object, NestJS ממיר אותו אוטומטית ל-JSON ומחזיר 200 (או 201 ל-POST).</p>
+
+<h3>Route parameter decorators</h3>
+<p>אלה ה-decorators שמוציאים חלקים מה-request:</p>
+<pre><code>@Get(":id")
+example(
+  @Param("id") id: string,          // מ-URL: /users/:id
+  @Query("page") page: string,      // מ-query string: ?page=2
+  @Body() body: CreateUserDto,      // מ-request body (JSON)
+  @Headers("authorization") auth: string,  // מ-header
+) {}</code></pre>
+
+<p>במקום לגשת ל-<code>req.params.id</code> כמו ב-Express, אתה מצהיר בדיוק מה אתה צריך והוא מוזרק לך. זה קריא יותר וגם ניתן לבדיקה בקלות.</p>
+
+<h3>שליטה ב-status code וב-response</h3>
+<pre><code>import { HttpCode, HttpStatus } from "@nestjs/common";
+
+@Post()
+@HttpCode(HttpStatus.CREATED)      // 201 מפורש
+create(@Body() dto: CreateUserDto) {
+  return this.usersService.create(dto);
+}</code></pre>
+
+<blockquote>
+<p><strong>עצה חשובה:</strong> אל תיגע ב-<code>@Res()</code> (ה-response object הגולמי של Express) אלא אם אתה חייב. ברגע שתשתמש בו, אתה מוותר על כל היתרונות של NestJS (interceptors, serialization אוטומטי). תן ל-NestJS לטפל ב-response — פשוט <code>return</code> את הנתונים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s5">5. Providers ו-Services — הלוגיקה העסקית</h2>
+
+<p>Provider הוא כל דבר שאפשר להזריק (inject) דרך ה-DI. ה-provider הנפוץ ביותר הוא <strong>service</strong> — המחלקה שמחזיקה את הלוגיקה העסקית האמיתית. כאן קורה הכל: חישובים, גישה ל-DB, קריאות ל-APIs חיצוניים.</p>
+
+<h3>Service בסיסי</h3>
+<pre><code>import { Injectable, NotFoundException } from "@nestjs/common";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { User } from "./entities/user.entity";
+
+@Injectable()                       // הופך את המחלקה ל-provider שאפשר להזריק
+export class UsersService {
+  private users: User[] = [];
+
+  findAll(): User[] {
+    return this.users;
+  }
+
+  findOne(id: string): User {
+    const user = this.users.find((u) => u.id === id);
+    if (!user) {
+      throw new NotFoundException(`User ${id} not found`);
+    }
+    return user;
+  }
+
+  create(dto: CreateUserDto): User {
+    const user: User = { id: crypto.randomUUID(), ...dto };
+    this.users.push(user);
+    return user;
+  }
+}</code></pre>
+
+<p>ה-<code>@Injectable()</code> הוא המפתח: הוא מסמן ל-NestJS "המחלקה הזו יכולה להיות מנוהלת על ידי ה-DI container". בלעדיו, NestJS לא ידע להזריק אותה.</p>
+
+<h3>למה בכלל להפריד service מ-controller?</h3>
+<p>הפרדת האחריות (separation of concerns) היא לא פורמליזם — היא מעשית:</p>
+<ul>
+<li><strong>Testability</strong> — אפשר לבדוק את הלוגיקה בלי HTTP בכלל.</li>
+<li><strong>שימוש חוזר</strong> — כמה controllers (או services אחרים) יכולים להשתמש באותו service.</li>
+<li><strong>החלפה</strong> — אפשר להחליף מימוש בלי לגעת ב-controller.</li>
+</ul>
+
+<p>הכלל: <strong>controller יודע על HTTP, service לא יודע כלום על HTTP.</strong> אם אתה רואה <code>@Body</code> או status codes ב-service, משהו לא במקום.</p>
+
+<hr>
+
+<h2 id="s6">6. Dependency Injection לעומק</h2>
+
+<p>DI הוא הלב הפועם של NestJS. הבנה עמוקה שלו תעשה את ההבדל בין "זה עובד ואני לא יודע למה" ל"אני שולט במערכת".</p>
+
+<h3>מה זה DI בכלל</h3>
+<p>במקום שמחלקה תיצור בעצמה את מה שהיא צריכה (<code>new UserRepository()</code>), היא <strong>מצהירה</strong> על מה שהיא צריכה ב-constructor, ומישהו חיצוני (ה-DI container של NestJS) מספק את זה:</p>
+
+<pre><code>// בלי DI — coupling הדוק, קשה לבדיקה:
+class UsersService {
+  private repo = new UserRepository();   // המחלקה יוצרת בעצמה
+}
+
+// עם DI — המחלקה רק מבקשת, NestJS מספק:
+@Injectable()
+export class UsersService {
+  constructor(private readonly repo: UserRepository) {}
+}</code></pre>
+
+<p>זוכר את ה-<strong>parameter properties</strong> מ-TypeScript? <code>private readonly repo</code> בפרמטר יוצר את השדה ומשים אליו אוטומטית. NestJS מסתכל על הטיפוס (<code>UserRepository</code>), מוצא את ה-provider המתאים, ומזריק instance.</p>
+
+<h3>איך NestJS יודע מה להזריק</h3>
+<p>כאן נכנס <code>emitDecoratorMetadata</code> מ-tsconfig (זוכר מהמדריך הקודם?). הוא גורם ל-TypeScript לפלוט את טיפוסי הפרמטרים ל-runtime דרך <code>reflect-metadata</code>. NestJS קורא את המידע הזה, רואה שהפרמטר הוא מטיפוס <code>UserRepository</code>, ומחפש provider שתואם. בלי הדגל הזה, DI לפי טיפוס פשוט לא יעבוד.</p>
+
+<h3>Scopes — משך החיים של provider</h3>
+<p>כברירת מחדל, כל provider ב-NestJS הוא <strong>singleton</strong> — instance אחד שנוצר פעם אחת ומשותף לכל האפליקציה. זה יעיל ונכון ל-99% מהמקרים:</p>
+
+<pre><code>@Injectable()                                    // ברירת מחדל: singleton
+export class UsersService {}
+
+@Injectable({ scope: Scope.REQUEST })            // instance חדש לכל request
+export class RequestScopedService {}</code></pre>
+
+<blockquote>
+<p><strong>אזהרה:</strong> <code>Scope.REQUEST</code> נראה מפתה אבל יש לו מחיר ביצועים אמיתי — NestJS חייב לבנות את שרשרת ה-DI מחדש לכל request. השתמש בו רק כשאתה באמת צריך state ספציפי ל-request. ברוב המקרים singleton עם העברת נתונים כפרמטרים עדיף.</p>
+</blockquote>
+
+<h3>Custom providers — שליטה מלאה</h3>
+<p>לפעמים אתה צריך להזריק משהו שהוא לא סתם מחלקה — ערך, factory, או מימוש שנבחר בזמן ריצה. יש ארבע צורות:</p>
+
+<pre><code>@Module({
+  providers: [
+    // 1. useClass — המימוש הרגיל (זה מה ש-[UsersService] הוא קיצור שלו)
+    UsersService,
+
+    // 2. useValue — להזריק ערך קבוע (נוח מאוד לבדיקות ולקונפיג)
+    { provide: "API_KEY", useValue: "secret-123" },
+
+    // 3. useClass דינמי — לבחור מימוש לפי תנאי
+    {
+      provide: PaymentService,
+      useClass: process.env.NODE_ENV === "production"
+        ? StripePaymentService
+        : FakePaymentService,
+    },
+
+    // 4. useFactory — לבנות את ה-provider עם לוגיקה ו-dependencies
+    {
+      provide: "DB_CONNECTION",
+      useFactory: (config: ConfigService) => createConnection(config.dbUrl),
+      inject: [ConfigService],       // ה-dependencies של ה-factory
+    },
+  ],
+})
+export class AppModule {}</code></pre>
+
+<h3>Injection tokens</h3>
+<p>כשמזריקים לפי מחלקה, המחלקה עצמה היא ה-token. אבל כשמזריקים ערך או interface (שנמחק ב-runtime!), צריך token מפורש — string או symbol — ומשתמשים ב-<code>@Inject</code>:</p>
+
+<pre><code>@Injectable()
+export class SomeService {
+  constructor(
+    @Inject("API_KEY") private readonly apiKey: string,
+    @Inject("DB_CONNECTION") private readonly db: Connection,
+  ) {}
+}</code></pre>
+
+<p>למה צריך את זה? כי interface נמחק בקומפילציה (type erasure — זוכר?). אין לו ייצוג ב-runtime, אז NestJS לא יכול להזריק "לפי interface". לכן ל-abstractions משתמשים ב-token מפורש. זו דוגמה מצוינת לאיך ידע ב-TypeScript מסביר התנהגות ב-NestJS.</p>
+
+<hr>
+
+<h2 id="s7">7. DTOs ו-Validation</h2>
+
+<p>DTO (Data Transfer Object) מגדיר את <strong>צורת הנתונים שנכנסים ויוצאים דרך ה-API</strong>. וכאן מגיע השיעור הכי חשוב שחזר גם במדריך TypeScript: <strong>טיפוסים לבדם לא מספיקים — צריך validation אמיתי בזמן ריצה.</strong></p>
+
+<h3>למה טיפוס לא מספיק</h3>
+<p>אם תגדיר <code>@Body() dto: CreateUserDto</code> ותסמוך על זה — אתה בבעיה. הטיפוס נמחק בקומפילציה. בזמן ריצה, מישהו יכול לשלוח JSON עם שדות חסרים, טיפוסים שגויים, או זבל מוחלט, ו-TypeScript לא יעצור אותו. חייבים validation שרץ בפועל.</p>
+
+<h3>class-validator ו-class-transformer</h3>
+<p>NestJS פותר את זה עם decorators על ה-DTO. שים לב: <strong>ה-DTO חייב להיות <code>class</code>, לא <code>interface</code></strong> — כי interface נמחק ב-runtime, ו-class נשאר כדי לשאת את ה-metadata של ה-validation:</p>
+
+<pre><code>import { IsString, IsEmail, IsInt, Min, Max, IsOptional } from "class-validator";
+
+export class CreateUserDto {
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsInt()
+  @Min(18)
+  @Max(120)
+  age: number;
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+}</code></pre>
+
+<h3>הפעלת ה-ValidationPipe גלובלית</h3>
+<p>ה-decorators לבדם לא עושים כלום — צריך להפעיל את ה-<code>ValidationPipe</code> שקורא אותם ואוכף אותם. מפעילים אותו פעם אחת גלובלית ב-<code>main.ts</code>:</p>
+
+<pre><code>import { ValidationPipe } from "@nestjs/common";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,             // מסיר שדות שלא מוגדרים ב-DTO
+      forbidNonWhitelisted: true,  // זורק שגיאה אם נשלחו שדות לא מוכרים
+      transform: true,             // ממיר אוטומטית לטיפוסים הנכונים
+    }),
+  );
+
+  await app.listen(3000);
+}
+bootstrap();</code></pre>
+
+<p>עכשיו, אם מישהו ישלח <code>POST /users</code> עם <code>age: 15</code> או בלי <code>email</code>, NestJS יחזיר אוטומטית <code>400 Bad Request</code> עם הודעה מפורטת — עוד לפני שה-controller בכלל רץ.</p>
+
+<blockquote>
+<p><strong>שלוש האפשרויות שחייבים להכיר:</strong> <code>whitelist</code> (זורק שדות עודפים), <code>forbidNonWhitelisted</code> (מתלונן עליהם במקום לזרוק בשקט), ו-<code>transform</code> (הופך את ה-payload ל-instance אמיתי של ה-DTO וממיר טיפוסים, למשל string מ-URL ל-number). כמעט תמיד תרצה את שלושתן.</p>
+</blockquote>
+
+<h3>Mapped types ל-DTOs — פחות שכפול</h3>
+<p>NestJS מספק utility types (במקביל לאלה של TypeScript) שגוזרים DTO אחד מהשני, כולל ה-validation decorators:</p>
+
+<pre><code>import { PartialType, OmitType, PickType } from "@nestjs/mapped-types";
+
+// כל השדות של CreateUserDto, אבל אופציונליים — מושלם ל-update:
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+
+// כל השדות חוץ מ-email:
+export class InternalUserDto extends OmitType(CreateUserDto, ["email"] as const) {}</code></pre>
+
+<p>זה בדיוק ה-<code>Partial</code>/<code>Omit</code> שהכרת, אבל בגרסה שמשמרת גם את ה-validation decorators. <code>UpdateUserDto</code> מקבל אוטומטית את כל הכללים של <code>CreateUserDto</code>, רק אופציונליים.</p>
+
+<hr>
+
+<h2 id="s8">8. Pipes</h2>
+
+<p>Pipe הוא רכיב ש<strong>מעבד או מאמת את הנתונים הנכנסים</strong> לפני שהם מגיעים ל-controller. ה-<code>ValidationPipe</code> שראית הוא pipe — אבל יש עוד, ואפשר לכתוב משלך.</p>
+
+<h3>Built-in pipes</h3>
+<p>הנפוצים ביותר ממירים ומאמתים פרמטר בודד:</p>
+<pre><code>import { ParseIntPipe, ParseUUIDPipe } from "@nestjs/common";
+
+@Get(":id")
+findOne(@Param("id", ParseUUIDPipe) id: string) {
+  // אם id אינו UUID תקין — 400 אוטומטי, לפני שה-method רץ
+  return this.usersService.findOne(id);
+}
+
+@Get()
+findPage(@Query("page", ParseIntPipe) page: number) {
+  // ה-string מה-query הופך ל-number אמיתי (או 400 אם לא מספר)
+  return this.usersService.findPage(page);
+}</code></pre>
+
+<h3>Custom pipe</h3>
+<p>Pipe הוא מחלקה עם method אחד — <code>transform</code>:</p>
+<pre><code>import { PipeTransform, Injectable, BadRequestException } from "@nestjs/common";
+
+@Injectable()
+export class TrimPipe implements PipeTransform {
+  transform(value: string): string {
+    if (typeof value !== "string") {
+      throw new BadRequestException("Expected a string");
+    }
+    return value.trim();
+  }
+}</code></pre>
+
+<p>שים לב ל-<code>implements PipeTransform</code> — עוד דוגמה ל-"programming to interfaces" שראית ב-TypeScript. NestJS מבטיח שהמחלקה תספק <code>transform</code>, וקורא לו אוטומטית.</p>
+
+<hr>
+
+<h2 id="s9">9. Exception Filters — טיפול בשגיאות</h2>
+
+<p>NestJS מטפל בשגיאות בצורה מובנית. במקום <code>try/catch</code> בכל controller, אתה <strong>זורק exception</strong> וה-framework ממיר אותו ל-HTTP response מתאים.</p>
+
+<h3>Built-in HTTP exceptions</h3>
+<p>NestJS מספק מחלקות exception לכל status code נפוץ. זורקים אותן מכל מקום — service או controller — וה-framework מתרגם:</p>
+
+<pre><code>import {
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+  ConflictException,
+} from "@nestjs/common";
+
+findOne(id: string): User {
+  const user = this.users.find((u) => u.id === id);
+  if (!user) {
+    throw new NotFoundException(`User ${id} not found`);  // → 404 אוטומטי
+  }
+  return user;
+}</code></pre>
+
+<p><code>NotFoundException</code> הופך ל-<code>404</code> עם JSON מסודר, <code>UnauthorizedException</code> ל-<code>401</code>, וכן הלאה. אתה פשוט זורק — NestJS מעצב את ה-response.</p>
+
+<h3>Custom Exception Filter</h3>
+<p>כשאתה צריך שליטה מלאה על צורת ה-error response (למשל פורמט אחיד לכל ה-API, או logging), כותבים exception filter:</p>
+
+<pre><code>import {
+  ExceptionFilter, Catch, ArgumentsHost, HttpException,
+} from "@nestjs/common";
+import { Response } from "express";
+
+@Catch(HttpException)
+export class HttpExceptionFilter implements ExceptionFilter {
+  catch(exception: HttpException, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse&lt;Response&gt;();
+    const status = exception.getStatus();
+
+    response.status(status).json({
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      message: exception.message,
+    });
+  }
+}</code></pre>
+
+<p>ה-<code>@Catch(HttpException)</code> אומר "התפוס הזה מטפל ב-HttpException". מפעילים אותו גלובלית עם <code>app.useGlobalFilters(new HttpExceptionFilter())</code>, או נקודתית עם <code>@UseFilters()</code> על controller ספציפי.</p>
+
+<hr>
+
+<h2 id="s10">10. Guards — אימות והרשאות</h2>
+
+<p>Guard מחליט <strong>אם request מורשה להמשיך</strong> — כן או לא. זה המקום הנכון ל-authentication (מי אתה) ו-authorization (מה מותר לך). Guard מחזיר <code>true</code> (המשך) או <code>false</code>/exception (עצור).</p>
+
+<h3>Guard בסיסי</h3>
+<pre><code>import {
+  CanActivate, ExecutionContext, Injectable, UnauthorizedException,
+} from "@nestjs/common";
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const token = request.headers["authorization"];
+
+    if (!token) {
+      throw new UnauthorizedException("Missing token");
+    }
+    // כאן היית מאמת את ה-token באמת (JWT וכו')
+    return true;
+  }
+}</code></pre>
+
+<h3>הפעלת Guard</h3>
+<pre><code>import { UseGuards } from "@nestjs/common";
+
+@Controller("users")
+@UseGuards(AuthGuard)              // מגן על כל ה-controller
+export class UsersController {
+
+  @Get("public")
+  publicRoute() {}                // עדיין מוגן — כי ה-guard על ה-controller
+
+  @Get("me")
+  @UseGuards(AuthGuard)           // אפשר גם על route בודד
+  getProfile() {}
+}</code></pre>
+
+<h3>Role-based authorization עם metadata</h3>
+<p>הדפוס הקלאסי: decorator מותאם שמצמיד metadata (אילו roles מותרים), ו-guard שקורא אותו. זה בדיוק "decorator = metadata" מהמדריך הקודם, בפעולה:</p>
+
+<pre><code>import { SetMetadata } from "@nestjs/common";
+
+// decorator מותאם שמצמיד את ה-roles הנדרשים כ-metadata
+export const Roles = (...roles: string[]) => SetMetadata("roles", roles);
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}   // Reflector קורא metadata
+
+  canActivate(context: ExecutionContext): boolean {
+    const required = this.reflector.get&lt;string[]&gt;("roles", context.getHandler());
+    if (!required) return true;                  // אין דרישת role — מותר
+
+    const { user } = context.switchToHttp().getRequest();
+    return required.some((role) => user.roles?.includes(role));
+  }
+}</code></pre>
+
+<pre><code>// שימוש בקוד:
+@Post()
+@Roles("admin")                   // רק admin יכול ליצור
+@UseGuards(AuthGuard, RolesGuard)
+create(@Body() dto: CreateUserDto) {}</code></pre>
+
+<p>ה-<code>Reflector</code> הוא הכלי של NestJS לקריאת metadata ש-decorators הצמידו. זה מסגר את הכל: אתה מתייג עם <code>@Roles</code>, וה-guard קורא את התיוג ומחליט.</p>
+
+<hr>
+
+<h2 id="s11">11. Interceptors</h2>
+
+<p>Interceptor <strong>עוטף</strong> את הריצה של ה-handler — הוא יכול לרוץ קוד <em>לפני</em> ו<em>אחרי</em> ה-method, ולשנות את ה-response. שימושי ל-logging, למדידת זמנים, ולעיצוב אחיד של תגובות.</p>
+
+<h3>מבנה של interceptor</h3>
+<pre><code>import {
+  NestInterceptor, ExecutionContext, CallHandler, Injectable,
+} from "@nestjs/common";
+import { Observable } from "rxjs";
+import { map, tap } from "rxjs/operators";
+
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable&lt;any&gt; {
+    const now = Date.now();
+
+    // קוד "לפני" ה-handler רץ כאן
+
+    return next.handle().pipe(
+      // קוד "אחרי" — כשה-handler סיים
+      tap(() => console.log(`Request took ${Date.now() - now}ms`)),
+    );
+  }
+}</code></pre>
+
+<p><code>next.handle()</code> מריץ את ה-handler בפועל ומחזיר <strong>Observable</strong> (מ-RxJS). כל מה שאחרי <code>.pipe()</code> רץ אחרי שה-handler סיים.</p>
+
+<h3>עיצוב אחיד של response</h3>
+<p>שימוש נפוץ — לעטוף כל תגובה במעטפת אחידה:</p>
+<pre><code>@Injectable()
+export class TransformInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable&lt;any&gt; {
+    return next.handle().pipe(
+      map((data) => ({ success: true, data, timestamp: Date.now() })),
+    );
+  }
+}
+// עכשיו כל תגובה תיראה: { success: true, data: {...}, timestamp: ... }</code></pre>
+
+<blockquote>
+<p><strong>הערה על RxJS:</strong> NestJS משתמש ב-Observables ב-interceptors. אם אתה לא מכיר RxJS, אל תיבהל — ל-interceptors בסיסיים מספיק לדעת ש-<code>map</code> משנה את ה-response ו-<code>tap</code> מריץ side-effect בלי לשנות. לא צריך RxJS מלא כדי להתחיל.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Middleware וסדר ה-Request Lifecycle</h2>
+
+<p>Middleware הוא הרובד הקרוב ביותר ל-Express — פונקציה שרצה <strong>לפני</strong> שה-request מגיע ל-router של NestJS. שימושי לדברים גלובליים כמו logging גולמי, CORS, או parsing.</p>
+
+<pre><code>import { Injectable, NestMiddleware } from "@nestjs/common";
+import { Request, Response, NextFunction } from "express";
+
+@Injectable()
+export class LoggerMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    console.log(`${req.method} ${req.url}`);
+    next();                         // חובה לקרוא ל-next כדי להמשיך
+  }
+}</code></pre>
+
+<pre><code>// מפעילים middleware ב-module:
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes("*");
+  }
+}</code></pre>
+
+<h3>סדר הריצה — הטבלה שחייבים לדעת בעל-פה</h3>
+<p>זו אחת הנקודות שהכי מבלבלות. כשמגיע request, NestJS מריץ את הרכיבים בסדר מדויק וקבוע:</p>
+
+<table>
+<tr><th>שלב</th><th>הרכיב</th><th>למה משמש</th></tr>
+<tr><td>1</td><td>Middleware</td><td>עיבוד גולמי, logging, CORS</td></tr>
+<tr><td>2</td><td>Guards</td><td>אימות והרשאות (אם לא מורשה — עוצר כאן)</td></tr>
+<tr><td>3</td><td>Interceptors (לפני)</td><td>קוד שרץ לפני ה-handler</td></tr>
+<tr><td>4</td><td>Pipes</td><td>validation והמרה של הנתונים</td></tr>
+<tr><td>5</td><td><strong>ה-Handler (controller method)</strong></td><td>הלוגיקה שלך</td></tr>
+<tr><td>6</td><td>Interceptors (אחרי)</td><td>עיצוב ה-response</td></tr>
+<tr><td>7</td><td>Exception Filters</td><td>תופסים כל שגיאה שנזרקה בדרך</td></tr>
+</table>
+
+<p>למה זה חשוב מעשית? כי זה מסביר החלטות עיצוב. למשל: guard רץ <em>לפני</em> pipe, אז ה-guard לא יכול לסמוך על נתונים מאומתים — ה-validation עדיין לא רץ. ו-exception filter תופס שגיאות מכל השלבים. הבנת הסדר הזה חוסכת שעות של דיבוג.</p>
+
+<hr>
+
+<h2 id="s13">13. Configuration ו-Environment</h2>
+
+<p>לעולם אל תכתוב סודות (מפתחות, סיסמאות DB) בקוד. NestJS מספק package רשמי לניהול קונפיגורציה מ-environment variables.</p>
+
+<pre><code>npm install @nestjs/config</code></pre>
+
+<pre><code>import { ConfigModule, ConfigService } from "@nestjs/config";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,              // זמין בכל האפליקציה בלי לייבא שוב
+      envFilePath: ".env",
+    }),
+  ],
+})
+export class AppModule {}</code></pre>
+
+<p><code>forRoot()</code> הוא דפוס נפוץ ב-NestJS — module שמקבל הגדרות. אחרי זה מזריקים את <code>ConfigService</code> וקוראים ערכים:</p>
+
+<pre><code>@Injectable()
+export class DatabaseService {
+  constructor(private config: ConfigService) {}
+
+  connect() {
+    const url = this.config.get&lt;string&gt;("DATABASE_URL");
+    const port = this.config.get&lt;number&gt;("PORT", 3000);   // עם ברירת מחדל
+  }
+}</code></pre>
+
+<blockquote>
+<p><strong>Best practice:</strong> הוסף validation גם ל-env vars (ConfigModule תומך ב-schema עם Joi). אפליקציה שנופלת בעלייה כי חסר <code>DATABASE_URL</code> עדיפה בהרבה על אפליקציה שעולה ומתרסקת בבקשה הראשונה. זה אותו עיקרון של "fail fast" — תפוס את הבעיה מוקדם ככל האפשר.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. Database — TypeORM ו-Prisma</h2>
+
+<p>NestJS לא מכתיב DB או ORM. שתי הבחירות הנפוצות ביותר הן <strong>TypeORM</strong> (משתלב הכי הדוק, decorator-based) ו-<strong>Prisma</strong> (type-safety מעולה, schema נפרד). נראה את TypeORM כי הוא ה"native" ל-NestJS.</p>
+
+<h3>Entity — טבלה כמחלקה</h3>
+<pre><code>import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+
+@Entity()                          // הופך את המחלקה לטבלה ב-DB
+export class User {
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
+
+  @Column()
+  name: string;
+
+  @Column({ unique: true })
+  email: string;
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}</code></pre>
+
+<p>שוב decorators שמצרפים metadata — הפעם TypeORM קורא אותם ובונה מהם את סכמת ה-DB. אותו רעיון בדיוק כמו NestJS עצמו.</p>
+
+<h3>חיבור ה-Repository ל-Service</h3>
+<pre><code>// users.module.ts — רושמים את ה-entity
+@Module({
+  imports: [TypeOrmModule.forFeature([User])],
+  providers: [UsersService],
+})
+export class UsersModule {}</code></pre>
+
+<pre><code>// users.service.ts — מזריקים את ה-repository
+@Injectable()
+export class UsersService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepo: Repository&lt;User&gt;,
+  ) {}
+
+  findAll(): Promise&lt;User[]&gt; {
+    return this.userRepo.find();
+  }
+
+  async findOne(id: string): Promise&lt;User&gt; {
+    const user = await this.userRepo.findOneBy({ id });
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+    return user;
+  }
+
+  create(dto: CreateUserDto): Promise&lt;User&gt; {
+    const user = this.userRepo.create(dto);   // בונה instance
+    return this.userRepo.save(user);          // שומר ל-DB
+  }
+}</code></pre>
+
+<p><code>Repository&lt;User&gt;</code> הוא בדיוק ה-generic repository שראית במדריך TypeScript — עכשיו עם מימוש אמיתי מ-TypeORM. הכל מתחבר.</p>
+
+<hr>
+
+<h2 id="s15">15. Lifecycle Hooks ו-Async Providers</h2>
+
+<p>לפעמים provider צריך לעשות setup (פתיחת חיבור) בעלייה, או cleanup (סגירה) בכיבוי. NestJS מספק lifecycle hooks:</p>
+
+<pre><code>import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+
+@Injectable()
+export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  async onModuleInit() {
+    // רץ פעם אחת כשה-module עולה — מקום טוב לפתוח חיבור
+    await this.connect();
+  }
+
+  async onModuleDestroy() {
+    // רץ בכיבוי — סוגרים חיבורים, משחררים משאבים
+    await this.disconnect();
+  }
+}</code></pre>
+
+<p>ה-hooks הנפוצים: <code>onModuleInit</code> (setup), <code>onModuleDestroy</code> (cleanup), ו-<code>onApplicationBootstrap</code> (אחרי שכל ה-modules אותחלו). השתמש בהם במקום לעשות side-effects ב-constructor — constructor צריך להישאר "טהור".</p>
+
+<blockquote>
+<p><strong>למה לא ב-constructor?</strong> constructor רץ בזמן בניית ה-DI graph, כשלא בטוח שכל ה-dependencies מוכנים, והוא סינכרוני (לא יכול <code>await</code>). lifecycle hooks רצים בזמן הנכון ויכולים להיות async. זה כלל אצבע טוב: constructor רק להזרקה, לוגיקה ב-hooks.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s16">16. Testing</h2>
+
+<p>אחד היתרונות הגדולים של DI הוא שהוא הופך בדיקות לקלות — אפשר להחליף כל dependency ב-mock. NestJS מגיע עם utilities לבנות "מודול בדיקה".</p>
+
+<h3>Unit test ל-service</h3>
+<pre><code>import { Test, TestingModule } from "@nestjs/testing";
+import { UsersService } from "./users.service";
+
+describe("UsersService", () => {
+  let service: UsersService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        // מחליפים את ה-repository האמיתי ב-mock:
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            findOneBy: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get&lt;UsersService&gt;(UsersService);
+  });
+
+  it("should return all users", async () => {
+    expect(await service.findAll()).toEqual([]);
+  });
+});</code></pre>
+
+<p>שים לב איך <code>useValue</code> (זוכר את custom providers?) מחליף את ה-repository האמיתי ב-mock. זה בדיוק היתרון של DI — ה-service לא יודע ולא אכפת לו מה מוזרק, כל עוד זה מקיים את החוזה.</p>
+
+<h3>E2E test</h3>
+<p>בדיקת end-to-end מריצה את כל האפליקציה ובודקת HTTP אמיתי:</p>
+<pre><code>import * as request from "supertest";
+
+it("/users (GET)", () => {
+  return request(app.getHttpServer())
+    .get("/users")
+    .expect(200)
+    .expect([]);
+});</code></pre>
+
+<p>ההבחנה: <strong>unit tests</strong> בודקים לוגיקה בבידוד (מהירים, הרבה), <strong>e2e tests</strong> בודקים שהכל מחובר נכון (איטיים, מעטים). שילוב נכון של שניהם הוא הבסיס לפרויקט אמין.</p>
+
+<hr>
+
+<h2 id="s17">17. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>Controllers דקים, services שמנים.</strong> שום לוגיקה עסקית ב-controller — הוא רק מנתב.</li>
+<li><strong>DTO תמיד <code>class</code>, אף פעם <code>interface</code>.</strong> interface נמחק ב-runtime ולא יכול לשאת validation decorators.</li>
+<li><strong>ValidationPipe גלובלי עם <code>whitelist</code> ו-<code>transform</code>.</strong> הגדר פעם אחת, תיהנה בכל האפליקציה.</li>
+<li><strong>אל תיגע ב-<code>@Res()</code> הגולמי.</strong> תן ל-NestJS לנהל את ה-response, אחרת אתה מאבד interceptors ו-serialization.</li>
+<li><strong>כבד את ה-encapsulation של modules.</strong> provider חייב <code>exports</code> כדי לשמש module אחר. אל תשבור את זה עם <code>@Global()</code> על הכל.</li>
+<li><strong>זרוק exceptions, אל תחזיר error objects.</strong> <code>throw new NotFoundException()</code> ולא <code>return { error: ... }</code>.</li>
+<li><strong>singleton scope כברירת מחדל.</strong> הימנע מ-<code>Scope.REQUEST</code> אלא אם באמת נחוץ — יש לו מחיר ביצועים.</li>
+<li><strong>סודות ב-env, לא בקוד.</strong> <code>@nestjs/config</code> עם validation.</li>
+<li><strong>side-effects ב-lifecycle hooks, לא ב-constructor.</strong> constructor רק להזרקה.</li>
+<li><strong>נצל את ה-CLI.</strong> <code>nest g resource</code> חוסך boilerplate ושומר על עקביות.</li>
+</ol>
+
+<h3>טעויות נפוצות שכדאי לזהות מוקדם</h3>
+<ul>
+<li><strong>"Nest can't resolve dependencies"</strong> — הטעות הכי נפוצה. כמעט תמיד: שכחת <code>exports</code> ב-module שמספק, או <code>imports</code> ב-module שצורך, או <code>@Injectable()</code> על המחלקה.</li>
+<li><strong>validation לא רץ</strong> — שכחת <code>app.useGlobalPipes(new ValidationPipe())</code>, או השתמשת ב-<code>interface</code> במקום <code>class</code> ל-DTO.</li>
+<li><strong>circular dependency בין modules</strong> — שני modules שמייבאים זה את זה. פתרון: <code>forwardRef()</code>, או עדיף — לחשוב מחדש על הגבולות.</li>
+<li><strong>לשים לוגיקה ב-controller</strong> — מקשה על בדיקות ושימוש חוזר.</li>
+</ul>
+
+<hr>
+
+<h2 id="s18">18. תרגיל מסכם</h2>
+
+<p>הדרך היחידה ללמוד NestJS היא לבנות. הנה פרויקט שמכסה את כל מה שכאן — בנה אותו מאפס:</p>
+
+<p><strong>המשימה: API לניהול משימות (Tasks).</strong></p>
+
+<ol>
+<li><strong>Setup:</strong> <code>nest new tasks-api</code>, הפעל <code>ValidationPipe</code> גלובלי ב-<code>main.ts</code>.</li>
+<li><strong>Module:</strong> צור <code>TasksModule</code> עם controller ו-service (נסה <code>nest g resource tasks</code>).</li>
+<li><strong>Entity:</strong> <code>Task</code> עם <code>id</code>, <code>title</code>, <code>description</code>, <code>status</code> (<code>"open" | "in-progress" | "done"</code>), <code>createdAt</code>.</li>
+<li><strong>DTOs:</strong> <code>CreateTaskDto</code> עם validation (<code>@IsString</code>, <code>@IsEnum</code>), ו-<code>UpdateTaskDto</code> עם <code>PartialType</code>.</li>
+<li><strong>CRUD:</strong> ממש <code>GET /tasks</code>, <code>GET /tasks/:id</code> (עם <code>ParseUUIDPipe</code> ו-<code>NotFoundException</code>), <code>POST</code>, <code>PATCH</code>, <code>DELETE</code>.</li>
+<li><strong>Guard:</strong> הוסף <code>AuthGuard</code> פשוט שבודק header, והגן על <code>POST</code> ו-<code>DELETE</code>.</li>
+<li><strong>Interceptor:</strong> הוסף <code>TransformInterceptor</code> שעוטף כל תגובה ב-<code>{ success, data }</code>.</li>
+<li><strong>Config:</strong> העבר את ה-<code>PORT</code> ל-<code>.env</code> דרך <code>@nestjs/config</code>.</li>
+<li><strong>Bonus:</strong> חבר ל-DB אמיתי עם TypeORM, והוסף unit test אחד ל-service.</li>
+</ol>
+
+<p>אם תבנה את זה ותבין כל שורה — אתה מפתח NestJS מתפקד.</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>עברנו את כל שלד ה-NestJS: מהמודל המנטלי (framework שמרכיב metadata של decorators), דרך modules, controllers, providers ו-DI, ועד ה-request lifecycle המלא, database, ו-testing.</p>
+
+<p>שים לב כמה מעט היה כאן "חדש" ברמת השפה — הכל נשען על TypeScript שכבר ידעת: decorators שמצרפים metadata, generics ב-repositories, DI דרך parameter properties, ו-interfaces ל-contracts. NestJS הוא בעיקר <strong>ארגון ומוסכמות</strong> על גבי TypeScript מוצק.</p>
+
+<p>הצעד הבא היחיד שחשוב: <strong>לבנות את התרגיל המסכם</strong>. קריאה נותנת מפה, בנייה נותנת שליטה. פתח טרמינל, <code>nest new</code>, וצא לדרך.</p>
+
+<p>בהצלחה. 🚀</p>
+
+</body>
+</html>

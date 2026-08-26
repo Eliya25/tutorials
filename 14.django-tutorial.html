@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Django — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #0c4b33; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #0c4b33; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #0a3d2a; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #08301f; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #e9f4ef; }
+  a { color: #0c4b33; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f1f8f4; border: 1px solid #cfe6da; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f1f8f4; border: 1px solid #cfe6da; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>Django — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>Django הוא framework ל-Backend ב-Python, בפילוסופיה <strong>הפוכה מ-NestJS</strong>: "batteries-included" — ORM, admin, auth, forms, הכל מובנה מהקופסה. המדריך מנצל את מה שאתה כבר יודע (NestJS, SQL, HTTP, auth) ומבליט את הניגודים, כדי שתלמד מהר.</p>
+<p>הדגש מוטה ל-<strong>ORM</strong> ול-<strong>Django REST Framework</strong> (בניית APIs) — כי אתה מפתח API, ולא כותב אתרים עם templates. עברית להסבר, אנגלית לקוד.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: Django, MVT, ו-Batteries-Included</a></li>
+<li><a href="#s2">התקנה ומבנה — Project מול Apps</a></li>
+<li><a href="#s3">מחזור הבקשה — URLs, Views, Response</a></li>
+<li><a href="#s4">URLs ו-Routing</a></li>
+<li><a href="#s5">Views — Function-Based מול Class-Based</a></li>
+<li><a href="#s6">Models ו-ORM — הכתר</a></li>
+<li><a href="#s7">ORM Queries — QuerySets ו-N+1</a></li>
+<li><a href="#s8">Migrations</a></li>
+<li><a href="#s9">Django Admin — ה-Feature המנצח</a></li>
+<li><a href="#s10">Django REST Framework — בניית APIs</a></li>
+<li><a href="#s11">Authentication ו-Permissions</a></li>
+<li><a href="#s12">Middleware</a></li>
+<li><a href="#s13">Settings ו-Environments</a></li>
+<li><a href="#s14">Async, Celery, Caching ו-Signals</a></li>
+<li><a href="#s15">Testing</a></li>
+<li><a href="#s16">Deployment</a></li>
+<li><a href="#s17">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s18">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: Django, MVT, ו-Batteries-Included</h2>
+
+<p>Django הוא framework ותיק, בוגר ומאוד פרודוקטיבי לבניית אפליקציות web ב-Python. הסלוגן שלו: "The web framework for perfectionists with deadlines" — כלומר, לבנות מהר בלי להתפשר על איכות.</p>
+
+<h3>הפילוסופיה: Batteries-Included</h3>
+<blockquote>
+<p>זה ההבדל המהותי מ-NestJS, וחשוב להפנים אותו. NestJS הוא מינימלי — אתה בוחר ORM, ספריית auth, וכו', ומרכיב. Django הוא <strong>ההפך: הכל כבר בפנים</strong> — ORM משלו, מערכת auth מלאה, admin panel אוטומטי, forms, migrations, caching. אתה מקבל אפליקציה עובדת מהר מאוד, אבל עם "הדרך של Django" (opinionated). ה-tradeoff: פחות החלטות והרכבה (מהיר), אבל פחות גמישות לבחור רכיבים משלך. שני הגישות לגיטימיות — Django מנצח על מהירות פיתוח וקוהרנטיות; NestJS על גמישות ומודולריות.</p>
+</blockquote>
+
+<h3>MVT — המודל של Django</h3>
+<p>Django משתמש בדפוס <strong>MVT (Model-View-Template)</strong>, וריאציה על MVC המוכר:</p>
+<ul>
+<li><strong>Model</strong> — הנתונים והלוגיקה העסקית (טבלאות ה-DB דרך ה-ORM).</li>
+<li><strong>View</strong> — מקבל request, מדבר עם ה-models, ומחזיר response. (שים לב: ב-Django "View" הוא מה ש-NestJS קורא לו controller — לא ה-UI!).</li>
+<li><strong>Template</strong> — ה-HTML (עבורך כמפתח API, פחות רלוונטי — תחזיר JSON דרך DRF).</li>
+</ul>
+
+<h3>מתי Django ומתי NestJS</h3>
+<table>
+<tr><th>Django</th><th>NestJS</th></tr>
+<tr><td>Python stack</td><td>Node/TypeScript stack</td></tr>
+<tr><td>batteries-included, מהיר להתחלה</td><td>מודולרי, גמיש</td></tr>
+<tr><td>admin panel מובנה (ענק)</td><td>אין admin מובנה</td></tr>
+<tr><td>ORM מובנה חזק</td><td>בוחר ORM (TypeORM/Prisma)</td></tr>
+<tr><td>מצוין ל-CRUD-heavy, data-driven apps</td><td>מצוין ל-APIs ו-microservices</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s2">2. התקנה ומבנה — Project מול Apps</h2>
+
+<h3>התקנה</h3>
+<pre><code>python -m venv venv           # virtual environment (מבודד תלויות — כמו node_modules)
+source venv/bin/activate      # (Windows: venv\Scripts\activate)
+pip install django
+django-admin startproject myproject
+cd myproject
+python manage.py runserver    # השרת עולה על :8000</code></pre>
+
+<h3>ההבחנה הקריטית: Project מול App</h3>
+<blockquote>
+<p>זו הנקודה שהכי מבלבלת מתחילים ב-Django. <strong>Project</strong> = כל האפליקציה שלך (ההגדרות, ה-config). <strong>App</strong> = מודול/רכיב עצמאי בתוך ה-project (users, orders, blog). project אחד מכיל כמה apps. חשוב על app כמו על <strong>module ב-NestJS</strong> — יחידה עצמאית עם models, views, ו-URLs משלה, שאפשר לעשות בה שימוש חוזר. הרעיון: apps קטנים וממוקדים, לא app ענק אחד.</p>
+</blockquote>
+
+<pre><code>python manage.py startapp users    # יוצר app בשם users</code></pre>
+
+<h3>המבנה</h3>
+<pre><code>myproject/
+├── manage.py              # ה-CLI — כל הפקודות (runserver, migrate, ...)
+├── myproject/             # ה-project (config)
+│   ├── settings.py        # כל ההגדרות (DB, apps, middleware)
+│   ├── urls.py            # ה-routing הראשי
+│   └── wsgi.py / asgi.py  # נקודות כניסה ל-production
+└── users/                 # app
+    ├── models.py          # טבלאות ה-DB
+    ├── views.py           # הלוגיקה (controllers)
+    ├── urls.py            # routing של ה-app
+    ├── admin.py           # רישום ל-admin panel
+    └── migrations/        # שינויי סכמה</code></pre>
+
+<h3>manage.py — ה-CLI שלך</h3>
+<p>כל פעולה ב-Django עוברת דרך <code>manage.py</code> (מקביל ל-nest CLI):</p>
+<pre><code>python manage.py runserver          # מריץ שרת פיתוח
+python manage.py startapp &lt;name&gt;     # יוצר app
+python manage.py makemigrations     # יוצר migrations מ-models
+python manage.py migrate            # מחיל migrations על ה-DB
+python manage.py createsuperuser    # יוצר admin user
+python manage.py shell              # Python shell עם Django טעון</code></pre>
+
+<h3>רישום App</h3>
+<p>אחרי יצירת app, חובה לרשום אותו ב-<code>settings.py</code> תחת <code>INSTALLED_APPS</code> — אחרת Django מתעלם ממנו (כמו imports ב-NestJS module):</p>
+<pre><code># settings.py
+INSTALLED_APPS = [
+    "django.contrib.admin",     # ה-apps המובנים של Django
+    "django.contrib.auth",
+    # ...
+    "users",                    # ה-app שלך
+]</code></pre>
+
+<hr>
+
+<h2 id="s3">3. מחזור הבקשה — URLs, Views, Response</h2>
+
+<p>לפני שנצלול לרכיבים, חשוב להבין את הזרימה — איך בקשה הופכת לתשובה ב-Django. זה מקביל ל-request lifecycle שראית ב-NestJS.</p>
+
+<div class="flow">
+1. בקשה מגיעה →<br>
+2. Middleware (סדרה של עיבודים — auth, sessions, ...)<br>
+3. URL Resolver — מתאים את ה-URL ל-view הנכון (urls.py)<br>
+4. View — הלוגיקה: מדבר עם Models, מכין נתונים<br>
+5. (Template או Serializer → JSON)<br>
+6. Middleware (בכיוון החזרה)<br>
+7. Response חוזר ללקוח
+</div>
+
+<p>שים לב כמה זה דומה ל-NestJS: middleware → routing → handler → response, עם middleware שעוטף בשני הכיוונים. הרעיונות זהים; רק השמות והתחביר שונים. זה למה הבסיס שלמדת מעביר אותך מ-framework ל-framework.</p>
+
+<hr>
+
+<h2 id="s4">4. URLs ו-Routing</h2>
+
+<p>ב-Django, ה-routing מפורש ומרוכז בקבצי <code>urls.py</code> (בניגוד ל-decorators על methods ב-NestJS). ה-project מפנה ל-apps, וכל app מגדיר את ה-URLs שלו.</p>
+
+<pre><code># myproject/urls.py — הראשי
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/users/", include("users.urls")),   # מאציל ל-app
+]
+
+# users/urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("", views.user_list),              # /api/users/
+    path("&lt;int:user_id&gt;/", views.user_detail),  # /api/users/42/
+]</code></pre>
+
+<p><code>&lt;int:user_id&gt;</code> הוא <strong>path parameter</strong> עם המרת טיפוס — Django ממיר ל-int ומעביר ל-view (מקביל ל-<code>ParseIntPipe</code> ב-NestJS). ה-<code>include</code> מאפשר לכל app לנהל את ה-URLs שלו — מודולריות.</p>
+
+<hr>
+
+<h2 id="s5">5. Views — Function-Based מול Class-Based</h2>
+
+<p>View ב-Django הוא מה שמטפל בבקשה (= controller ב-NestJS). יש שתי גישות, ושתיהן נפוצות.</p>
+
+<h3>Function-Based Views (FBV)</h3>
+<p>פונקציה פשוטה שמקבלת <code>request</code> ומחזירה <code>response</code>:</p>
+<pre><code>from django.http import JsonResponse
+
+def user_list(request):
+    if request.method == "GET":
+        users = User.objects.all()          # ORM query
+        data = [{"id": u.id, "name": u.name} for u in users]
+        return JsonResponse(data, safe=False)</code></pre>
+
+<h3>Class-Based Views (CBV)</h3>
+<p>מחלקה שמארגנת לוגיקה לפי HTTP method, ומאפשרת שימוש חוזר דרך ירושה:</p>
+<pre><code>from django.views import View
+
+class UserListView(View):
+    def get(self, request):
+        # ...טיפול ב-GET
+    def post(self, request):
+        # ...טיפול ב-POST</code></pre>
+
+<blockquote>
+<p><strong>מעשי:</strong> FBV פשוט וברור לדברים קטנים; CBV נותן שימוש חוזר וארגון לדברים מורכבים. אבל האמת — כמפתח API, ברוב הזמן <strong>לא תכתוב אף אחד מאלה ידנית</strong>. תשתמש ב-<strong>Django REST Framework</strong> (פרק 10) שנותן ViewSets ברמה גבוהה יותר שמייצרים את כל ה-CRUD אוטומטית. ה-views הגולמיים חשובים להבנה, אבל DRF הוא מה שתעבוד איתו בפועל.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s6">6. Models ו-ORM — הכתר</h2>
+
+<p>ה-ORM של Django הוא אחד החזקים והנוחים שקיימים, וזה כנראה הסיבה המרכזית לבחור ב-Django. אתה מגדיר את הטבלאות כמחלקות Python, ו-Django מתרגם לכל ה-SQL — כולל migrations.</p>
+
+<h3>הגדרת Model</h3>
+<pre><code># users/models.py
+from django.db import models
+
+class User(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    age = models.IntegerField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name        # תצוגה קריאה (חשוב ל-admin)</code></pre>
+
+<p>שים לב: אין צורך להגדיר <code>id</code> — Django מוסיף primary key אוטומטי. כל <code>Field</code> מתרגם לעמודה עם טיפוס וה-constraints (זוכר DDL ממדריך SQL? זה בדיוק אותו דבר, מוגדר ב-Python).</p>
+
+<h3>סוגי Fields עיקריים</h3>
+<table>
+<tr><th>Field</th><th>עמודה</th></tr>
+<tr><td><code>CharField</code> / <code>TextField</code></td><td>VARCHAR / TEXT</td></tr>
+<tr><td><code>IntegerField</code> / <code>BigIntegerField</code></td><td>INT / BIGINT</td></tr>
+<tr><td><code>DecimalField</code></td><td>NUMERIC (לכסף! זוכר מ-SQL?)</td></tr>
+<tr><td><code>BooleanField</code></td><td>BOOLEAN</td></tr>
+<tr><td><code>DateTimeField</code></td><td>TIMESTAMP</td></tr>
+<tr><td><code>EmailField</code> / <code>URLField</code></td><td>VARCHAR + validation</td></tr>
+<tr><td><code>JSONField</code></td><td>JSONB (זוכר ממדריך Databases?)</td></tr>
+</table>
+
+<h3>קשרים (Relationships) — בדיוק המודל הרלציוני</h3>
+<pre><code>class Order(models.Model):
+    # One-to-Many: user אחד → הרבה orders
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders")
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+
+class Profile(models.Model):
+    # One-to-One
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+class Course(models.Model):
+    # Many-to-Many — Django יוצר את ה-junction table אוטומטית!
+    students = models.ManyToManyField(User, related_name="courses")</code></pre>
+
+<blockquote>
+<p><strong>נקודה יפה:</strong> זוכר שבמדריך Databases היינו צריכים ליצור junction table ידנית ל-M:N? Django עושה את זה <strong>אוטומטית</strong> עם <code>ManyToManyField</code>. וה-<code>on_delete=CASCADE</code> הוא בדיוק ה-referential action מ-SQL. ה-ORM לא מסתיר ממך את המודל הרלציוני — הוא נותן לך אותו בתחביר Python נקי. כל מה שלמדת ב-SQL ו-Databases חל כאן, רק בממשק אחר.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s7">7. ORM Queries — QuerySets ו-N+1</h2>
+
+<p>ה-QuerySet הוא איך אתה שולף נתונים. הוא חזק, קריא, ויש לו כמה מאפיינים חשובים להבין — במיוחד לביצועים.</p>
+
+<h3>Queries בסיסיים</h3>
+<pre><code>User.objects.all()                          # SELECT * FROM users
+User.objects.filter(age__gte=18)            # WHERE age &gt;= 18
+User.objects.filter(is_active=True).exclude(age__lt=18)  # WHERE + NOT
+User.objects.get(id=42)                      # שורה אחת (זורק אם 0 או &gt;1)
+User.objects.filter(name__icontains="eli")  # WHERE name ILIKE '%eli%'
+User.objects.order_by("-created_at")[:10]   # ORDER BY DESC LIMIT 10
+User.objects.count()                         # COUNT(*)</code></pre>
+
+<p>ה-<code>__</code> (double underscore) הוא ה-syntax של lookups: <code>age__gte</code> = "age &gt;= ", <code>name__icontains</code> = case-insensitive contains. זה כל ה-WHERE מ-SQL, בתחביר Python.</p>
+
+<h3>Lazy Evaluation — מאפיין חשוב</h3>
+<blockquote>
+<p>QuerySets הם <strong>עצלים (lazy)</strong> — הם <em>לא</em> פונים ל-DB עד שאתה באמת צריך את הנתונים (iteration, <code>list()</code>, <code>len()</code>). זה מאפשר לשרשר סינונים בלי לפגוע ב-DB בכל שלב:</p>
+<pre><code>qs = User.objects.filter(is_active=True)   # עדיין אין query!
+qs = qs.filter(age__gte=18)                # עדיין אין query — רק בונה
+users = list(qs)                           # ← עכשיו ה-SQL רץ, פעם אחת</code></pre>
+<p>יתרון: יעילות. סכנה: קל לגרום בטעות לכמה queries אם לא מבינים מתי הם "מתממשים".</p>
+</blockquote>
+
+<h3>הבעיה הכי חשובה: N+1 Queries</h3>
+<p>זו הטעות מספר אחת עם כל ORM (כיסינו אותה ב-SQL וב-Databases — כאן ספציפית ל-Django). גישה ל-relation בתוך לולאה מפעילה query נפרד לכל שורה:</p>
+<pre><code># ❌ N+1: query אחד ל-orders, ואז query לכל order.user!
+for order in Order.objects.all():
+    print(order.user.name)      # ← query נפרד לכל order
+
+# ✅ select_related — JOIN אחד (ל-ForeignKey / OneToOne):
+for order in Order.objects.select_related("user"):
+    print(order.user.name)      # ← query אחד עם JOIN
+
+# ✅ prefetch_related — ל-ManyToMany / reverse FK:
+for user in User.objects.prefetch_related("orders"):
+    print(user.orders.all())    # ← 2 queries סה"כ, לא N+1</code></pre>
+
+<blockquote>
+<p><strong>הכלל שיחסוך לך ביצועים:</strong> <code>select_related</code> ל-ForeignKey/OneToOne (עושה JOIN), <code>prefetch_related</code> ל-ManyToMany/reverse (עושה query שני ומחבר בזיכרון). כמעט כל בעיית ביצועים ב-Django היא N+1 שלא טופל. הכלי לזיהוי: <strong>django-debug-toolbar</strong> מראה לך כמה queries כל דף מריץ — אם אתה רואה 50 queries לרשימה, יש לך N+1. (זוכר את <code>EXPLAIN</code> ממדריך SQL? כאן ה-debug toolbar הוא הכלי המקביל).</p>
+</blockquote>
+
+<h3>Aggregations ו-annotations</h3>
+<pre><code>from django.db.models import Count, Sum, Avg
+
+User.objects.aggregate(Avg("age"))                    # ממוצע כללי
+User.objects.annotate(order_count=Count("orders"))    # מוסיף שדה מחושב לכל שורה</code></pre>
+<p><code>annotate</code> הוא כמו window/aggregate שמצורף לכל שורה — חזק מאוד לדוחות, בלי לכתוב SQL גולמי.</p>
+
+<hr>
+
+<h2 id="s8">8. Migrations</h2>
+
+<p>אחד היתרונות הגדולים של Django: migrations <strong>אוטומטיים</strong>. אתה משנה model, Django מייצר את ה-migration, ומחיל אותו. (זוכר migrations ממדריך Databases? כאן זה חלק ומובנה).</p>
+
+<pre><code># 1. שינית/הוספת model ב-models.py
+# 2. Django מזהה את השינוי ומייצר migration:
+python manage.py makemigrations
+#    → יוצר קובץ migrations/0002_add_phone.py
+
+# 3. מחיל על ה-DB:
+python manage.py migrate</code></pre>
+
+<h3>איך זה עובד</h3>
+<p>Django שומר את היסטוריית ה-migrations (בקבצים ובטבלה ב-DB), ומחיל רק את החדשים. כל migration הוא Python עם <code>operations</code> (הוסף עמודה, צור טבלה). אפשר גם לכתוב migrations ידניים (data migrations — למשל למלא נתונים).</p>
+
+<blockquote>
+<p><strong>אזהרות מ-production (חוזר ממדריך Databases):</strong> migrations הרסניים (מחיקת עמודה) על טבלה חיה עלולים לשבור קוד שעדיין רץ, ולנעול טבלאות גדולות. הכלל expand-contract חל גם כאן: הוסף, פרוס קוד, ואז מחק. וחשוב: <strong>commit את קבצי ה-migrations ל-git</strong> — הם חלק מהקוד, וכל הצוות והשרתים צריכים אותם. אל תמחק migrations שכבר רצו בשרת.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Django Admin — ה-Feature המנצח</h2>
+
+<p>זה ה-feature ש-Django מפורסם בזכותו, ושאין לו מקביל ב-NestJS. עם כמה שורות, אתה מקבל <strong>ממשק ניהול web מלא</strong> לכל ה-models — CRUD, חיפוש, סינון, הרשאות — בחינם.</p>
+
+<pre><code># users/admin.py
+from django.contrib import admin
+from .models import User
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ["name", "email", "is_active", "created_at"]   # עמודות בטבלה
+    list_filter = ["is_active"]                                    # מסננים בצד
+    search_fields = ["name", "email"]                              # חיפוש</code></pre>
+
+<p>אחרי <code>createsuperuser</code>, נכנסים ל-<code>/admin</code> ומקבלים ממשק מלא לנהל את הנתונים — בלי לכתוב שום frontend. </p>
+
+<blockquote>
+<p><strong>למה זה כל כך שימושי:</strong> ה-admin חוסך שבועות של עבודה על "ממשק ניהול פנימי". לצוותים, ל-CMS, ל-back-office — זה זהב. הרבה חברות בונות MVP שלם רק על ה-admin. זה הביטוי הכי חזק של "batteries-included". <strong>אבל</strong> — הוא לא נועד להיות ה-UI של המשתמשים שלך (הוא ממשק פנימי/אדמין); לזה תבנה frontend נפרד שמדבר עם ה-API (DRF).</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s10">10. Django REST Framework — בניית APIs</h2>
+
+<p>זה הפרק הכי חשוב עבורך כמפתח API. Django "טהור" בנוי לאתרים עם templates; לבניית <strong>REST APIs</strong> משתמשים ב-<strong>Django REST Framework (DRF)</strong> — ספרייה שהיא כמעט סטנדרט. היא נותנת serializers, viewsets, auth, ו-pagination מובנים.</p>
+
+<pre><code>pip install djangorestframework
+# ואז מוסיפים "rest_framework" ל-INSTALLED_APPS</code></pre>
+
+<h3>Serializers — הלב של DRF</h3>
+<p>Serializer ממיר בין objects של Django (models) ל-JSON וחזרה, <em>וגם</em> מבצע validation. זה בדיוק ה-DTO + validation שהכרת ב-NestJS (class-validator), מאוחד לרכיב אחד:</p>
+<pre><code># users/serializers.py
+from rest_framework import serializers
+from .models import User
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "name", "email", "age"]   # אילו שדות לחשוף
+        # אפשר read_only_fields, validation מותאם, וכו'</code></pre>
+
+<p>ה-<code>ModelSerializer</code> גוזר אוטומטית את השדות מה-model — כולל טיפוסים ו-validation בסיסי. שים לב איך זה מקביל ל-DTOs עם <code>Pick</code>/<code>Omit</code> מ-NestJS: בוחרים בדיוק מה נכנס/יוצא ב-API.</p>
+
+<h3>ViewSets — CRUD מלא כמעט בחינם</h3>
+<p>ViewSet נותן את כל פעולות ה-CRUD (list, create, retrieve, update, delete) ממחלקה אחת:</p>
+<pre><code># users/views.py
+from rest_framework import viewsets
+from .models import User
+from .serializers import UserSerializer
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    # וזהו! GET/POST/PUT/PATCH/DELETE — הכל עובד.</code></pre>
+
+<pre><code># users/urls.py — router מחבר את ה-viewset ל-URLs אוטומטית:
+from rest_framework.routers import DefaultRouter
+router = DefaultRouter()
+router.register("users", UserViewSet)
+urlpatterns = router.urls
+# → GET /users/, POST /users/, GET /users/42/, PUT, DELETE — הכל!</code></pre>
+
+<blockquote>
+<p><strong>הכוח של DRF:</strong> שלושת הקטעים למעלה נותנים לך API CRUD מלא, עם validation, pagination, ו-browsable API (ממשק web לבדיקה) — בפחות מ-15 שורות. זה ה-"batteries-included" בפעולה. השווה לכמה קוד זה היה ב-NestJS (controller + service + DTOs + module). DRF מבריק ל-CRUD-heavy APIs. ה-tradeoff: כשצריך לוגיקה לא-סטנדרטית, ה-magic יכול להפריע — ואז מוסיפים custom methods או יורדים ל-views ידניים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. Authentication ו-Permissions</h2>
+
+<p>Django מגיע עם מערכת auth מלאה מובנית (זוכר כמה עבדנו על זה ב-NestJS? כאן הרבה מזה בחינם) — user model, sessions, password hashing, permissions.</p>
+
+<h3>מה מובנה</h3>
+<ul>
+<li><strong>User model</strong> — מובנה (<code>django.contrib.auth</code>), עם username, email, password.</li>
+<li><strong>Password hashing</strong> — אוטומטי (PBKDF2 חזק — זוכר bcrypt מ-Auth? Django עושה את זה בשבילך).</li>
+<li><strong>Sessions</strong> — מובנה (session-based auth, זוכר ממדריך Auth?).</li>
+<li><strong>Permissions & groups</strong> — מערכת הרשאות מובנית.</li>
+</ul>
+
+<h3>Auth ב-DRF — לבחירתך</h3>
+<p>ל-APIs, DRF תומך בכמה שיטות (כולן מהמדריך על Authentication):</p>
+<ul>
+<li><strong>Session auth</strong> — טוב ל-frontend באותו domain.</li>
+<li><strong>Token auth</strong> — token פשוט לכל user (מובנה ב-DRF).</li>
+<li><strong>JWT</strong> — דרך <code>djangorestframework-simplejwt</code> (access + refresh — בדיוק הדפוס ממדריך Auth).</li>
+</ul>
+
+<h3>Permissions</h3>
+<pre><code>from rest_framework.permissions import IsAuthenticated
+
+class UserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]   # רק מחוברים
+    # אפשר permissions מותאמים: IsOwner, IsAdmin, וכו'</code></pre>
+
+<blockquote>
+<p><strong>הקשר למדריך Auth:</strong> כל מה שלמדת שם חל — sessions מול JWT, hashing, permissions. ההבדל: Django נותן לך את רוב זה <strong>מובנה ובדוק</strong>, במקום להרכיב עם Passport כמו ב-NestJS. זה בדיוק היתרון של batteries-included לאבטחה — פחות קוד שאתה כותב (ופחות קוד שאתה יכול לטעות בו). וזה מחזק את העצה ממדריך Auth: אל תבנה auth מאפס — Django נותן לך מימוש בדוק.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Middleware</h2>
+
+<p>Middleware ב-Django הוא סדרה של "שכבות" שכל בקשה עוברת דרכן בכניסה, וכל תשובה ביציאה (בדיוק המושג ממדריכי Networking ו-NestJS). זה המקום ל-cross-cutting concerns: auth, sessions, CORS, security headers.</p>
+
+<pre><code># settings.py — הסדר חשוב! (רץ מלמעלה למטה בכניסה, הפוך ביציאה)
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # middleware מותאם שלך
+]</code></pre>
+
+<p>Django מגיע עם middleware מובנה חשוב: security headers, sessions, CSRF protection (זוכר CSRF ממדריך Auth/Networking? Django מגן מזה כברירת מחדל). middleware מותאם הוא פונקציה/מחלקה שעוטפת את ה-view.</p>
+
+<hr>
+
+<h2 id="s13">13. Settings ו-Environments</h2>
+
+<p><code>settings.py</code> הוא ה-control panel של הפרויקט — DB, apps, middleware, secrets. ניהול נכון שלו בין סביבות (dev/prod) הוא קריטי.</p>
+
+<h3>הגדרות מרכזיות</h3>
+<pre><code># settings.py
+DEBUG = False                    # ⚠️ תמיד False ב-production!
+SECRET_KEY = os.environ["SECRET_KEY"]    # מ-env, לא בקוד!
+ALLOWED_HOSTS = ["myapp.com"]
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["DB_NAME"],
+        # ...מ-env
+    }
+}</code></pre>
+
+<blockquote>
+<p><strong>כללי ברזל (חוזרים ממדריכי DevOps/Auth/Git):</strong> (1) <code>SECRET_KEY</code> וסיסמאות מ-<strong>environment variables</strong>, אף פעם לא בקוד/git. (2) <code>DEBUG = False</code> ב-production תמיד — <code>DEBUG=True</code> חושף stack traces ומידע רגיש לתוקפים, וזו פרצת אבטחה קלאסית. (3) הפרד settings לסביבות (למשל <code>settings/base.py</code>, <code>settings/prod.py</code>) או השתמש ב-<code>django-environ</code>. זה בדיוק ה-12-factor config שראית ב-DevOps.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. Async, Celery, Caching ו-Signals</h2>
+
+<h3>Async Django</h3>
+<p>נקודה חשובה להבין, במיוחד אחרי מדריך Node: Django הוא <strong>סינכרוני</strong> במקורו (בניגוד ל-Node שהוא async מהיסוד). כל בקשה מטופלת על thread/process, והמודל הוא "worker per request". גרסאות חדשות של Django הוסיפו תמיכה ב-<code>async def</code> views ו-ORM אסינכרוני, אבל האקוסיסטם עדיין בעיקר סינכרוני. המשמעות: Django סקיילר דרך <strong>הרבה workers</strong> (processes), לא דרך event loop אחד כמו Node.</p>
+
+<h3>Celery — עבודה ברקע</h3>
+<p>ל-Django אין event loop לעבודה אסינכרונית, אז משימות כבדות/איטיות (שליחת מייל, עיבוד, דוחות) מועברות ל-<strong>Celery</strong> — task queue שרץ ב-workers נפרדים, בדרך כלל עם Redis/RabbitMQ כ-broker (זוכר message queues ממדריך System Design?):</p>
+<pre><code>from celery import shared_task
+
+@shared_task
+def send_welcome_email(user_id):
+    # רץ ב-worker נפרד, לא חוסם את הבקשה
+    ...
+
+# ב-view:
+send_welcome_email.delay(user.id)   # מכניס לתור, מחזיר מיד</code></pre>
+<p>זה הפתרון של Django למה ש-Node עושה עם async — במקום non-blocking על thread אחד, מוציאים את העבודה ל-worker אחר.</p>
+
+<h3>Caching</h3>
+<p>Django מגיע עם framework caching מובנה — cache-per-view, cache-per-query, או low-level. בד"כ עם Redis (זוכר caching ממדריכי System Design/Databases?):</p>
+<pre><code>from django.core.cache import cache
+cache.set("key", value, timeout=300)
+value = cache.get("key")</code></pre>
+
+<h3>Signals</h3>
+<p>מנגנון event-driven מובנה: קוד שרץ אוטומטית באירועים של models (נשמר, נמחק). למשל, ליצור Profile אוטומטית כשנוצר User:</p>
+<pre><code>from django.db.models.signals import post_save
+
+@receiver(post_save, sender=User)
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)</code></pre>
+<blockquote>
+<p><strong>אזהרה (כמו triggers ב-SQL):</strong> signals נוחים אבל מסתירים לוגיקה — קשה לעקוב אחרי מה קורה מתי. השתמש בהם ל-cross-cutting נקי (audit, יצירת objects נלווים), אבל לוגיקה עסקית עדיף במקום מפורש. אותה עצה כמו על triggers ממדריך SQL.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s15">15. Testing</h2>
+
+<p>Django מגיע עם framework testing מובנה (מבוסס על <code>unittest</code> של Python), עם DB בדיקה שנוצר ונמחק אוטומטית לכל ריצה:</p>
+<pre><code>from django.test import TestCase
+
+class UserModelTest(TestCase):
+    def setUp(self):
+        User.objects.create(name="Eliya", email="e@x.com")
+
+    def test_user_str(self):
+        user = User.objects.get(email="e@x.com")
+        self.assertEqual(str(user), "Eliya")
+
+# ל-API (DRF):
+from rest_framework.test import APITestCase
+
+class UserAPITest(APITestCase):
+    def test_list_users(self):
+        response = self.client.get("/api/users/")
+        self.assertEqual(response.status_code, 200)</code></pre>
+<p><code>python manage.py test</code> מריץ הכל. Django מקים DB בדיקה נפרד, אז הטסטים לא נוגעים בנתונים אמיתיים. (הרבה צוותים מעדיפים <strong>pytest-django</strong> — נוח יותר). זוכר את חשיבות הטסטים בעידן ה-AI ממדריך DevOps? חל גם כאן.</p>
+
+<hr>
+
+<h2 id="s16">16. Deployment</h2>
+
+<p>שרת הפיתוח (<code>runserver</code>) הוא <strong>לא</strong> ל-production. בפרודקשן מריצים דרך application server:</p>
+<ul>
+<li><strong>WSGI</strong> (סינכרוני) — <code>Gunicorn</code> או <code>uWSGI</code>. הסטנדרט ל-Django רגיל.</li>
+<li><strong>ASGI</strong> (אסינכרוני) — <code>Uvicorn</code>/<code>Daphne</code>, אם אתה משתמש ב-async Django/WebSockets.</li>
+</ul>
+<div class="flow">
+Client → Nginx (reverse proxy) → Gunicorn (כמה workers) → Django<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(static files, TLS)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(worker per request)
+</div>
+<p>הכל מ-DevOps חל: Docker (containerize את Django + Gunicorn), reverse proxy (Nginx — TLS termination, static files), env vars, ו-migrations כחלק מה-deploy. <code>collectstatic</code> אוסף קבצים סטטיים. מספר ה-workers של Gunicorn = איך Django מנצל כמה cores (זוכר שהוא סינכרוני? זה ה-cluster המקביל).</p>
+
+<blockquote>
+<p><strong>checklist ל-production:</strong> <code>DEBUG=False</code>, <code>SECRET_KEY</code> מ-env, <code>ALLOWED_HOSTS</code> מוגדר, Postgres (לא SQLite), Gunicorn+Nginx, static files מוגשים נכון, HTTPS, ו-<code>python manage.py check --deploy</code> (Django בודק לך הגדרות אבטחה!). זה בדיוק ה-deploy checklist ממדריך DevOps, מותאם ל-Django.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s17">17. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>apps קטנים וממוקדים</strong> — לא app ענק אחד. כמו modules ב-NestJS.</li>
+<li><strong>select_related / prefetch_related</strong> — הכלי מספר אחד נגד N+1. השתמש ב-debug-toolbar לזהות.</li>
+<li><strong>DRF ל-APIs</strong> — serializers + viewsets, לא views ידניים לכל CRUD.</li>
+<li><strong>נצל את ה-admin</strong> — ל-back-office, חוסך שבועות.</li>
+<li><strong><code>DEBUG=False</code> + secrets ב-env</strong> ב-production — קריטי לאבטחה.</li>
+<li><strong>commit migrations ל-git</strong>, expand-contract לשינויים הרסניים.</li>
+<li><strong>Celery לעבודה כבדה</strong> — Django סינכרוני, אל תחסום בקשות.</li>
+<li><strong>נצל את ה-auth המובנה</strong> — אל תבנה מאפס.</li>
+<li><strong>fat models, thin views</strong> — לוגיקה ב-models/services, views דקים (מקביל ל-thin controllers).</li>
+<li><strong>Postgres, לא SQLite</strong> ב-production.</li>
+</ol>
+
+<h3>טעויות נפוצות</h3>
+<ul>
+<li><strong>N+1 queries</strong> — הכי נפוצה. select_related/prefetch_related.</li>
+<li><strong><code>DEBUG=True</code> ב-production</strong> — פרצת אבטחה חמורה.</li>
+<li><strong>secrets ב-settings.py שב-git</strong> — זוכר את הכלל מ-Git?</li>
+<li><strong>לוגיקה כבדה ב-view סינכרוני</strong> — חוסם worker. Celery.</li>
+<li><strong>לבלבל project ו-app</strong> — או app ענק מונוליטי.</li>
+<li><strong>signals מוגזמים</strong> — לוגיקה נסתרת קשה לדיבוג.</li>
+<li><strong><code>get()</code> בלי טיפול בחריגה</strong> — <code>DoesNotExist</code> מפיל אם אין תוצאה (השתמש ב-<code>get_object_or_404</code>).</li>
+</ul>
+
+<hr>
+
+<h2 id="s18">18. תרגילים</h2>
+
+<p><strong>1 — Setup.</strong> צור project + app "blog", חבר ל-Postgres, והרץ את השרת. צור superuser וכנס ל-admin.</p>
+
+<p><strong>2 — Models.</strong> הגדר <code>Post</code> (title, body, author=FK ל-User, created_at) ו-<code>Comment</code> (post=FK, text). הרץ makemigrations + migrate. רשום אותם ל-admin.</p>
+
+<p><strong>3 — ORM.</strong> ב-<code>manage.py shell</code>: צור נתונים, וכתוב queries — כל הפוסטים של author מסוים, פוסטים עם יותר מ-5 תגובות (annotate), ופוסט עם התגובות שלו <strong>בלי N+1</strong> (prefetch_related).</p>
+
+<p><strong>4 — DRF API.</strong> הוסף DRF, כתוב <code>PostSerializer</code> ו-<code>PostViewSet</code>, וחבר router. בדוק שכל ה-CRUD עובד דרך ה-browsable API.</p>
+
+<p><strong>5 — Auth.</strong> הוסף JWT (simplejwt), הגן על ה-endpoints שיצירה/עריכה דורשות התחברות, וש-author נקבע אוטומטית למשתמש המחובר.</p>
+
+<p><strong>6 — N+1 hunt.</strong> התקן django-debug-toolbar, מצא endpoint עם N+1, ותקן אותו עם select_related. השווה את מספר ה-queries לפני ואחרי.</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים לקחת: Django הוא <strong>batteries-included</strong> — ORM, admin, auth, forms, הכל מובנה, מה שהופך אותו למהיר מאוד ל-CRUD ו-data-driven apps; וה-<strong>ORM + DRF</strong> הם הליבה שלך כמפתח API — models נקיים, ו-serializers+viewsets שנותנים CRUD מלא במעט קוד.</p>
+
+<p>שים לב כמה מהמדריך היה מוכר: models הם ה-SQL/Databases שלמדת (relationships, migrations, N+1); auth הוא בדיוק מדריך Authentication (sessions/JWT/hashing) רק מובנה; middleware, request cycle, ו-deploy חוזרים מ-NestJS/Networking/DevOps. <strong>זה בדיוק העניין:</strong> ברגע שאתה מבין את הבסיס (SQL, HTTP, auth, DB modeling), מעבר בין frameworks הוא בעיקר לימוד תחביר — לא מושגים חדשים. Django מול NestJS זה אותה מוזיקה, כלי אחר.</p>
+
+<p>יש לך עכשיו 13 מדריכים ב-<code>C:\claude-folder</code>. ההמלצה, כמו תמיד: הכי טוב ללמוד framework חדש זה <strong>לבנות בו</strong> — קח את פרויקט הבלוג מהתרגילים, או שכתב את ה-RAG ב-Django+DRF במקום NestJS, ותראה את ההבדלים על בשרך. 🚀</p>
+
+</body>
+</html>

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מאחורי הקלעים — Computer Systems למפתחים</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #334155; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2.2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #334155; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #1e293b; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #0f172a; }
+  .part { background: #334155; color: #fff; padding: 8px 18px; border-radius: 8px; margin-top: 2.5em; font-size: 1.15em; font-weight: bold; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #eef1f5; }
+  a { color: #334155; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f4f6f9; border: 1px solid #dde3ec; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f4f6f9; border: 1px solid #dde3ec; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>מאחורי הקלעים — Computer Systems למפתחים</h1>
+
+<blockquote>
+<p>המדריך הזה שונה מכל הקודמים: הוא לא על שפה או framework, אלא על <strong>איך המחשב באמת עובד</strong> — מהטרנזיסטור ועד ה-web request. בעידן שבו AI כותב סינטקס, זו ההבנה שמבדילה מהנדס: היא לא מתיישנת, ולא ניתנת ל-outsource.</p>
+<p>המדריך בנוי בשש שכבות, מלמטה למעלה: ייצוג נתונים → ארכיטקטורה → זיכרון → מערכת הפעלה → concurrency → I/O. כל שכבה בונה על הקודמת. עברית להסבר, אנגלית למונחים.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<p><strong>חלק א' — יסודות: ייצוג והרצה</strong></p>
+<ol>
+<li><a href="#s1">מבוא: מגדל ההפשטות</a></li>
+<li><a href="#s2">בינארי וייצוג נתונים</a></li>
+<li><a href="#s3">איך קוד רץ — Compilation, Interpretation, JIT</a></li>
+</ol>
+<p><strong>חלק ב' — Computer Architecture</strong></p>
+<ol start="4">
+<li><a href="#s4">ה-CPU מבפנים — Registers, ALU, Instructions</a></li>
+<li><a href="#s5">Pipeline ו-CPU מודרני</a></li>
+<li><a href="#s6">Memory Hierarchy ו-Cache</a></li>
+</ol>
+<p><strong>חלק ג' — Memory Management</strong></p>
+<ol start="7">
+<li><a href="#s7">RAM ו-Addressing</a></li>
+<li><a href="#s8">Stack מול Heap</a></li>
+<li><a href="#s9">Virtual Memory</a></li>
+<li><a href="#s10">Pointers, References ו-Garbage Collection</a></li>
+</ol>
+<p><strong>חלק ד' — Operating Systems</strong></p>
+<ol start="11">
+<li><a href="#s11">Kernel, User Mode ו-System Calls</a></li>
+<li><a href="#s12">Processes מול Threads</a></li>
+<li><a href="#s13">Scheduler ו-Context Switch</a></li>
+<li><a href="#s14">IPC — תקשורת בין תהליכים</a></li>
+</ol>
+<p><strong>חלק ה' — Concurrency &amp; Synchronization</strong></p>
+<ol start="15">
+<li><a href="#s15">הבעיה — Race Conditions ו-Critical Sections</a></li>
+<li><a href="#s16">Locks — Mutex, Semaphore, RW Lock, Condition Variables</a></li>
+<li><a href="#s17">Atomic Operations, CAS ו-Lock-Free</a></li>
+<li><a href="#s18">מפגעי Concurrency — Deadlock, Livelock, Starvation</a></li>
+</ol>
+<p><strong>חלק ו' — I/O והרכבה</strong></p>
+<ol start="19">
+<li><a href="#s19">מודלי I/O — Blocking, Non-Blocking, Multiplexing, Async</a></li>
+<li><a href="#s20">Interrupts, DMA ואיך I/O באמת עובד</a></li>
+<li><a href="#s21">הרכבה: איך Web Request עובר דרך הכל</a></li>
+<li><a href="#s22">מה הלאה ומשאבים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<div class="part">חלק א' — יסודות: ייצוג והרצה</div>
+
+<h2 id="s1">1. מבוא: מגדל ההפשטות</h2>
+
+<p>כשאתה כותב <code>const x = 5</code>, קורה מסע מדהים: השורה הזו הופכת לפקודות מכונה, שרצות על CPU שמזיז אלקטרונים, שקורא מזיכרון שמנוהל על ידי מערכת הפעלה. כל שכבה <strong>מסתירה</strong> את זו שמתחתיה — וזה בדיוק היופי והסכנה.</p>
+
+<h3>מגדל ההפשטות (Abstraction Stack)</h3>
+<div class="flow">
+הקוד שלך (JS/Python/...)          ← אתה כאן<br>
+&nbsp;&nbsp;↓ runtime / interpreter / compiler<br>
+Bytecode / Machine code<br>
+&nbsp;&nbsp;↓ מערכת הפעלה (OS)<br>
+Processes, Threads, Virtual Memory<br>
+&nbsp;&nbsp;↓ ארכיטקטורה (CPU)<br>
+Registers, ALU, Cache, Instructions<br>
+&nbsp;&nbsp;↓ חומרה<br>
+Transistors, אלקטרונים, 0 ו-1
+</div>
+
+<h3>למה זה חשוב לך — במיוחד עכשיו</h3>
+<blockquote>
+<p>אתה יכול לכתוב קוד שנים בלי להבין את השכבות האלה — עד שמשהו נשבר. למה הלולאה שלך איטית פי 10 עם linked list במקום array? למה שני threads "דורסים" ערך? למה Node מטפל באלפי חיבורים על thread אחד? למה סקריפט "אוכל" את כל ה-RAM? כל התשובות נמצאות בשכבות מתחת לקוד. <strong>ההבנה הזו היא מה שהופך אותך ממי שמעתיק פתרונות למי שמבין למה הם עובדים</strong> — וזה בדיוק מה ש-AI לא נותן לך, כי הוא נותן את ה"מה", לא את ה"למה".</p>
+</blockquote>
+
+<p>המדריך מטפס במגדל מלמטה למעלה. בסוף, תעקוב אחרי web request דרך <em>כל</em> השכבות — ותראה איך הכל מתחבר.</p>
+
+<hr>
+
+<h2 id="s2">2. בינארי וייצוג נתונים</h2>
+
+<p>הכל במחשב הוא <strong>bits</strong> — 0 או 1 (נוכחות/היעדר מתח חשמלי). כל מספר, טקסט, תמונה, וידאו — הכל בסופו של דבר רצף של bits. נבין איך.</p>
+
+<h3>Bits ו-Bytes</h3>
+<ul>
+<li><strong>bit</strong> — הספרה הבינארית הבסיסית (0/1).</li>
+<li><strong>byte</strong> — 8 bits. יכול לייצג 2⁸ = 256 ערכים (0–255).</li>
+<li>ספירה בינארית: <code>101</code> = 1×4 + 0×2 + 1×1 = 5.</li>
+</ul>
+
+<h3>ייצוג מספרים שליליים: Two's Complement</h3>
+<p>איך מייצגים מספר שלילי ב-bits? השיטה האוניברסלית היא <strong>two's complement</strong>: הופכים את כל ה-bits ומוסיפים 1. היתרון הגאוני — חיבור וחיסור עובדים באותו מעגל חומרה, בלי טיפול מיוחד בסימן:</p>
+<pre><code>ב-8 bits:
+ 5  = 00000101
+-5  = 11111011   (הפוך את כל הביטים של 5, הוסף 1)
+ 5 + (-5) = 100000000 → נחתך ל-00000000 = 0  ✅</code></pre>
+<p>זו הסיבה ש-<code>int</code> ב-8 bits נע מ-128- עד 127 (לא 0–255): ה-bit העליון מסמן סימן. וזה מסביר <strong>integer overflow</strong> — כשמספר גדל מעבר לטווח, הוא "עוטף" למספר שלילי.</p>
+
+<h3>ייצוג מספרים עשרוניים: IEEE 754 — וכאן נפתר תעלומה</h3>
+<blockquote>
+<p>זוכר <code>0.1 + 0.2 !== 0.3</code> ממדריך JavaScript? הנה למה. מספרים עשרוניים מיוצגים ב-<strong>floating point</strong> לפי תקן IEEE 754: sign + exponent + mantissa (בערך "notation מדעי בבינארי"). הבעיה: <strong>0.1 לא ניתן לייצוג מדויק ב-binary</strong> — בדיוק כמו ש-1/3 לא ניתן לייצוג מדויק בעשרוני (0.333...). אז 0.1 מאוחסן כקירוב, והשגיאות הזעירות מצטברות. זו לא תקלה של JS — זה איך <em>כל</em> שפה מייצגת floats בחומרה. הלקח (חוזר מ-SQL ו-JS): <strong>לעולם אל תשתמש ב-float לכסף</strong> — עבוד ב-integers (cents) או decimal.</p>
+</blockquote>
+
+<h3>ייצוג טקסט: Encoding</h3>
+<p>אותיות הן מספרים. <strong>ASCII</strong> מיפה 128 תווים (A=65). אבל 128 לא מספיק לעברית, אמוג'י, ושפות העולם — אז <strong>Unicode</strong> מגדיר מספר (code point) לכל תו, ו-<strong>UTF-8</strong> מקודד אותם ל-bytes (1–4 bytes לתו). זו הסיבה שטקסט עברי ב-encoding שגוי = ג'יבריש (זוכר Buffers ממדריך Node?), ולמה תו עברי "שוקל" יותר bytes מתו אנגלי.</p>
+
+<h3>Hexadecimal — קיצור נוח</h3>
+<p><strong>Hex</strong> (בסיס 16: 0-9, A-F) הוא דרך קומפקטית לכתוב binary — כל ספרת hex = 4 bits. לכן צבעים (<code>#FF5733</code>), כתובות זיכרון (<code>0x7FFF</code>), ו-hashes נכתבים ב-hex. <code>0xFF</code> = 255 = <code>11111111</code>.</p>
+
+<hr>
+
+<h2 id="s3">3. איך קוד רץ — Compilation, Interpretation, JIT</h2>
+
+<p>ה-CPU מבין רק <strong>machine code</strong> (פקודות בינאריות). אבל אתה כותב JavaScript/Python. איך הפער נסגר? יש שלוש גישות, וההבדל ביניהן מסביר הרבה על ביצועים.</p>
+
+<h3>Compiled — תרגום מראש</h3>
+<p>שפות כמו C, C++, Rust, Go <strong>מקומפלות</strong>: compiler מתרגם את כל הקוד ל-machine code <em>לפני</em> ההרצה, פעם אחת. התוצאה — קובץ בינארי שרץ ישירות על ה-CPU. <strong>מהיר מאוד</strong> (אין תרגום בזמן ריצה), אבל תלוי-פלטפורמה (בינארי ל-Windows ≠ Linux) וצריך build.</p>
+
+<h3>Interpreted — תרגום תוך כדי</h3>
+<p>שפות כמו Python (בגישה הקלאסית) <strong>מפורשות</strong>: interpreter קורא ומריץ את הקוד שורה-שורה בזמן ריצה. <strong>גמיש</strong> (אין build, cross-platform, dynamic) אבל <strong>איטי יותר</strong> — כי התרגום קורה שוב ושוב בכל הרצה.</p>
+
+<h3>Bytecode + Virtual Machine — הביניים</h3>
+<p>Java, C# (ו-Python מתחת) מקמפלות ל-<strong>bytecode</strong> — פורמט ביניים, לא machine code אבל לא source. ה-bytecode רץ על <strong>Virtual Machine</strong> (JVM, CLR) שמתרגמת אותו לפלטפורמה. זה נותן "compile once, run anywhere" — ה-VM היא שכבת ההפשטה מעל החומרה.</p>
+
+<h3>JIT — הקסם של JavaScript</h3>
+<blockquote>
+<p>איך JavaScript "מפורשת" אבל מהירה? <strong>JIT (Just-In-Time compilation)</strong>. מנוע V8 (זוכר ממדריך Node?) מתחיל לפרש, אבל <strong>מזהה קוד "חם"</strong> (פונקציות שרצות הרבה) ו<strong>מקמפל אותן ל-machine code בזמן ריצה</strong> — משלב את הגמישות של interpreted עם המהירות של compiled. הוא גם עושה אופטימיזציות מבוססות-נתונים (למשל, מניח שמשתנה תמיד number ומקמפל בהתאם, ומבטל אם ההנחה נשברת). זו הסיבה שקוד JS "יציב" (טיפוסים עקביים) רץ מהר יותר מקוד "כאוטי" — ה-JIT יכול לאופטמז אותו טוב יותר. הבנת זה מסבירה למה טיפוסים עקביים (וגם TypeScript) עוזרים לביצועים.</p>
+</blockquote>
+
+<table>
+<tr><th>גישה</th><th>מתי מתרגמים</th><th>מהירות</th><th>דוגמאות</th></tr>
+<tr><td>Compiled</td><td>מראש, פעם אחת</td><td>הכי מהיר</td><td>C, C++, Rust, Go</td></tr>
+<tr><td>Interpreted</td><td>תוך כדי, שורה-שורה</td><td>איטי</td><td>Python (קלאסי)</td></tr>
+<tr><td>Bytecode + VM</td><td>מראש ל-bytecode, VM מריצה</td><td>בינוני-מהיר</td><td>Java, C#</td></tr>
+<tr><td>JIT</td><td>תוך כדי, מקמפל קוד חם</td><td>מהיר</td><td>JavaScript (V8), JVM</td></tr>
+</table>
+
+<hr>
+
+<div class="part">חלק ב' — Computer Architecture</div>
+
+<h2 id="s4">4. ה-CPU מבפנים — Registers, ALU, Instructions</h2>
+
+<p>ה-CPU (Central Processing Unit) הוא ה"מוח" — הוא מבצע את הפקודות. נפרק אותו לרכיבים ונבין את המחזור שהוא רץ מיליארדי פעמים בשנייה.</p>
+
+<h3>הרכיבים המרכזיים</h3>
+<ul>
+<li><strong>Registers</strong> — תאי זיכרון זעירים <em>בתוך</em> ה-CPU עצמו. הכי מהירים שיש (גישה ב-cycle אחד), אבל מעטים מאוד (עשרות). כאן ה-CPU מחזיק את הנתונים שהוא עובד עליהם <em>עכשיו</em>.</li>
+<li><strong>ALU (Arithmetic Logic Unit)</strong> — היחידה שמבצעת חישובים (חיבור, חיסור) ופעולות לוגיות (AND, OR). זה ה"מחשבון" של ה-CPU.</li>
+<li><strong>Control Unit</strong> — מנצח: מפענח פקודות ומכוון את שאר הרכיבים.</li>
+<li><strong>Clock</strong> — "פעימת הלב". כל tick (cycle) ה-CPU מתקדם צעד. 3GHz = 3 מיליארד ticks בשנייה.</li>
+<li><strong>Program Counter (PC)</strong> — register מיוחד שמצביע לכתובת הפקודה הבאה.</li>
+</ul>
+
+<h3>מחזור ה-Fetch-Decode-Execute</h3>
+<p>זה מה שה-CPU עושה, שוב ושוב, מיליארדי פעמים בשנייה. כל תוכנית בעולם היא בסופו של דבר המחזור הזה:</p>
+<div class="flow">
+┌─→ 1. FETCH   — שלוף את הפקודה הבאה מהזיכרון (לפי ה-PC)<br>
+│&nbsp;&nbsp;&nbsp;2. DECODE  — ה-Control Unit מפענח: מה הפקודה אומרת?<br>
+│&nbsp;&nbsp;&nbsp;3. EXECUTE — ה-ALU/רכיבים מבצעים; התוצאה ל-register<br>
+└──────  PC מתקדם לפקודה הבאה, חוזר
+</div>
+
+<h3>Instructions ו-ISA</h3>
+<p>ה-CPU מבין קבוצה מוגדרת של פקודות פשוטות — ה-<strong>Instruction Set Architecture (ISA)</strong>. אלה פקודות אטומיות כמו "טען ערך מזיכרון ל-register", "חבר שני registers", "קפוץ לכתובת". שתי משפחות עיקריות:</p>
+<ul>
+<li><strong>x86</strong> (Intel/AMD) — CISC, פקודות מורכבות. שולט ב-desktops/servers.</li>
+<li><strong>ARM</strong> — RISC, פקודות פשוטות וחסכוניות בחשמל. שולט במובייל, ובעלייה בשרתים (Apple Silicon, AWS Graviton).</li>
+</ul>
+<p>כל שורת קוד שלך הופכת בסוף לרצף של פקודות ISA. למשל <code>x = a + b</code> ≈ "טען a ל-register, טען b ל-register, ALU מחבר, שמור תוצאה". <strong>Assembly</strong> הוא ייצוג קריא-לאדם של פקודות ה-ISA.</p>
+
+<blockquote>
+<p><strong>למה אכפת לך:</strong> אתה לא תכתוב assembly, אבל ההבנה ש<strong>כל פעולה מתפרקת לפקודות זעירות שרצות ב-cycles</strong> מסבירה ביצועים. פעולה שנראית "אחת" בקוד (למשל גישה ל-property של object) יכולה להיות עשרות פקודות. וזה בסיס להבנת ה-cache (פרק 6) וה-atomics (פרק 17) — "פעולה אטומית" זה בדיוק שאלה של כמה פקודות CPU היא לוקחת.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s5">5. Pipeline ו-CPU מודרני</h2>
+
+<p>אם ה-CPU היה עושה fetch-decode-execute אחד בכל פעם עד הסוף, הוא היה מבזבז זמן — בזמן ש-ALU עובד, יחידת ה-fetch בטלה. CPUs מודרניים משתמשים בטריקים מתוחכמים כדי לנצל כל cycle.</p>
+
+<h3>Pipelining — קו ייצור</h3>
+<p>כמו קו ייצור במפעל: בזמן שפקודה אחת ב-execute, הבאה כבר ב-decode, והשלישית ב-fetch — <strong>במקביל</strong>. במקום שכל פקודה תחכה לסיום המלא של הקודמת, הן "זורמות" בקו:</p>
+<div class="flow">
+בלי pipeline:  [F][D][E]        [F][D][E]        (פקודה, ואז הבאה)<br>
+עם pipeline:   [F][D][E]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[F][D][E]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← חופפות! פי כמה throughput<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[F][D][E]
+</div>
+
+<h3>Hazards — מה שמשבש את ה-pipeline</h3>
+<p>ה-pipeline נשבר כשפקודה תלויה בתוצאה של קודמתה שעוד לא הסתיימה, או כשיש <strong>branch</strong> (if/loop) — ה-CPU לא יודע איזו פקודה באה אחרי ה-if עד שהוא מחשב את התנאי. וזה מוביל לטריק המדהים הבא.</p>
+
+<h3>Branch Prediction ו-Speculative Execution</h3>
+<blockquote>
+<p>במקום לחכות לתוצאת ה-if, ה-CPU <strong>מנחש</strong> לאיזה כיוון ה-branch ילך (על סמך היסטוריה — "בפעמים הקודמות הלולאה המשיכה") וממשיך להריץ באופן <strong>ספקולטיבי</strong>. אם ניחש נכון — חסך זמן. אם טעה — זורק את העבודה ומתחיל מחדש (branch misprediction, יקר). מנבאי ה-branch המודרניים מדויקים ב-~95%+. </p>
+<p><strong>למה אכפת לך:</strong> זה מסביר תופעה מפתיעה — <strong>קוד שמעבד מערך ממוין מהיר יותר מקוד על מערך לא-ממוין</strong>, כי ה-branch prediction מצליח יותר כשהדפוס צפוי. וזה גם הבסיס לפרצות אבטחה מפורסמות (Spectre/Meltdown) שניצלו את ה-speculative execution.</p>
+</blockquote>
+
+<h3>Superscalar ו-Out-of-Order</h3>
+<p>CPUs מודרניים הם <strong>superscalar</strong> (כמה ALUs — מריצים כמה פקודות בו-זמנית ממש) ו-<strong>out-of-order</strong> (מריצים פקודות לא לפי הסדר בקוד, אלא לפי מה שמוכן, כל עוד התוצאה נכונה). זו הסיבה ש"מספר הפקודות" לא שווה ל"זמן" — CPU מודרני עושה הרבה במקביל. גם <strong>hyper-threading</strong> (core פיזי אחד שנראה כשניים) הוא ניצול של ה-idle בזמן שפקודה מחכה לזיכרון.</p>
+
+<hr>
+
+<h2 id="s6">6. Memory Hierarchy ו-Cache</h2>
+
+<p>זה אולי הפרק הכי חשוב לביצועים בפועל. ה-CPU מהיר בצורה מסחררת, אבל ה-RAM <strong>איטי בהשוואה</strong> — וכל הפער הזה מנוהל על ידי היררכיית זיכרון חכמה.</p>
+
+<h3>הבעיה: פער המהירות</h3>
+<p>ה-CPU יכול לבצע פקודה ב-cycle (~0.3 ננו-שנייה). אבל גישה ל-RAM לוקחת ~100 ננו-שניות — <strong>פי מאות</strong>. אם ה-CPU היה מחכה ל-RAM בכל גישה, הוא היה בטל 99% מהזמן. הפתרון: <strong>caches</strong> — זיכרונות קטנים ומהירים קרוב ל-CPU.</p>
+
+<h3>ההיררכיה</h3>
+<table>
+<tr><th>רמה</th><th>גודל</th><th>מהירות (בערך)</th></tr>
+<tr><td>Registers</td><td>~KB (עשרות)</td><td>1 cycle</td></tr>
+<tr><td>L1 Cache</td><td>~32-64 KB</td><td>~4 cycles</td></tr>
+<tr><td>L2 Cache</td><td>~256KB-1MB</td><td>~12 cycles</td></tr>
+<tr><td>L3 Cache</td><td>~8-32 MB</td><td>~40 cycles</td></tr>
+<tr><td>RAM</td><td>~GB</td><td>~100-300 cycles</td></tr>
+<tr><td>SSD/Disk</td><td>~TB</td><td>~10,000-1M+ cycles</td></tr>
+</table>
+<p>ככל שיורדים — גדול יותר וזול יותר, אבל איטי יותר בסדרי גודל. ה-CPU מחפש נתון קודם ב-L1, ואם אין (cache miss) יורד ל-L2, L3, ולבסוף RAM — כל רמה יקרה יותר.</p>
+
+<h3>Cache Lines ו-Locality — הרעיון המרכזי</h3>
+<blockquote>
+<p>ה-cache לא מביא byte בודד — הוא מביא <strong>cache line</strong> שלם (בד"כ 64 bytes) בכל פעם. הרעיון מבוסס על שני עקרונות של <strong>locality</strong>:</p>
+<ul>
+<li><strong>Temporal locality</strong> — אם ניגשת לנתון, כנראה תיגש אליו שוב בקרוב (לכן שומרים אותו ב-cache).</li>
+<li><strong>Spatial locality</strong> — אם ניגשת לכתובת, כנראה תיגש לשכנות בקרוב (לכן מביאים line שלם).</li>
+</ul>
+</blockquote>
+
+<h3>למה זה מסביר Array מול Linked List</h3>
+<blockquote>
+<p>שאלה קלאסית: למה מעבר על array מהיר <em>בהרבה</em> ממעבר על linked list, גם כשה-Big-O זהה (O(n))? <strong>Cache locality.</strong> array הוא רצף <em>רציף</em> בזיכרון — כשה-CPU מביא cache line, הוא מקבל את האיברים הבאים "בחינם" (spatial locality). linked list פזור בזיכרון — כל node במקום אחר, כל גישה היא cache miss שיורד ל-RAM. בפועל, array יכול להיות פי 10+ מהיר, למרות אותו Big-O. <strong>זה הלקח הכי חשוב: Big-O מתעלם מה-cache, אבל בעולם האמיתי ה-cache שולט.</strong> זו הסיבה שמבני נתונים "cache-friendly" (arrays, contiguous memory) מנצחים בפועל.</p>
+</blockquote>
+
+<p>נגזרת מעשית: <strong>false sharing</strong> — שני threads שכותבים למשתנים שונים שנמצאים באותו cache line גורמים ל-cache line "לקפוץ" ביניהם ומאטים דרמטית, גם שאין ביניהם קשר לוגי. זה מלכוד concurrency שנחזור אליו.</p>
+
+<hr>
+
+<div class="part">חלק ג' — Memory Management</div>
+
+<h2 id="s7">7. RAM ו-Addressing</h2>
+
+<p>RAM (Random Access Memory) הוא הזיכרון הראשי — כאן חיים התוכניות והנתונים בזמן ריצה. "Random Access" = אפשר לגשת לכל כתובת באותה מהירות (בניגוד לדיסק/טייפ סדרתי).</p>
+
+<h3>המודל: מערך ענק של bytes</h3>
+<p>חשוב על RAM כמערך ענק של תאים, כל אחד בגודל byte, כל אחד עם <strong>כתובת</strong> ייחודית (מספר, שמיוצג ב-hex — <code>0x7FFF...</code>). ה-CPU קורא/כותב לפי כתובת: "תן לי את ה-byte בכתובת X". זהו — כל המורכבות של structs, objects, arrays בנויה מעל המודל הפשוט הזה.</p>
+
+<div class="flow">
+כתובת:  0x00  0x01  0x02  0x03  0x04 ...<br>
+ערך:    [72]  [101] [108] [108] [111]   ← "Hello" ב-ASCII
+</div>
+
+<h3>Word size — 32 מול 64 bit</h3>
+<p>"מחשב 64-bit" אומר שהכתובות הן 64 bits — מה שמאפשר לפנות ל-2⁶⁴ כתובות (הרבה יותר ממה שקיים). 32-bit הוגבל ל-2³² = ~4GB RAM בלבד, וזו הסיבה שעברנו ל-64-bit. גם ה-registers ורוחב הנתונים הבסיסי הם 64 bits.</p>
+
+<hr>
+
+<h2 id="s8">8. Stack מול Heap</h2>
+
+<p>כשתוכנית רצה, הזיכרון שלה מחולק לאזורים. שניים מהם קריטיים להבין — <strong>Stack</strong> ו-<strong>Heap</strong> — כי הם מסבירים איך משתנים חיים, למה יש stack overflow, ואיך GC עובד.</p>
+
+<h3>ה-Stack — מהיר ומסודר</h3>
+<p>ה-stack מנהל את <strong>קריאות הפונקציות</strong> והמשתנים המקומיים. הוא עובד LIFO (Last In First Out) — כמו ערימת צלחות. כל קריאה לפונקציה דוחפת <strong>stack frame</strong> חדש (הפרמטרים, המשתנים המקומיים, כתובת החזרה), וכשהפונקציה מסתיימת — ה-frame נזרק (pop):</p>
+<div class="flow">
+function a() { b(); }<br>
+function b() { c(); }<br>
+<br>
+Stack (גדל למטה):<br>
+│ frame של a │  ← נדחף כש-a נקראת<br>
+│ frame של b │  ← נדחף כש-b נקראת<br>
+│ frame של c │  ← נדחף כש-c נקראת, נזרק כשהיא מסתיימת
+</div>
+<p>מאפיינים: <strong>מהיר מאוד</strong> (רק מזיז מצביע), אוטומטי (מתנקה לבד כשפונקציה מסתיימת), אבל <strong>מוגבל בגודל</strong> וקבוע.</p>
+
+<h3>Stack Overflow — עכשיו זה הגיוני</h3>
+<p>זוכר את השם של האתר? <strong>stack overflow</strong> הוא כשה-stack מתמלא — בדרך כלל מ-<strong>רקורסיה אינסופית</strong>: כל קריאה דוחפת frame, ובלי תנאי עצירה ה-stack נגמר וקורס. עכשיו אתה מבין <em>למה</em> — לא סתם "יותר מדי רקורסיה", אלא מיצוי פיזי של אזור ה-stack.</p>
+
+<h3>ה-Heap — גמיש ומנוהל</h3>
+<p>ה-heap הוא לאחסון <strong>דינמי</strong> — objects, arrays, כל דבר שגודלו לא ידוע מראש או שצריך לחיות מעבר לפונקציה שיצרה אותו. הקצאה ב-heap גמישה (כל גודל, בכל זמן) אבל <strong>איטית יותר</strong> (צריך למצוא מקום פנוי) ו<strong>דורשת ניהול</strong> — מי משחרר את הזיכרון כשלא צריך? (פרק 10).</p>
+
+<h3>ההבחנה שמסבירה value מול reference</h3>
+<blockquote>
+<p>זוכר value מול reference ממדריך JavaScript? הנה השורש. ב-JS (וברוב השפות), <strong>primitives קטנים חיים ב-stack</strong> (מהיר, מועתק by value), <strong>ו-objects חיים ב-heap</strong> — והמשתנה ב-stack מחזיק רק <strong>pointer</strong> (כתובת) ל-object ב-heap. לכן:</p>
+<pre><code>let a = 5;         // 5 ב-stack
+let obj = {...};   // ה-object ב-heap, המשתנה obj מחזיק pointer אליו
+let obj2 = obj;    // מעתיק את ה-pointer — שניהם מצביעים לאותו object ב-heap!</code></pre>
+<p>זו הסיבה ש"העתקת object" משתפת reference — העתקת ה-pointer, לא ה-object. עכשיו זה לא "כלל שרירותי של JS" אלא תוצאה ישירה של איך stack ו-heap עובדים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Virtual Memory</h2>
+
+<p>אחד הרעיונות הכי חכמים במערכות הפעלה, ופותר כמה בעיות בבת אחת. הרעיון: כל תהליך חושב שיש לו את <strong>כל הזיכרון לעצמו</strong>, ברצף נקי מכתובת 0 — אבל זו אשליה שה-OS וה-CPU יוצרים.</p>
+
+<h3>הבעיה שהוא פותר</h3>
+<p>בלי virtual memory: תהליכים היו צריכים לחלוק את ה-RAM הפיזי ישירות, לדעת אילו כתובות פנויות, ולהיזהר לא לדרוס זה את זה. כאוס ואבטחה אפסית. Virtual memory נותן לכל תהליך <strong>address space וירטואלי משלו</strong> — מבודד ופרטי.</p>
+
+<h3>איך זה עובד: Pages ו-Page Table</h3>
+<p>הזיכרון הווירטואלי מחולק ל-<strong>pages</strong> (בד"כ 4KB), והפיזי ל-<strong>frames</strong> באותו גודל. ה-<strong>page table</strong> ממפה כל virtual page ל-physical frame. כשהתוכנית ניגשת לכתובת וירטואלית, ה-<strong>MMU</strong> (Memory Management Unit, בחומרה) מתרגם אותה לכתובת פיזית דרך ה-page table:</p>
+<div class="flow">
+כתובת וירטואלית (מה שהתוכנית רואה)<br>
+&nbsp;&nbsp;↓ MMU + Page Table (תרגום)<br>
+כתובת פיזית (איפה זה באמת ב-RAM)
+</div>
+
+<h3>TLB — cache לתרגום</h3>
+<p>תרגום בכל גישה יקר, אז יש <strong>TLB (Translation Lookaside Buffer)</strong> — cache של תרגומים אחרונים בתוך ה-CPU. TLB hit = תרגום מיידי. זה עוד רובד cache, הפעם לכתובות.</p>
+
+<h3>Paging / Swapping — RAM וירטואלי גדול מהפיזי</h3>
+<blockquote>
+<p>הקסם: virtual memory מאפשר לתוכניות להשתמש ביותר זיכרון ממה שיש פיזית. pages שלא בשימוש כרגע "מפונים" ל-<strong>disk</strong> (swap), ומוחזרים ל-RAM כשצריך. כשתוכנית ניגשת ל-page שלא ב-RAM — <strong>page fault</strong>: ה-OS עוצר, מביא את ה-page מהדיסק, וממשיך. זה שקוף לתוכנית, אבל <strong>איטי מאוד</strong> (דיסק פי אלפים מ-RAM). "המחשב נתקע וה-disk עובד קשה" = יותר מדי swapping ("thrashing"). זו הסיבה שחוסר RAM מאט הכל דרמטית — לא סתם "נגמר זיכרון", אלא swapping מתמיד לדיסק.</p>
+</blockquote>
+
+<h3>למה זה חשוב לך</h3>
+<ul>
+<li><strong>בידוד ואבטחה</strong> — תהליך לא יכול לגשת לזיכרון של תהליך אחר. הבסיס לאבטחת OS (וזוכר containers ממדריך DevOps? זה נשען על זה).</li>
+<li><strong>"out of memory"</strong> — עכשיו אתה מבין: זה גם RAM פיזי וגם ניהול ה-virtual memory.</li>
+<li><strong>ביצועים</strong> — page faults ו-TLB misses הם עלויות נסתרות בקוד memory-heavy.</li>
+</ul>
+
+<hr>
+
+<h2 id="s10">10. Pointers, References ו-Garbage Collection</h2>
+
+<p>השאלה הגדולה של ה-heap: מי משחרר זיכרון שכבר לא צריך? יש שתי גישות עולמיות, וההבחנה ביניהן מגדירה שפות שלמות.</p>
+
+<h3>Pointers ו-References</h3>
+<p><strong>Pointer</strong> הוא משתנה שמחזיק <strong>כתובת זיכרון</strong> של ערך אחר (ב-heap בד"כ). זה בדיוק מה שראינו — משתנה object ב-JS מחזיק pointer ל-heap. שפות כמו C נותנות גישה ישירה ל-pointers (חזק ומסוכן); שפות מנוהלות (JS, Python, Java) מסתירות אותם מאחורי "references" אבל המנגנון זהה.</p>
+
+<h3>הבעיה: Memory Leaks ו-Dangling Pointers</h3>
+<ul>
+<li><strong>Memory leak</strong> — הקצאת זיכרון ב-heap ואי-שחרורו כשלא צריך. מצטבר עד קריסה (זוכר ממדריך Node?).</li>
+<li><strong>Dangling pointer</strong> — pointer שמצביע לזיכרון ששוחרר כבר. גישה אליו = באג חמור/קריסה/פרצה.</li>
+</ul>
+
+<h3>שתי גישות לשחרור זיכרון</h3>
+
+<h4>1. ניהול ידני (Manual) — C, C++</h4>
+<p>המתכנת אחראי: <code>malloc</code> להקצות, <code>free</code> לשחרר. <strong>שליטה מלאה וביצועים מקסימליים</strong>, אבל <strong>מסוכן</strong> — שכחת free = leak, free כפול/מוקדם = קריסה. מקור עצום לבאגים ופרצות.</p>
+
+<h4>2. Garbage Collection (GC) — JS, Python, Java, Go</h4>
+<p>ה-runtime מנהל את הזיכרון אוטומטית — מזהה objects ש"אף אחד לא מצביע אליהם יותר" ומשחרר אותם. <strong>בטוח ונוח</strong> (אין leaks קלאסיים), אבל <strong>עולה בביצועים</strong> ובשליטה.</p>
+
+<h3>איך GC עובד — האלגוריתמים</h3>
+<blockquote>
+<p><strong>Reference Counting</strong> — כל object סופר כמה מצביעים אליו; כשמגיע ל-0, משוחרר. פשוט, אבל נכשל ב-<strong>circular references</strong> (A מצביע ל-B, B ל-A — שניהם ב-count 1 לנצח).</p>
+<p><strong>Mark-and-Sweep</strong> (מה ש-JS/Java משתמשים בו) — מתחילים מ"שורשים" (globals, stack) ו"מסמנים" כל object שאפשר להגיע אליו. מה שלא סומן — זבל, נמחק. פותר circular references.</p>
+<p><strong>Generational GC</strong> — אופטימיזציה מבוססת-תצפית: "רוב ה-objects מתים צעירים". מחלקים ל-young/old generations, וסורקים את ה-young הרבה יותר תדיר (זול). זה מה ש-V8 (Node) עושה.</p>
+</blockquote>
+
+<h3>ה-tradeoff שחשוב לך: Stop-the-World</h3>
+<blockquote>
+<p>ה-GC לפעמים חייב <strong>לעצור את כל התוכנית</strong> ("stop-the-world pause") כדי לסרוק זיכרון — וזה גורם ל-<strong>latency spikes</strong>. באפליקציה עם GC (Node, Java), אתה עלול לראות "קפיצות" ב-p99 latency שהן GC pauses. זו הסיבה ש-GC tuning חשוב לשירותים רגישי-latency, ולמה שפות בלי GC (Rust, C++) נבחרות ל-systems programming קריטי. Rust מיוחדת — היא נותנת בטיחות זיכרון <em>בלי</em> GC, דרך מערכת "ownership" שנאכפת בקומפילציה. זה למה Rust פופולרית לתשתית ביצועים. עכשיו אתה מבין את ה-tradeoff שמאחורי בחירת שפה: ידני (מהיר, מסוכן) מול GC (בטוח, pauses) מול Rust (בטוח, מהיר, עקומת למידה).</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ד' — Operating Systems</div>
+
+<h2 id="s11">11. Kernel, User Mode ו-System Calls</h2>
+
+<p>מערכת ההפעלה (OS) היא השכבה בין החומרה לתוכניות שלך. היא מנהלת את הכל — CPU, זיכרון, קבצים, רשת — ומאפשרת להרבה תוכניות לחלוק מחשב אחד בבטחה.</p>
+
+<h3>ה-Kernel — הליבה</h3>
+<p>ה-<strong>kernel</strong> הוא הלב של ה-OS — הקוד שרץ עם הרשאות מלאות ומנהל את החומרה: scheduling של תהליכים, ניהול זיכרון (virtual memory מפרק 9), גישה לקבצים ולרשת. הכל עובר דרכו.</p>
+
+<h3>User Mode מול Kernel Mode — ההפרדה הקריטית</h3>
+<blockquote>
+<p>ה-CPU רץ בשני מצבים (rings), וזו אחת ההגנות החשובות ביותר:</p>
+<ul>
+<li><strong>User Mode</strong> — הקוד שלך רץ כאן, עם הרשאות <strong>מוגבלות</strong>. לא יכול לגשת ישירות לחומרה, לזיכרון של תהליכים אחרים, או לפקודות מסוכנות. מבודד.</li>
+<li><strong>Kernel Mode</strong> — ה-kernel רץ כאן, עם הרשאות <strong>מלאות</strong> — גישה לכל החומרה והזיכרון.</li>
+</ul>
+<p>למה זה קריטי: אם כל תוכנית יכלה לגשת ישירות לחומרה, באג אחד או תוכנה זדונית היו מפילים את כל המערכת. ההפרדה מבטיחה שתוכנית פוגעת יכולה לקרוס — בלי להפיל את ה-OS או תוכניות אחרות.</p>
+</blockquote>
+
+<h3>System Calls — הגשר</h3>
+<p>אבל התוכנית שלך <em>צריכה</em> לקרוא קבצים, לשלוח ברשת, להקצות זיכרון — כל אלה דורשים kernel mode. הפתרון: <strong>system call (syscall)</strong> — בקשה מבוקרת מהתוכנית ל-kernel לבצע פעולה מיוחסת בשמה:</p>
+<div class="flow">
+הקוד שלך (User Mode)<br>
+&nbsp;&nbsp;↓ syscall (למשל read, write, open, socket)<br>
+מעבר ל-Kernel Mode (context switch מבוקר)<br>
+&nbsp;&nbsp;↓ ה-kernel מבצע את הפעולה על החומרה<br>
+חוזר עם התוצאה ל-User Mode
+</div>
+
+<blockquote>
+<p><strong>למה זה חשוב לך מעשית:</strong> כל <code>fs.readFile</code>, <code>fetch</code>, או פתיחת socket בקוד שלך מתורגם בסוף ל-syscall. ו-<strong>syscall הוא יקר</strong> — המעבר בין user ל-kernel mode עולה מאות cycles. זו הסיבה ש-batching (קריאה אחת גדולה במקום אלף קטנות) וש-buffering משפרים ביצועים דרמטית. וזו הבסיס להבנת מודלי ה-I/O (פרק 19) — כל השאלה של blocking מול async היא <em>איך</em> מבצעים את ה-syscalls של ה-I/O.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Processes מול Threads</h2>
+
+<p>ההבחנה הזו היא מהחשובות ב-systems, וחוזרת ישירות למדריכי Node ו-System Design. שניהם דרכים ל"הרצה במקביל", אבל שונים מהותית.</p>
+
+<h3>Process — תוכנית בריצה, מבודדת</h3>
+<p><strong>Process</strong> הוא instance של תוכנית רצה, עם <strong>address space וירטואלי משלו</strong> (זוכר virtual memory?), משאבים משלו, ובידוד מלא מ-processes אחרים. שני processes לא יכולים לגשת לזיכרון זה של זה (בלי IPC מפורש — פרק 14).</p>
+
+<h3>Thread — "חוט ביצוע" בתוך process</h3>
+<p><strong>Thread</strong> הוא רצף ביצוע בתוך process. process יכול להכיל כמה threads, וכולם <strong>חולקים את אותו address space</strong> — אותו heap, אותם משתנים גלובליים. לכל thread יש רק stack משלו ו-registers משלו.</p>
+
+<h3>מה משותף ומה נפרד — הטבלה שמסבירה הכל</h3>
+<table>
+<tr><th></th><th>Processes</th><th>Threads (באותו process)</th></tr>
+<tr><td>Address space</td><td>נפרד (מבודד)</td><td>משותף!</td></tr>
+<tr><td>Heap / globals</td><td>נפרד</td><td>משותף</td></tr>
+<tr><td>Stack</td><td>נפרד</td><td>נפרד לכל thread</td></tr>
+<tr><td>תקשורת</td><td>IPC (יקר)</td><td>זיכרון משותף ישיר (מהיר)</td></tr>
+<tr><td>יצירה</td><td>יקרה</td><td>זולה</td></tr>
+<tr><td>כשל</td><td>מבודד (אחד נופל, השאר חיים)</td><td>thread שקורס עלול להפיל את כל ה-process</td></tr>
+</table>
+
+<blockquote>
+<p><strong>ההשלכה הכי חשובה:</strong> threads חולקים זיכרון — וזה בדיוק גם היתרון (תקשורת מהירה) וגם המקור לכל <strong>בעיות ה-concurrency</strong> (חלק ה'). כששני threads כותבים לאותו משתנה בו-זמנית — race condition. processes לא סובלים מזה (בידוד), אבל תקשורת ביניהם יקרה. זה ה-tradeoff המרכזי.</p>
+<p><strong>חיבור למדריך Node:</strong> זוכר ש-Node הוא single-threaded? עכשיו מדויק — הקוד שלך רץ על thread אחד (אין race conditions בקוד שלך!), אבל worker threads וה-libuv thread pool כן קיימים מתחת. וזוכר cluster ו-multiple containers ממדריך System Design? זה בחירה ב-<strong>processes</strong> (מבודדים, בטוחים) על פני threads — למה Node מעדיף לסקיילר ב-processes.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13">13. Scheduler ו-Context Switch</h2>
+
+<p>יש לך 8 cores אבל מאות תהליכים ו-threads. איך כולם "רצים במקביל"? הם לא באמת — ה-<strong>scheduler</strong> מחליף ביניהם מהר כל כך שזה נראה בו-זמני.</p>
+
+<h3>Concurrency מול Parallelism — הבחנה חשובה</h3>
+<blockquote>
+<p>שני מושגים שמבלבלים: <strong>Concurrency</strong> = לנהל כמה משימות שמתקדמות "בו-זמנית" על ידי החלפה מהירה (גם על core אחד). <strong>Parallelism</strong> = כמה משימות רצות <em>ממש</em> בו-זמנית (על כמה cores). אנלוגיה: concurrency = ברמן אחד שמטפל בכמה הזמנות לסירוגין; parallelism = כמה ברמנים. ה-scheduler נותן concurrency; כמה cores נותנים parallelism.</p>
+</blockquote>
+
+<h3>ה-Scheduler — מחלק את ה-CPU</h3>
+<p>ה-scheduler של ה-kernel מחליט איזה thread רץ על איזה core, ולכמה זמן. הוא נותן לכל thread <strong>time slice</strong> (quantum, ~מילישניות), ואז מעביר לבא. זה <strong>preemptive</strong> — ה-OS יכול "לחטוף" את ה-CPU מ-thread באמצע (בניגוד ל-cooperative, שם thread צריך "לוותר" מרצונו — מסוכן, כי thread תקוע מקפיא הכל).</p>
+
+<h3>Context Switch — ההחלפה, והמחיר שלה</h3>
+<blockquote>
+<p>כשה-scheduler מחליף thread, הוא עושה <strong>context switch</strong>: שומר את המצב המלא של ה-thread הנוכחי (registers, PC, stack pointer) וטוען את המצב של הבא. וזה <strong>יקר</strong>: לא רק שמירת/טעינת registers, אלא גם ה-<strong>cache וה-TLB "מתקררים"</strong> — ה-thread החדש לא נמצא ב-cache, אז הרבה cache misses עד שהוא "מתחמם". context switch עולה ~מיקרו-שניות, אבל כשקורה אלפי פעמים בשנייה — מצטבר.</p>
+<p><strong>למה זה חשוב לך:</strong> זו הסיבה ש<strong>יותר threads לא תמיד = יותר מהיר</strong>. יותר מדי threads = יותר context switches = יותר overhead ופחות תפוקה אמיתית ("thrashing"). וזו הסיבה העמוקה שמאחורי המודל של Node — <strong>thread אחד עם event loop נמנע מ-context switches</strong> ומ-overhead של threads, ולכן יעיל מאוד ל-I/O. עכשיו אתה מבין <em>למה</em> single-threaded + async מנצח thread-per-request לעומסי I/O.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. IPC — תקשורת בין תהליכים</h2>
+
+<p>Processes מבודדים (זוכר? address space נפרד) — אבל לפעמים הם צריכים לתקשר. <strong>IPC (Inter-Process Communication)</strong> הוא מנגנוני התקשורת ביניהם. כל אחד עם tradeoffs.</p>
+
+<h3>המנגנונים העיקריים</h3>
+<table>
+<tr><th>מנגנון</th><th>מה זה</th><th>מתי</th></tr>
+<tr><td><strong>Pipes</strong></td><td>צינור חד-כיווני בין תהליכים (הפלט של אחד = הקלט של השני)</td><td><code>ls | grep</code> ב-shell (זוכר ממדריך DevOps?)</td></tr>
+<tr><td><strong>Shared Memory</strong></td><td>אזור זיכרון שכמה processes ממפים — הכי מהיר</td><td>נתונים גדולים, ביצועים</td></tr>
+<tr><td><strong>Message Passing</strong></td><td>שליחת הודעות דרך ה-kernel</td><td>מבנה נקי, פחות באגים</td></tr>
+<tr><td><strong>Sockets</strong></td><td>תקשורת דרך הרשת (או מקומית)</td><td>בין מכונות (זוכר Networking?)</td></tr>
+<tr><td><strong>Signals</strong></td><td>התראה אסינכרונית (SIGTERM, SIGKILL)</td><td>graceful shutdown (זוכר Node?)</td></tr>
+</table>
+
+<h3>ה-tradeoff המרכזי</h3>
+<blockquote>
+<p><strong>Shared memory</strong> הכי מהיר (גישה ישירה לזיכרון, בלי kernel) — אבל דורש סנכרון ידני (locks — חלק ה'!) כי כמה processes נוגעים באותו זיכרון. <strong>Message passing</strong> איטי יותר (עובר דרך ה-kernel, מעתיק נתונים) — אבל בטוח יותר (אין זיכרון משותף = אין race conditions). זה tradeoff שחוזר לאורך כל ה-systems: <strong>shared state מהיר אבל מסוכן, message passing בטוח אבל איטי.</strong> (זוכר ממדריך System Design — message queues בין microservices? זה IPC בקנה מידה של רשת. אותו רעיון, שכבה גבוהה יותר).</p>
+</blockquote>
+
+<p>הבחנה יפה: <strong>Sockets</strong> הם IPC שעובד גם בין processes על אותה מכונה וגם בין מכונות ברשת — זה מה שמאחד את המדריך הזה עם מדריך Networking. HTTP request הוא בסוף socket, שהוא syscall, שעובר ל-kernel. הכל מתחבר.</p>
+
+<hr>
+
+<div class="part">חלק ה' — Concurrency &amp; Synchronization</div>
+
+<h2 id="s15">15. הבעיה — Race Conditions ו-Critical Sections</h2>
+
+<p>הגענו לאחד הנושאים הקשים בכל התוכנה. concurrency — כמה threads שרצים בו-זמנית וחולקים זיכרון (זוכר פרק 12?) — יוצר בעיות שקשה מאוד לדבג, כי הן <strong>לא-דטרמיניסטיות</strong> (תלויות בתזמון).</p>
+
+<h3>הבעיה בבסיס: אין אטומיות</h3>
+<blockquote>
+<p>פעולה שנראית "אחת" בקוד היא בעצם כמה פקודות CPU (זוכר פרק 4?). <code>count++</code> הוא לא אטומי — הוא שלוש פעולות: <strong>קרא</strong> את count, <strong>הוסף</strong> 1, <strong>כתוב</strong> בחזרה. וכאן הבעיה:</p>
+<pre><code>count = 5;
+// Thread A ו-Thread B מריצים count++ בו-זמנית:
+Thread A: קורא count (5)
+Thread B: קורא count (5)      ← עדיין 5! A לא סיים לכתוב
+Thread A: מחשב 6, כותב 6
+Thread B: מחשב 6, כותב 6      ← דרס!
+// התוצאה: 6, אבל היה צריך להיות 7! אבד עדכון.</code></pre>
+<p>זה <strong>Race Condition</strong> — התוצאה תלויה ב"מרוץ" בין ה-threads, בתזמון המדויק שמשתנה מריצה לריצה. לפעמים עובד, לפעמים לא — הסיוט של הדיבוג.</p>
+</blockquote>
+
+<h3>Critical Section</h3>
+<p>ה-<strong>critical section</strong> הוא קטע הקוד שניגש למשאב משותף (למשל <code>count++</code>) ו<strong>חייב לרוץ בבלעדיות</strong> — רק thread אחד בכל פעם. כל הפתרונות (locks וכו') הם דרכים להבטיח את הבלעדיות הזו. המושג המרכזי: <strong>mutual exclusion</strong> — הדרה הדדית, רק אחד בפנים.</p>
+
+<blockquote>
+<p><strong>למה זה חשוב לך גם ב-Node:</strong> אמנם הקוד שלך ב-Node single-threaded (אין race conditions ברמת ה-CPU), אבל race conditions <em>לוגיות</em> קורות גם שם — למשל, שתי בקשות אסינכרוניות שקוראות-משנות-כותבות את אותה שורה ב-DB (זוכר transactions ו-<code>SELECT FOR UPDATE</code> ממדריך SQL?). ה-DB פותר את זה עם locks — בדיוק המנגנונים כאן, שכבה אחת למעלה. הבנת ה-concurrency ברמת ה-CPU מסבירה למה isolation levels קיימים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s16">16. Locks — Mutex, Semaphore, RW Lock, Condition Variables</h2>
+
+<p>הכלים לאכוף mutual exclusion ולסנכרן threads. כל אחד לתרחיש שונה.</p>
+
+<h3>Mutex — המנעול הבסיסי</h3>
+<p><strong>Mutex</strong> (MUTual EXclusion) — מנעול שרק thread אחד יכול "להחזיק" בכל רגע. thread נועל לפני ה-critical section, ומשחרר אחרי. thread אחר שמנסה לנעול — <strong>חוסם וממתין</strong> עד השחרור:</p>
+<pre><code>mutex.lock();       // אם תפוס — ממתין
+count++;            // critical section — בטוח, רק אני כאן
+mutex.unlock();     // משחרר, thread ממתין יכול להיכנס</code></pre>
+<p>זה פותר את ה-race מפרק 15: רק thread אחד נכנס ל-<code>count++</code> בכל פעם. המחיר: threads ממתינים (serialization) — פחות מקביליות.</p>
+
+<h3>Semaphore — מונה של הרשאות</h3>
+<p><strong>Semaphore</strong> מכליל את ה-mutex: במקום "אחד בלבד", הוא מרשה עד <strong>N</strong> בו-זמנית. יש לו מונה — כל thread שנכנס מוריד 1, כל יציאה מעלה 1; ב-0 הבאים ממתינים. שימוש קלאסי: <strong>connection pool</strong> (זוכר ממדריך Databases?) — "עד 10 חיבורים בו-זמנית". mutex הוא בעצם semaphore עם N=1.</p>
+
+<h3>Read-Write Lock — אופטימיזציה חכמה</h3>
+<blockquote>
+<p>תובנה: <strong>קריאות מקבילות בטוחות</strong> — רק כתיבה מסוכנת. אז למה לנעול קוראים אחד את השני? <strong>RW Lock</strong> מרשה: <strong>כמה קוראים בו-זמנית</strong>, אבל <strong>כותב אחד בלעדי</strong> (חוסם את כולם). מושלם לנתונים ש<strong>נקראים הרבה ונכתבים מעט</strong> (config, cache) — שיפור ביצועים ענק מול mutex רגיל שהיה מסרסר גם קריאות. (זוכר read replicas ממדריך System Design? אותו עיקרון — קריאות מקבילות, כתיבה מסונכרנת, שכבה גבוהה יותר).</p>
+</blockquote>
+
+<h3>Condition Variables — "המתן עד שתנאי מתקיים"</h3>
+<p>לפעמים thread צריך לחכות ל<strong>תנאי</strong>, לא רק למנעול — למשל, consumer שממתין ש-queue לא יהיה ריק. <strong>Condition variable</strong> מאפשר thread "לישון" עד ש-thread אחר "מעיר" אותו (<code>wait</code> / <code>signal</code>/<code>notify</code>). זה הבסיס לדפוס <strong>producer-consumer</strong>: producer מוסיף ל-queue ו-signals, consumer ישן עד שיש עבודה. יעיל יותר מ-<strong>busy-waiting</strong> (בדיקה בלולאה שמבזבזת CPU).</p>
+
+<h3>Monitor</h3>
+<p><strong>Monitor</strong> הוא הפשטה ברמה גבוהה שעוטפת mutex + condition variables (למשל <code>synchronized</code> ב-Java) — object שכל המתודות שלו מסונכרנות אוטומטית. נוח, פחות מועד לטעויות מ-locks ידניים.</p>
+
+<hr>
+
+<h2 id="s17">17. Atomic Operations, CAS ו-Lock-Free</h2>
+
+<p>locks עובדים, אבל יש להם מחיר — threads ממתינים, ויש overhead. לפעמים אפשר להימנע מהם לגמרי עם <strong>atomic operations</strong>.</p>
+
+<h3>Atomic Operations — פעולות בלתי-ניתנות-לחלוקה</h3>
+<p>פעולה <strong>אטומית</strong> קורית "בבת אחת" מבחינת threads אחרים — אי אפשר לראות אותה באמצע. החומרה מספקת פקודות אטומיות (למשל atomic increment) שעושות read-modify-write כיחידה אחת. <code>count++</code> אטומי פותר את ה-race מפרק 15 <strong>בלי lock</strong> — מהיר יותר, כי אין המתנה.</p>
+
+<h3>CAS — Compare-And-Swap, הבסיס לכל lock-free</h3>
+<blockquote>
+<p><strong>Compare-And-Swap</strong> היא פקודת CPU אטומית שאומרת: "אם הערך בכתובת עדיין X, החלף אותו ל-Y; אחרת, אל תעשה כלום ותגיד לי שנכשלת". באטומיות אחת:</p>
+<pre><code>// פסאודו:  CAS(address, expected, newValue)
+// דפוס lock-free: קרא, חשב, נסה להחליף — ואם מישהו שינה בינתיים, נסה שוב:
+do {
+  old = counter;
+  new = old + 1;
+} while (!CAS(&counter, old, new));   // חזור אם הערך השתנה תחתיך</code></pre>
+<p>זה הבסיס ל-<strong>lock-free algorithms</strong>: במקום לנעול, מנסים לעדכן אטומית, ואם מישהו הקדים — מנסים שוב (retry). היתרון: אין threads שנחסמים לגמרי — המערכת תמיד מתקדמת. זה גם הבסיס ל-optimistic locking ב-DBs (זוכר?) ול-<code>AtomicInteger</code> וכו'.</p>
+</blockquote>
+
+<h3>Memory Barriers — הבעיה הנסתרת</h3>
+<blockquote>
+<p>מלכודת עמוקה: זוכר ש-CPUs מודרניים מבצעים out-of-order (פרק 5) ויש caches נפרדים לכל core (פרק 6)? המשמעות המפחידה: <strong>thread אחד עלול לא לראות מיד כתיבה של thread אחר</strong> — כי הכתיבה תקועה ב-cache של ה-core השני, או שהפקודות סודרו מחדש. <strong>Memory barrier</strong> (fence) היא פקודה שמכריחה סדר ו-visibility — "וודא שכל הכתיבות שלי גלויות לפני שתמשיך". locks ו-atomics כוללים barriers אוטומטית, ולכן הם עובדים. זו הסיבה ש-concurrency "ידני" בלי הכלים הנכונים הוא כמעט בלתי אפשרי לעשות נכון — ולמה כמעט תמיד עדיף להשתמש בפרימיטיבים בדוקים, לא לגלגל בעצמך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s18">18. מפגעי Concurrency — Deadlock, Livelock, Starvation</h2>
+
+<p>locks פותרים races, אבל יוצרים בעיות חדשות משלהם. אלה המפגעים שכל מתכנת concurrency חייב להכיר.</p>
+
+<h3>Deadlock — התקיעה ההדדית</h3>
+<blockquote>
+<p><strong>Deadlock</strong> — שני threads (או יותר) ממתינים זה לזה לנצח. A מחזיק lock 1 ורוצה את 2; B מחזיק lock 2 ורוצה את 1. אף אחד לא משחרר, שניהם תקועים לנצח:</p>
+<pre><code>Thread A: lock(1) ✓ ... רוצה lock(2) — ממתין ל-B
+Thread B: lock(2) ✓ ... רוצה lock(1) — ממתין ל-A
+// שניהם ממתינים זה לזה. תקיעה מוחלטת.</code></pre>
+<p>Deadlock דורש <strong>ארבעה תנאים בו-זמנית</strong> (תנאי Coffman): (1) mutual exclusion, (2) hold-and-wait (מחזיק ומחכה), (3) no preemption (אי אפשר לחטוף lock), (4) circular wait (מעגל המתנה). <strong>שבירת אחד מהם מונעת deadlock.</strong> הפתרון המעשי הנפוץ: שבור את ה-circular wait — <strong>תמיד נעל משאבים באותו סדר גלובלי</strong> (זוכר את העצה הזו ממדריך SQL על deadlocks? הנה השורש שלה).</p>
+</blockquote>
+
+<h3>Livelock — עסוקים אבל לא מתקדמים</h3>
+<p><strong>Livelock</strong> — ה-threads <em>לא</em> תקועים (הם פעילים), אבל לא מתקדמים. כמו שני אנשים במסדרון שכל אחד זז לאותו צד שוב ושוב כדי לפנות דרך לשני — תנועה בלי התקדמות. קורה כשה-threads "מגיבים" זה לזה בלולאה. קשה יותר לזהות מ-deadlock (הם נראים עסוקים).</p>
+
+<h3>Starvation — ה-thread שאף פעם לא מקבל תור</h3>
+<p><strong>Starvation</strong> — thread אחד לא מקבל גישה למשאב לעולם, כי אחרים תמיד "מקדימים" אותו (למשל, כותב שממתין לנצח כי כל הזמן מגיעים קוראים חדשים ב-RW lock). הפתרון: <strong>fairness</strong> — מנגנון שמבטיח שכל thread יקבל תור בסוף (למשל, תור FIFO ל-lock).</p>
+
+<h3>Lock Contention ו-Spinlocks</h3>
+<blockquote>
+<p><strong>Lock Contention</strong> — כשהרבה threads נלחמים על אותו lock, רובם ממתינים והמקביליות נהרסת. זה ה-bottleneck הנפוץ במערכות concurrent. הפתרונות: locks עדינים יותר (lock קטן לכל פריט במקום lock אחד ענק), RW locks, או lock-free.</p>
+<p><strong>Spinlock</strong> — במקום ש-thread "יישן" כשה-lock תפוס (מה שדורש context switch יקר — פרק 13), הוא <strong>"מסתובב" בלולאה</strong> ובודק שוב ושוב עד שמתפנה. יעיל <em>רק</em> כשההמתנה קצרה מאוד (פחות מ-context switch), כי הוא שורף CPU. משתמשים בו בתוך kernels ובקוד ביצועים קריטי. זו דוגמה מושלמת ל-tradeoff: לישון (חוסך CPU, יקר להעיר) מול spin (מבזבז CPU, מיידי).</p>
+</blockquote>
+
+<blockquote>
+<p><strong>הלקח הגדול של כל חלק ה':</strong> concurrency הוא קשה <em>מיסודו</em> — לא כי אתה לא חכם, אלא כי אי-הדטרמיניזם, ה-caches הנפרדים, וה-out-of-order הופכים אותו למלכודת. הכלל המעשי: <strong>הימנע מ-shared mutable state כשאפשר</strong> (זו הסיבה ש-message passing, immutability, ו-single-threaded models כמו Node כל כך פופולריים), וכשאתה חייב state משותף — השתמש בפרימיטיבים בדוקים (locks, atomics), לא תגלגל בעצמך. "shared state בין threads" הוא המקום שבו באגים חיים.</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ו' — I/O והרכבה</div>
+
+<h2 id="s19">19. מודלי I/O — Blocking, Non-Blocking, Multiplexing, Async</h2>
+
+<p>הפרק שמחבר את כל ה-systems ל-Backend שאתה כותב. כל השאלה של "איך Node מטפל באלפי חיבורים על thread אחד" נענית כאן — וזה בעצם על <strong>איך מבצעים syscalls של I/O</strong> (זוכר פרק 11?).</p>
+
+<h3>הבעיה: I/O איטי</h3>
+<p>קריאה מדיסק/רשת איטית בסדרי גודל מה-CPU (זוכר את מספרי ה-latency ממדריך System Design?). השאלה: מה ה-thread עושה בזמן שהוא מחכה ל-I/O? ארבע תשובות, בסדר תחכום עולה.</p>
+
+<h3>1. Blocking I/O — המודל הפשוט</h3>
+<p>ה-thread קורא ל-<code>read()</code> ו<strong>נחסם</strong> — ישן עד שהנתונים מגיעים. פשוט, אבל <strong>bזבזני</strong>: thread לכל חיבור, וכל אחד ישן רוב הזמן. 10,000 חיבורים = 10,000 threads = הרבה זיכרון והרבה context switches (פרק 13). זה המודל הקלאסי (Apache הישן, thread-per-request).</p>
+
+<h3>2. Non-Blocking I/O — "תבדוק ותחזור"</h3>
+<p><code>read()</code> מחזיר מיד — או עם נתונים, או "עוד אין, נסה שוב". ה-thread לא נחסם, אבל עכשיו הוא צריך <strong>לבדוק שוב ושוב</strong> (polling) — מבזבז CPU על בדיקות ריקות. שיפור חלקי.</p>
+
+<h3>3. I/O Multiplexing — הפתרון החכם (epoll/select)</h3>
+<blockquote>
+<p>כאן הקסם. במקום thread לכל חיבור, <strong>thread אחד מנטר אלפי חיבורים בבת אחת</strong> ושואל את ה-kernel: "מבין כל ה-1000 חיבורים האלה, אילו מוכנים עכשיו?". ה-syscalls: <strong>select</strong> (ישן), <strong>poll</strong>, ו-<strong>epoll</strong> (Linux, יעיל) / <strong>kqueue</strong> (BSD/Mac):</p>
+<pre><code>// thread אחד, לולאה אחת, אלפי חיבורים:
+while (true) {
+  ready = epoll_wait(all_connections);   // ה-kernel מחזיר רק את המוכנים
+  for (conn of ready) {
+    handle(conn);                        // טפל רק במה שמוכן
+  }
+}</code></pre>
+<p>ה-thread ישן ב-<code>epoll_wait</code> עד שמשהו מוכן — לא מבזבז CPU, לא thread לכל חיבור. <strong>זה בדיוק ה-event loop.</strong></p>
+</blockquote>
+
+<h3>4. Asynchronous I/O — "תודיע לי כשסיימת"</h3>
+<p>המודל הכי מתקדם: מתחילים פעולת I/O, ממשיכים לעבוד, וה-kernel <strong>מודיע</strong> (callback) כשהיא הסתיימה — כולל העברת הנתונים. (io_uring ב-Linux מודרני).</p>
+
+<h3>איך Node באמת עובד — הכל מתחבר</h3>
+<blockquote>
+<p>עכשיו התמונה המלאה של המודל של Node (ממדריך Node, עם ההסבר העמוק): Node הוא single-threaded עם <strong>event loop</strong> שבנוי על <strong>I/O multiplexing (epoll/kqueue)</strong> דרך libuv. כשאתה עושה <code>fs.readFile</code> או קריאת רשת, Node לא חוסם — הוא רושם את הפעולה ל-kernel וממשיך. כש-ה-kernel מסמן "מוכן" (דרך epoll), ה-callback נכנס לתור ורץ. thread אחד, אלפי חיבורים, כי רובם רק ממתינים ל-I/O והמתנה "לא עולה thread". <strong>זו הסיבה ש-Node מבריק ל-I/O ורע ל-CPU</strong> — CPU כבד חוסם את ה-thread היחיד (זוכר "אל תחסום את ה-event loop"?), אבל I/O הוא בדיוק מה שהמודל בנוי לו. (עבודה שבאמת חוסמת, כמו קריאת קובץ, libuv מריצה ב-thread pool קטן מאחורי הקלעים). עכשיו אתה מבין את המודל מהיסוד — מ-epoll ועד ה-callback שלך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s20">20. Interrupts, DMA ואיך I/O באמת עובד</h2>
+
+<p>ירדנו עד ה-syscall — אבל איך החומרה באמת מודיעה שנתונים הגיעו? שני מנגנונים משלימים את התמונה.</p>
+
+<h3>Interrupts — "תעצור הכל, קרה משהו"</h3>
+<p>איך ה-CPU יודע שחבילת רשת הגיעה או שהדיסק סיים? הוא <em>לא</em> בודק בלולאה (בזבזני). במקום זה, ההתקן שולח <strong>interrupt</strong> — אות חומרה שגורם ל-CPU <strong>לעצור את מה שהוא עושה</strong>, לשמור מצב, ולרוץ ל-<strong>interrupt handler</strong> של ה-kernel שמטפל באירוע, ואז לחזור. זה מה שמאפשר ל-CPU לעבוד על דברים אחרים ולהיות "מופרע" רק כשצריך — הבסיס לכל I/O אסינכרוני. (ה-timer שמפעיל את ה-scheduler? גם הוא interrupt).</p>
+
+<h3>DMA — העברת נתונים בלי לבזבז את ה-CPU</h3>
+<blockquote>
+<p>בעיה: להעביר megabyte מהדיסק ל-RAM byte-byte דרך ה-CPU היה משתק אותו. הפתרון: <strong>DMA (Direct Memory Access)</strong> — controller ייעודי שמעביר נתונים <strong>ישירות</strong> בין ההתקן ל-RAM, בלי לערב את ה-CPU. ה-CPU רק אומר "העבר X ל-Y", וה-DMA עושה את העבודה, ושולח interrupt כשסיים. ה-CPU חופשי לעבוד בינתיים. זה מה שמאפשר I/O throughput גבוה בלי לחנוק את המעבד.</p>
+</blockquote>
+
+<h3>התמונה המלאה של קריאת קובץ</h3>
+<div class="flow">
+1. הקוד: fs.readFile → syscall → מעבר ל-Kernel Mode<br>
+2. ה-kernel מורה ל-disk controller לקרוא, ורושם DMA<br>
+3. ה-thread ממשיך (async) / ישן (blocking)<br>
+4. ה-DMA מעביר את הנתונים לדיסק → RAM, בלי CPU<br>
+5. סיום → ההתקן שולח Interrupt<br>
+6. ה-kernel מטפל, מסמן "מוכן" (epoll), מעיר את ה-callback<br>
+7. ה-callback שלך רץ עם הנתונים
+</div>
+<p>כל שכבה שלמדת מופיעה כאן: syscall (OS), kernel/user mode, DMA ו-interrupts (חומרה), epoll (I/O model), event loop (runtime). זה המסע המלא של פעולת I/O אחת.</p>
+
+<hr>
+
+<h2 id="s21">21. הרכבה: איך Web Request עובר דרך הכל</h2>
+
+<p>הגיע הרגע לחבר את כל 20 הפרקים. נעקוב אחרי request אחד — <code>GET /users/42</code> — מהחוט ועד התשובה, דרך <em>כל</em> שכבה. זה מאחד גם את המדריך הזה עם מדריכי Networking, Node, ו-System Design.</p>
+
+<div class="flow">
+1. חבילת רשת מגיעה לכרטיס הרשת (NIC)<br>
+2. ה-NIC שולח INTERRUPT ל-CPU (פרק 20)<br>
+3. ה-CPU עוצר, עובר ל-KERNEL MODE (פרק 11), מריץ interrupt handler<br>
+4. DMA כבר העביר את החבילה ל-RAM (פרק 20)<br>
+5. ה-kernel מפרק את שכבות הרשת — TCP/IP (מדריך Networking)<br>
+6. ה-socket של השרת שלך מסומן "מוכן" ל-EPOLL (פרק 19)<br>
+7. ה-EVENT LOOP של Node מתעורר, שולף את הבקשה (פרק 19 + מדריך Node)<br>
+8. הקוד שלך רץ ב-USER MODE — NestJS: guards → validation → handler<br>
+9. הקוד ניגש למשתנים ב-STACK/HEAP (פרק 8), ה-CPU קורא דרך CACHE (פרק 6)<br>
+&nbsp;&nbsp;&nbsp;כתובות מתורגמות דרך VIRTUAL MEMORY + TLB (פרק 9)<br>
+10. צריך נתונים מה-DB → עוד SYSCALL, עוד socket, החוצה לרשת<br>
+&nbsp;&nbsp;&nbsp;(ה-thread לא נחסם — ASYNC, ה-event loop מטפל בבקשות אחרות בינתיים)<br>
+11. ה-DB עונה → INTERRUPT → epoll → callback → הקוד ממשיך<br>
+12. בונים JSON (עוד עבודת CPU, עוד cache, עוד heap)<br>
+13. res.end() → SYSCALL write → kernel → TCP → NIC → DMA → החוצה<br>
+14. התשובה בדרך חזרה ללקוח
+</div>
+
+<blockquote>
+<p><strong>זו הנקודה של המדריך כולו:</strong> מה שנראה כמו <code>@Get() findOne() { return this.service.find(id); }</code> — שורה אחת תמימה — הוא בעצם ריקוד מתואם בין חומרה, kernel, virtual memory, caches, event loop, ורשת. אתה לא צריך לחשוב על כל זה כשאתה כותב קוד. אבל כשמשהו נשבר — latency מוזר, memory leak, CPU ב-100%, deadlock — <strong>ההבנה הזו היא ההבדל בין "אני לא יודע למה זה איטי" ל"אני יודע בדיוק איפה להסתכל".</strong> וזה, בעידן ה-AI, מה שהופך אותך למהנדס ולא למעתיק קוד.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s22">22. מה הלאה ומשאבים</h2>
+
+<p>כיסינו את כל מגדל ההפשטה — מ-bits ועד web request. זה בסיס עצום, אבל כל נושא כאן הוא דלת לעומק נוסף. אם רוצה להעמיק:</p>
+
+<h3>ספרים קלאסיים (המקורות האמיתיים)</h3>
+<ul>
+<li><strong>"Computer Systems: A Programmer's Perspective" (CSAPP)</strong> — התנ"ך. מכסה כמעט כל מה שכאן לעומק. אם תקרא ספר אחד — זה.</li>
+<li><strong>"Operating Systems: Three Easy Pieces" (OSTEP)</strong> — חינמי online, מעולה ל-OS/concurrency (חלקים ד'-ה').</li>
+<li><strong>"Designing Data-Intensive Applications"</strong> — מגשר בין systems ל-Backend בקנה מידה (משלים את מדריך System Design).</li>
+</ul>
+
+<h3>איך ללמוד את זה באמת — לא רק לקרוא</h3>
+<ol>
+<li><strong>כתוב קצת C</strong> — כלום לא מלמד stack/heap/pointers כמו לנהל זיכרון ידנית. אפילו פרויקט קטן.</li>
+<li><strong>שחק עם threads</strong> — כתוב race condition בכוונה (ב-Go/Java/C), ראה אותו נשבר, ותקן עם mutex. לראות זה להבין.</li>
+<li><strong>פרופיילינג</strong> — הרץ profiler על קוד אמיתי, ראה cache misses, context switches, GC pauses. החומר מהמדריך הופך למוחשי.</li>
+<li><strong>קרא את libuv</strong> — הקוד שמפעיל את event loop של Node הוא C פתוח. לראות את ה-epoll האמיתי סוגר את המעגל.</li>
+</ol>
+
+<blockquote>
+<p><strong>הנקודה האחרונה, והכי חשובה:</strong> אמרת שאתה רוצה להבין איך מערכות עובדות ולא רק סינטקס — וזו בדיוק הגישה הנכונה לעידן הזה. סינטקס AI כותב; <strong>הבנת מערכות היא מה שמאפשר לך לתכנן, לדבג, ולהחליט</strong> — הדברים ש-AI לא עושה בשבילך. המדריך הזה נתן לך את המפה. אבל מפה היא לא שטח: ההבנה תיהפך לאמיתית רק כשתראה את הדברים האלה קורים בקוד אמיתי — race condition שנשבר, cache miss שמאט, GC pause ב-profiler. תסתכל מתחת למכסה בכל הזדמנות. זה מה שיבדיל אותך.</p>
+</blockquote>
+
+<p>יש לך עכשיו 15 מדריכים ב-<code>C:\claude-folder</code> — מהשפה (JS/TS), דרך ה-frameworks (Node/NestJS/Django), התשתית (Networking/SQL/Databases/DevOps/System Design/Auth/Git/AI), ועד לרצפה עצמה: המערכת מאחורי הקלעים. זה סט ידע של מהנדס Backend שלם. 🚀</p>
+
+</body>
+</html>

@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #4d7c0f; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #4d7c0f; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #3f6212; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #365314; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #f2f8e8; }
+  a { color: #4d7c0f; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f7fbef; border: 1px solid #dcecc4; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f7fbef; border: 1px solid #dcecc4; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>Node.js — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>הפער שדילגנו עליו: כיסינו את TypeScript (השפה) ואת NestJS (ה-framework), אבל לא את ה-<strong>runtime עצמו</strong>. המדריך הזה מסביר <strong>איך Node עובד מתחת למכסה</strong> — ה-event loop, async internals, streams, modules — כדי שתבין <em>למה</em> הקוד שלך מתנהג כמו שהוא מתנהג, לא רק שהוא עובד.</p>
+<p>הכתר של המדריך הוא ה-event loop (פרק 2). אם תבין אותו לעומק — הפכת ממישהו שמשתמש ב-Node למישהו שמבין אותו. עברית להסבר, אנגלית לקוד.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: מה זה Node.js — V8 ו-libuv</a></li>
+<li><a href="#s2">ה-Event Loop — הכתר</a></li>
+<li><a href="#s3">Async — Callbacks, Promises, async/await</a></li>
+<li><a href="#s4">Modules — CommonJS מול ESM</a></li>
+<li><a href="#s5">npm ו-ניהול תלויות</a></li>
+<li><a href="#s6">Core Modules</a></li>
+<li><a href="#s7">EventEmitter — הדפוס ש-Node בנוי עליו</a></li>
+<li><a href="#s8">Streams ו-Backpressure</a></li>
+<li><a href="#s9">Buffers ונתונים בינאריים</a></li>
+<li><a href="#s10">מודול ה-HTTP — שרת בלי framework</a></li>
+<li><a href="#s11">Process ו-Environment</a></li>
+<li><a href="#s12">Error Handling ב-Async</a></li>
+<li><a href="#s13">Worker Threads, Child Processes ו-Cluster</a>
+  <ul style="margin-top:6px;"><li><a href="#s13f">זרקור: Advanced Node — AsyncLocalStorage, Atomics, perf_hooks, N-API</a></li></ul>
+</li>
+<li><a href="#s14">Performance ו-Profiling</a></li>
+<li><a href="#s15">אבטחה ו-Tooling</a></li>
+<li><a href="#s16">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s17">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: מה זה Node.js — V8 ו-libuv</h2>
+
+<p>Node.js הוא <strong>runtime</strong> שמריץ JavaScript מחוץ לדפדפן — בשרת. לפני Node, JS רץ רק בדפדפן; Node לקח את מנוע ה-JS של Chrome (V8) ואיפשר לו לגשת לקבצים, לרשת, ולמערכת ההפעלה. זה מה שהפך את JavaScript לשפת Backend.</p>
+
+<h3>משני רכיבים</h3>
+<ul>
+<li><strong>V8</strong> — מנוע ה-JavaScript של Google (מ-Chrome). מקמפל ומריץ את קוד ה-JS. מהיר מאוד.</li>
+<li><strong>libuv</strong> — ספריית C שנותנת ל-Node את היכולות שאין ל-JS לבד: גישה לקבצים, רשת, ו<strong>ה-event loop</strong> (פרק 2). זה החלק שהופך את Node ל-non-blocking.</li>
+</ul>
+
+<h3>הרעיון המרכזי: Single-threaded, Non-blocking I/O</h3>
+<p>זו הנקודה שהכי חשוב להבין, ומה שמבדיל את Node מ-frameworks אחרים. Node רץ את הקוד שלך על <strong>thread אחד</strong>. נשמע מגביל — אבל זה בדיוק החוזק שלו:</p>
+
+<blockquote>
+<p>במקום ליצור thread לכל בקשה (המודל הקלאסי, יקר בזיכרון), Node משתמש ב-thread אחד עם <strong>event loop</strong>: כשמגיעה פעולה איטית (קריאת DB, קריאת קובץ, בקשת רשת), Node <strong>לא מחכה</strong> — הוא שולח אותה הצידה (ל-libuv) וממשיך לטפל בבקשות אחרות. כשהפעולה מסתיימת, callback שלה נכנס לתור וממתין לתורו. כך thread אחד מטפל באלפי בקשות בו-זמנית — כל עוד רובן הן I/O (המתנה), לא CPU.</p>
+</blockquote>
+
+<h3>למה זה מתאים ל-Backend</h3>
+<p>רוב עבודת ה-Backend היא <strong>I/O-bound</strong> — מחכים ל-DB, ל-APIs, לקבצים — לא CPU-bound. במשימות כאלה, המודל של Node מבריק: בזמן שבקשה אחת מחכה ל-DB, ה-thread מטפל בעשר אחרות. זו הסיבה ש-Node מעולה ל-APIs, microservices, ו-real-time. <strong>אבל</strong> — משימה CPU כבדה (חישוב ארוך) חוסמת את ה-thread היחיד ומקפיאה את הכל (נחזור לזה בפרק 13).</p>
+
+<hr>
+
+<h2 id="s2">2. ה-Event Loop — הכתר</h2>
+
+<p>זה הנושא היחיד שאם תבין אותו לעומק, תבין את Node. ה-event loop הוא המנגנון שמאפשר ל-thread אחד לטפל בהמון פעולות אסינכרוניות. נעשה את זה לאט וברור.</p>
+
+<h3>הרעיון הבסיסי</h3>
+<p>ה-event loop הוא <strong>לולאה אינסופית</strong> שכל הזמן שואלת: "יש callback מוכן להרצה? אם כן — הרץ אותו". כשאתה קורא ל-<code>fs.readFile</code> עם callback, Node שולח את הקריאה ל-libuv וממשיך. כשהקובץ מוכן, ה-callback נכנס לתור, וה-event loop יריץ אותו כשה-thread פנוי.</p>
+
+<h3>הפאזות של ה-Event Loop</h3>
+<p>ה-event loop לא תור אחד — הוא עובר במחזור בין כמה <strong>פאזות</strong>, כל אחת עם סוג callbacks משלה:</p>
+
+<div class="flow">
+   ┌───────────────────────────┐<br>
+┌─&gt;│  timers  (setTimeout/Interval)│<br>
+│  ├───────────────────────────┤<br>
+│  │  pending callbacks         │<br>
+│  ├───────────────────────────┤<br>
+│  │  poll  (I/O — קריאת קבצים/רשת)│  ← כאן מבלים רוב הזמן<br>
+│  ├───────────────────────────┤<br>
+│  │  check  (setImmediate)     │<br>
+│  ├───────────────────────────┤<br>
+└──│  close callbacks           │<br>
+   └───────────────────────────┘
+</div>
+
+<p>הפאזות החשובות למפתח: <strong>timers</strong> (מריץ callbacks של <code>setTimeout</code>), <strong>poll</strong> (מטפל ב-I/O — כאן רוב הפעולות), ו-<strong>check</strong> (מריץ <code>setImmediate</code>).</p>
+
+<h3>Microtasks מול Macrotasks — ההבחנה הקריטית</h3>
+<p>זו הנקודה שהכי מבלבלת ומופיעה בכל ראיון. בין כל פאזה (ולמעשה אחרי כל callback), Node מריץ את ה-<strong>microtask queue</strong> עד שהיא ריקה. ל-microtasks יש <strong>עדיפות</strong> על הכל:</p>
+
+<table>
+<tr><th>Microtasks (עדיפות גבוהה)</th><th>Macrotasks</th></tr>
+<tr><td><code>process.nextTick()</code></td><td><code>setTimeout</code> / <code>setInterval</code></td></tr>
+<tr><td>Promise callbacks (<code>.then</code>/<code>await</code>)</td><td><code>setImmediate</code></td></tr>
+<tr><td>רצים מיד אחרי ה-callback הנוכחי</td><td>I/O callbacks</td></tr>
+</table>
+
+<p>הכלל: אחרי כל פעולה, Node מרוקן את <strong>כל</strong> ה-microtasks לפני שהוא עובר ל-macrotask הבא. ו-<code>process.nextTick</code> קודם אפילו ל-Promises.</p>
+
+<h3>הדוגמה שמבהירה הכל</h3>
+<pre><code>console.log("1: start");
+
+setTimeout(() =&gt; console.log("2: setTimeout"), 0);   // macrotask
+
+Promise.resolve().then(() =&gt; console.log("3: promise"));  // microtask
+
+process.nextTick(() =&gt; console.log("4: nextTick"));   // microtask (עדיפות עליונה)
+
+console.log("5: end");
+
+// הפלט:
+// 1: start        ← קוד סינכרוני רץ קודם
+// 5: end          ← עדיין סינכרוני
+// 4: nextTick     ← microtask, עדיפות עליונה
+// 3: promise      ← microtask
+// 2: setTimeout   ← macrotask, אחרון (למרות ה-0!)</code></pre>
+
+<blockquote>
+<p><strong>למה זה חשוב מעשית:</strong> ההבנה הזו מסבירה באגים אמיתיים — למה <code>setTimeout(fn, 0)</code> לא רץ "מיד", למה סדר הפעולות לפעמים מפתיע, ולמה <code>process.nextTick</code> בלולאה יכול "להרעיב" את ה-event loop (למנוע ממנו להתקדם לפאזות אחרות). מפתח שמבין את זה כותב קוד אסינכרוני צפוי; מפתח שלא — מדבג "כישופים" לנצח.</p>
+</blockquote>
+
+<h3>הכלל הזהב: אל תחסום את ה-Event Loop</h3>
+<p>מכיוון שהכל רץ על thread אחד, <strong>קוד סינכרוני כבד חוסם את הכל</strong>. לולאה של מיליון איטרציות, <code>JSON.parse</code> על מגה-בייטים, hashing כבד — כל אלה "מקפיאים" את השרת, וכל הבקשות האחרות ממתינות. זה החטא הגדול ב-Node. פתרונות: לפרק לחתיכות, או להעביר ל-worker thread (פרק 13).</p>
+
+<hr>
+
+<h2 id="s3">3. Async — Callbacks, Promises, async/await</h2>
+
+<p>כל עבודת ה-I/O ב-Node אסינכרונית. השפה עברה שלושה דורות של תחביר לטיפול בזה — חשוב להכיר את כולם כי תיתקל בכל השלושה בקוד אמיתי.</p>
+
+<h3>דור 1: Callbacks (וה-"callback hell")</h3>
+<p>הדפוס המקורי של Node: פונקציה מקבלת callback שירוץ כשהפעולה נגמרת. המוסכמה היא <strong>error-first callback</strong> — הפרמטר הראשון הוא השגיאה:</p>
+<pre><code>fs.readFile("a.txt", (err, data) =&gt; {
+  if (err) return handle(err);     // error-first: תמיד בודקים err קודם
+  fs.readFile("b.txt", (err, data2) =&gt; {
+    if (err) return handle(err);
+    // ...מקונן ומקונן — "callback hell" / "pyramid of doom"
+  });
+});</code></pre>
+<p>הבעיה: קינון עמוק, קשה לקריאה, error handling חוזר. זה הוביל לדור הבא.</p>
+
+<h3>דור 2: Promises</h3>
+<p>Promise הוא אובייקט שמייצג ערך עתידי — pending, ואז fulfilled או rejected. משטח את הקינון:</p>
+<pre><code>readFilePromise("a.txt")
+  .then(data =&gt; readFilePromise("b.txt"))
+  .then(data2 =&gt; { /* ... */ })
+  .catch(err =&gt; handle(err));      // catch אחד לכל השרשרת</code></pre>
+
+<h3>דור 3: async/await (המודרני)</h3>
+<p>סוכר תחבירי על Promises שנותן קוד אסינכרוני שנראה סינכרוני. זה מה שתכתוב היום:</p>
+<pre><code>async function readBoth() {
+  try {
+    const data = await readFilePromise("a.txt");
+    const data2 = await readFilePromise("b.txt");
+    return { data, data2 };
+  } catch (err) {
+    handle(err);                   // try/catch רגיל!
+  }
+}</code></pre>
+
+<p>(כיסינו את הטיפוסים של זה במדריך TypeScript — כאן ההקשר הוא ה-runtime). <code>await</code> "משהה" את הפונקציה עד שה-Promise נפתר, בלי לחסום את ה-event loop — מאחורי הקלעים זה רושם microtask שימשיך כשהתוצאה מוכנה.</p>
+
+<h3>עבודה במקביל — הטעות הנפוצה</h3>
+<blockquote>
+<p><strong>מלכודת ביצועים:</strong> <code>await</code> ברצף מריץ דברים <em>בזה אחר זה</em> — גם כשהם עצמאיים. אם שתי הקריאות לא תלויות זו בזו, הרצה סדרתית מבזבזת זמן:</p>
+<pre><code>// ❌ סדרתי — 200ms (100+100):
+const a = await fetchA();   // מחכה 100ms
+const b = await fetchB();   // ואז עוד 100ms
+
+// ✅ מקבילי — 100ms (שניהם יחד):
+const [a, b] = await Promise.all([fetchA(), fetchB()]);</code></pre>
+<p><code>Promise.all</code> מריץ במקביל וממתין לכולם. שווה זהב ב-Backend שעושה כמה קריאות עצמאיות. (זוכר מ-TypeScript? כאן זה למה זה חשוב לביצועים).</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s4">4. Modules — CommonJS מול ESM</h2>
+
+<p>נגענו בזה קצר במדריך TypeScript; כאן נעמיק כי ב-Node זה מקור אמיתי לכאב. ל-Node יש <strong>שתי מערכות modules</strong> שחיות זו לצד זו, והבלבול ביניהן מפיל מפתחים.</p>
+
+<h3>CommonJS (CJS) — הוותיק</h3>
+<p>מערכת ה-modules המקורית של Node. סינכרונית, עם <code>require</code> ו-<code>module.exports</code>:</p>
+<pre><code>// math.js
+function add(a, b) { return a + b; }
+module.exports = { add };
+
+// app.js
+const { add } = require("./math");</code></pre>
+
+<h3>ES Modules (ESM) — הסטנדרט המודרני</h3>
+<p>התחביר הסטנדרטי של JavaScript (גם בדפדפן). אסינכרוני, עם <code>import</code>/<code>export</code>:</p>
+<pre><code>// math.js
+export function add(a, b) { return a + b; }
+
+// app.js
+import { add } from "./math.js";</code></pre>
+
+<h3>איך Node מחליט איזו מערכת</h3>
+<table>
+<tr><th>מפעיל ESM</th><th>מפעיל CJS</th></tr>
+<tr><td><code>"type": "module"</code> ב-package.json</td><td>ברירת מחדל (בלי type)</td></tr>
+<tr><td>סיומת <code>.mjs</code></td><td>סיומת <code>.cjs</code></td></tr>
+</table>
+
+<h3>ההבדלים המעשיים שחשוב לדעת</h3>
+<ul>
+<li><strong>ESM דורש סיומות מלאות</strong> ב-import (<code>"./math.js"</code>, לא <code>"./math"</code>). CJS סלחני.</li>
+<li><strong>אין <code>__dirname</code>/<code>__filename</code> ב-ESM</strong> — צריך לגזור מ-<code>import.meta.url</code>.</li>
+<li><strong>ESM אסינכרוני</strong> — תומך ב-top-level <code>await</code>. CJS סינכרוני.</li>
+<li><strong>ערבוב מסובך</strong> — לייבא CJS מ-ESM עובד לרוב; ההפך בעייתי.</li>
+</ul>
+
+<blockquote>
+<p><strong>מעשי:</strong> הכיוון הוא ESM (הסטנדרט), אבל הרבה פרויקטי Node ו-NestJS עדיין ב-CJS מטעמי תאימות. אם אתה מתחיל פרויקט חדש — ESM. אם אתה מצטרף לקיים — בדוק את ה-<code>"type"</code> ב-package.json והישאר עקבי. השגיאה <code>Cannot use import statement outside a module</code> או <code>require is not defined</code> = ערבבת בין השתיים. עם TypeScript, ה-<code>tsconfig</code> (<code>module</code>/<code>moduleResolution</code>) מתרגם, אז לרוב אתה כותב <code>import</code> וה-compiler מטפל.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s5">5. npm ו-ניהול תלויות</h2>
+
+<p>npm (Node Package Manager) הוא איך אתה מתקין ומנהל ספריות. הוא גם הרישום (registry) הכי גדול בעולם — מיליוני חבילות.</p>
+
+<h3>package.json — תעודת הזהות של הפרויקט</h3>
+<pre><code>{
+  "name": "my-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest"
+  },
+  "dependencies": {          // נחוצות ל-runtime
+    "express": "^4.18.0"
+  },
+  "devDependencies": {       // רק לפיתוח (build, test)
+    "typescript": "^5.4.0"
+  }
+}</code></pre>
+
+<h3>dependencies מול devDependencies — הבחנה חשובה</h3>
+<ul>
+<li><strong><code>dependencies</code></strong> — נחוצות כשהאפליקציה רצה (express, pg, zod). מותקנות ב-production.</li>
+<li><strong><code>devDependencies</code></strong> — רק לפיתוח (typescript, טסטים, linters). <em>לא</em> מותקנות ב-production (<code>npm ci --omit=dev</code>). זה מקטין את ה-image (זוכר multi-stage build ממדריך DevOps?).</li>
+</ul>
+
+<h3>Semantic Versioning (semver)</h3>
+<p>גרסאות בפורמט <code>MAJOR.MINOR.PATCH</code> (למשל <code>4.18.2</code>):</p>
+<ul>
+<li><strong>MAJOR</strong> — שינוי שובר תאימות (breaking).</li>
+<li><strong>MINOR</strong> — feature חדש, תואם אחורה.</li>
+<li><strong>PATCH</strong> — תיקון באג.</li>
+</ul>
+<p>הסימנים ב-package.json קובעים כמה "חופש" לעדכן: <code>^4.18.0</code> = עדכוני minor+patch (עד 5.0), <code>~4.18.0</code> = רק patch, <code>4.18.0</code> = מדויק בדיוק.</p>
+
+<h3>Lockfile — למה הוא קריטי</h3>
+<blockquote>
+<p><code>package-lock.json</code> נועל את הגרסאות <strong>המדויקות</strong> של כל התלויות (כולל תלויות-של-תלויות). זה מבטיח ש<strong>כולם מתקינים בדיוק אותו דבר</strong> — reproducibility (זוכר ממדריך DevOps?). בלעדיו, שני מפתחים או ה-CI עלולים לקבל גרסאות שונות, ו"עובד אצלי" חוזר. <strong>תמיד commit את ה-lockfile ל-git</strong>, והשתמש ב-<code>npm ci</code> (לא <code>npm install</code>) ב-CI/production — הוא מתקין בדיוק לפי ה-lockfile, מהיר ודטרמיניסטי.</p>
+</blockquote>
+
+<h3>npm מול yarn מול pnpm</h3>
+<p>שלושה package managers, אותו רעיון. <strong>pnpm</strong> חוסך מקום (משתף חבילות בין פרויקטים) ומהיר; <strong>yarn</strong> ותיק; <strong>npm</strong> ברירת המחדל. כולם עובדים — הצוות בוחר אחד ונדבק בו (lockfile שונה לכל אחד).</p>
+
+<hr>
+
+<h2 id="s6">6. Core Modules</h2>
+
+<p>Node מגיע עם ספריות מובנות (built-in), בלי צורך בהתקנה. אלה שתשתמש בהם. מייבאים עם prefix <code>node:</code> (מומלץ, מבהיר שזה core):</p>
+
+<table>
+<tr><th>Module</th><th>למה</th></tr>
+<tr><td><code>node:fs</code></td><td>קבצים — קריאה/כתיבה (יש גרסת <code>fs/promises</code>)</td></tr>
+<tr><td><code>node:path</code></td><td>עבודה עם נתיבים חוצת-פלטפורמות</td></tr>
+<tr><td><code>node:http</code> / <code>https</code></td><td>שרתים ולקוחות HTTP (פרק 10)</td></tr>
+<tr><td><code>node:crypto</code></td><td>הצפנה, hashing, אקראיות (זוכר bcrypt/JWT מ-Auth?)</td></tr>
+<tr><td><code>node:events</code></td><td>EventEmitter (פרק 7)</td></tr>
+<tr><td><code>node:stream</code></td><td>streams (פרק 8)</td></tr>
+<tr><td><code>node:os</code></td><td>מידע על המערכת (CPUs, זיכרון)</td></tr>
+<tr><td><code>node:util</code></td><td>עזרים (promisify, ועוד)</td></tr>
+<tr><td><code>node:process</code></td><td>התהליך הרץ (פרק 11)</td></tr>
+</table>
+
+<h3>fs — קבצים, עם דגש חשוב</h3>
+<pre><code>import { readFile } from "node:fs/promises";   // גרסת ה-Promise — מומלצת
+
+const data = await readFile("config.json", "utf-8");   // async, לא חוסם
+
+// לעומת הגרסה הסינכרונית:
+import { readFileSync } from "node:fs";
+const data2 = readFileSync("config.json", "utf-8");    // ⚠️ חוסם את ה-event loop!</code></pre>
+
+<blockquote>
+<p><strong>כלל:</strong> העדף תמיד את הגרסאות ה-<strong>async</strong> (<code>fs/promises</code>) על ה-<code>*Sync</code>. גרסאות Sync חוסמות את ה-event loop (זוכר את הכלל הזהב?) ומקפיאות את השרת. גרסאות Sync בסדר רק ב-startup (טעינת config פעם אחת לפני שהשרת מקבל בקשות) — אף פעם לא בתוך request handler.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s7">7. EventEmitter — הדפוס ש-Node בנוי עליו</h2>
+
+<p>הרבה מ-Node בנוי על דפוס ה-<strong>event-driven</strong>: אובייקטים פולטים אירועים, ואחרים מאזינים ומגיבים. <code>EventEmitter</code> הוא המחלקה שמממשת את זה, והרבה ממחלקות ה-core (streams, HTTP servers) יורשות ממנה.</p>
+
+<pre><code>import { EventEmitter } from "node:events";
+
+const emitter = new EventEmitter();
+
+// מאזינים לאירוע:
+emitter.on("order", (data) =&gt; {
+  console.log("New order:", data.id);
+});
+
+// פולטים אירוע:
+emitter.emit("order", { id: 42 });   // מפעיל את כל המאזינים</code></pre>
+
+<p>זה דפוס ה-<strong>pub/sub</strong> ברמת התהליך (זוכר ממדריך System Design?). היתרון: <strong>decoupling</strong> — מי שפולט את האירוע לא צריך לדעת מי מאזין. אפשר להוסיף מאזינים בלי לשנות את הפולט.</p>
+
+<p>איפה תיתקל בזה: <code>server.on("request", ...)</code>, <code>stream.on("data", ...)</code>, <code>process.on("exit", ...)</code> — כולם EventEmitters. הבנת הדפוס עוזרת לך להבין את כל ה-API של Node.</p>
+
+<blockquote>
+<p><strong>מלכודת:</strong> אם המאזין זורק שגיאה על אירוע <code>"error"</code> ואין לו handler — Node <strong>קורס</strong>. תמיד הוסף <code>emitter.on("error", ...)</code>. וזהירות מ-<strong>memory leaks</strong>: הוספת מאזינים בלי להסיר (<code>off</code>/<code>removeListener</code>) מצטברת. Node מזהיר אחרי 10 מאזינים לאותו אירוע — זה בדרך כלל סימן לדליפה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. Streams ו-Backpressure</h2>
+
+<p>Streams הם אחד הנושאים החזקים והפחות-מובנים ב-Node. הם הדרך לעבד <strong>נתונים בחתיכות (chunks)</strong> במקום לטעון הכל לזיכרון בבת אחת. קריטי לקבצים גדולים ולתעבורת רשת.</p>
+
+<h3>הבעיה שהם פותרים</h3>
+<pre><code>// ❌ טוען קובץ 2GB כולו לזיכרון — קורס / זולל RAM:
+const data = await readFile("huge.mp4");
+response.write(data);
+
+// ✅ stream — מעביר chunk-chunk, זיכרון קבוע וקטן:
+createReadStream("huge.mp4").pipe(response);</code></pre>
+
+<p>עם stream, אתה אף פעם לא מחזיק את כל הקובץ בזיכרון — רק chunk קטן בכל רגע. זה מה שמאפשר ל-Node לשרת קבצים ענקיים עם זיכרון מזערי.</p>
+
+<h3>ארבעת סוגי ה-Streams</h3>
+<ul>
+<li><strong>Readable</strong> — קוראים ממנו (קובץ נקרא, request נכנס).</li>
+<li><strong>Writable</strong> — כותבים אליו (קובץ נכתב, response יוצא).</li>
+<li><strong>Duplex</strong> — גם וגם (socket רשת).</li>
+<li><strong>Transform</strong> — duplex שמעבד תוך כדי (דחיסה, הצפנה).</li>
+</ul>
+
+<h3>pipe — חיבור streams</h3>
+<pre><code>import { createReadStream, createWriteStream } from "node:fs";
+import { createGzip } from "node:zlib";
+
+// קרא קובץ → דחוס → כתוב, הכל ב-streaming:
+createReadStream("input.txt")
+  .pipe(createGzip())            // transform stream
+  .pipe(createWriteStream("input.txt.gz"));</code></pre>
+
+<h3>Backpressure — הרעיון הכי חשוב ב-streams</h3>
+<blockquote>
+<p>מה קורה כשקוראים מהר יותר ממה שכותבים? (למשל, קוראים מ-SSD מהיר וכותבים לרשת איטית). בלי בקרה, ה-chunks היו מצטברים בזיכרון עד קריסה. <strong>Backpressure</strong> הוא המנגנון שבו ה-writable stream "אומר" ל-readable "האט, אני עמוס" — וה-readable מפסיק זמנית. <code>pipe()</code> מטפל בזה <strong>אוטומטית</strong> — זו הסיבה המרכזית להשתמש ב-<code>pipe</code> (או <code>pipeline</code>) במקום לחבר ידנית עם <code>on("data")</code> + <code>write()</code>, שם אתה אחראי ל-backpressure בעצמך וקל לטעות. זה הרעיון שמבדיל בין מי ש"מכיר streams" למי שמבין אותם.</p>
+</blockquote>
+
+<pre><code>import { pipeline } from "node:stream/promises";
+
+// pipeline = pipe עם error handling ו-cleanup נכונים (מומלץ על pipe):
+await pipeline(
+  createReadStream("input.txt"),
+  createGzip(),
+  createWriteStream("output.gz")
+);</code></pre>
+
+<hr>
+
+<h2 id="s9">9. Buffers ונתונים בינאריים</h2>
+
+<p>JavaScript נועד לטקסט, אבל Backend מתעסק גם ב<strong>נתונים בינאריים</strong> — קבצים, תמונות, פרוטוקולי רשת. <code>Buffer</code> הוא הטיפוס של Node לרצף bytes גולמי (בזיכרון מחוץ ל-V8 heap).</p>
+
+<pre><code>// Buffer מטקסט:
+const buf = Buffer.from("hello", "utf-8");
+console.log(buf);              // &lt;Buffer 68 65 6c 6c 6f&gt;  (ה-bytes)
+console.log(buf.length);       // 5
+console.log(buf.toString("hex"));     // "68656c6c6f"
+console.log(buf.toString("base64"));  // קידוד base64</code></pre>
+
+<p>איפה תיתקל ב-Buffers: chunks של streams הם Buffers, <code>crypto</code> עובד עם Buffers, קריאת קובץ בינארי, וקידוד/פענוח (base64 — זוכר מ-JWT ב-Auth? ה-payload מקודד base64). encoding נכון (<code>utf-8</code> לטקסט, <code>hex</code>/<code>base64</code> לייצוג) הוא מקור נפוץ לבאגים — טקסט עברי ב-encoding שגוי = ג'יבריש.</p>
+
+<hr>
+
+<h2 id="s10">10. מודול ה-HTTP — שרת בלי framework</h2>
+
+<p>לפני Express ו-NestJS יש את מודול ה-<code>http</code> של Node. חשוב לראות אותו פעם אחת — כי זה מה שכל ה-frameworks עוטפים. כשתבין את זה, NestJS יפסיק להיות "קסם".</p>
+
+<pre><code>import { createServer } from "node:http";
+
+const server = createServer((req, res) =&gt; {
+  // req = IncomingMessage (readable stream), res = ServerResponse (writable stream)
+  if (req.url === "/users" &amp;&amp; req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify([{ id: 1, name: "Eliya" }]));
+  } else {
+    res.writeHead(404);
+    res.end("Not Found");
+  }
+});
+
+server.listen(3000, () =&gt; console.log("Listening on :3000"));</code></pre>
+
+<h3>מה זה מלמד</h3>
+<p>שים לב לכמה דברים שמתחברים לכל הסדרה:</p>
+<ul>
+<li><code>createServer</code> מקבל callback שרץ <strong>לכל בקשה</strong> — וה-event loop הוא זה שמזמן אותו. thread אחד, אלפי בקשות.</li>
+<li><code>req</code> ו-<code>res</code> הם <strong>streams</strong> (פרק 8) — request נקרא chunk-chunk, response נכתב chunk-chunk. זו הסיבה ש-<code>res.end()</code> ולא "return".</li>
+<li>אין routing, אין parsing של body, אין validation — הכל ידני. <strong>זה בדיוק מה ש-Express/NestJS מוסיפים</strong>: הם עוטפים את ה-<code>http</code> הגולמי בשכבות נוחות (routing, middleware, DI).</li>
+<li>הכל כאן זה HTTP ממדריך Networking — methods, status codes, headers — עכשיו בקוד.</li>
+</ul>
+
+<blockquote>
+<p><strong>למה שווה לראות את זה:</strong> ברגע שאתה מבין ש-NestJS הוא בסופו של דבר <code>http.createServer</code> עם המון שכבות נוחות מעליו, אתה מפסיק לפחד מה-framework ומתחיל להבין מה קורה מתחת. וכשמשהו נשבר ברמה נמוכה — אתה יודע לאן להסתכל.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. Process ו-Environment</h2>
+
+<p>האובייקט הגלובלי <code>process</code> מייצג את התהליך הרץ ונותן גישה לסביבה, לארגומנטים, ולמחזור החיים.</p>
+
+<h3>Environment variables</h3>
+<pre><code>const port = process.env.PORT || 3000;
+const dbUrl = process.env.DATABASE_URL;
+// ⚠️ אלה תמיד strings! process.env.PORT הוא "3000", לא 3000.
+const portNum = Number(process.env.PORT) || 3000;   // המרה נכונה</code></pre>
+<p>זה איך קונפיגורציה מגיעה פנימה (זוכר 12-factor וsecrets ממדריך DevOps?). בפיתוח משתמשים ב-<code>.env</code> (עם <code>dotenv</code> או תמיכה מובנית ב-Node חדש).</p>
+
+<h3>Arguments וקלט/פלט</h3>
+<pre><code>process.argv          // ארגומנטים משורת הפקודה: ["node", "script.js", "arg1"]
+process.stdout.write("...")   // כתיבה ל-stdout (מה ש-console.log עושה)
+process.exit(1)       // יציאה עם קוד (0 = הצלחה, אחר = שגיאה)</code></pre>
+
+<h3>Signals ו-Graceful Shutdown</h3>
+<p>נקודה חשובה ל-production (וזוכר "disposability" מ-12-factor?). כשמערכת ההפעלה/Docker רוצה לכבות את התהליך, היא שולחת <strong>signal</strong> (<code>SIGTERM</code>). אתה צריך לתפוס אותו ולסגור בחן — לסיים בקשות פעילות, לסגור חיבורי DB — לפני היציאה:</p>
+<pre><code>process.on("SIGTERM", async () =&gt; {
+  console.log("Shutting down gracefully...");
+  await server.close();        // הפסק לקבל בקשות חדשות, סיים קיימות
+  await db.disconnect();        // סגור משאבים
+  process.exit(0);
+});</code></pre>
+<p>בלי זה, deploy (שמכבה container ומעלה חדש — זוכר rolling deploy?) יקטע בקשות באמצע. graceful shutdown הוא מה שהופך deploys לחלקים באמת.</p>
+
+<hr>
+
+<h2 id="s12">12. Error Handling ב-Async</h2>
+
+<p>טיפול בשגיאות ב-Node קשה יותר מבשפות סינכרוניות, כי שגיאה יכולה לקרות "מאוחר" (ב-callback/promise) כשה-stack כבר לא שם. חובה לעשות את זה נכון — שגיאה לא-מטופלת יכולה להפיל את כל התהליך.</p>
+
+<h3>הכללים לפי סוג</h3>
+<pre><code>// async/await — try/catch רגיל:
+try {
+  await riskyOperation();
+} catch (err) {
+  handle(err);
+}
+
+// Promise — .catch:
+riskyOperation().catch(handle);
+
+// error-first callback — בדוק את err תמיד:
+fs.readFile("f", (err, data) =&gt; {
+  if (err) return handle(err);
+  // ...
+});</code></pre>
+
+<h3>המלכודת הכי מסוכנת: unhandled rejection</h3>
+<blockquote>
+<p>אם Promise נדחה ואין לו <code>.catch</code> (או <code>try/catch</code> סביב ה-<code>await</code>), זה <strong>unhandled rejection</strong>. ב-Node מודרני זה <strong>מפיל את התהליך</strong>. הדוגמה הקלאסית — לשכוח <code>await</code>:</p>
+<pre><code>async function bad() {
+  riskyOperation();   // ❌ בלי await — אם זה נכשל, unhandled rejection!
+}
+async function good() {
+  await riskyOperation();   // ✅ עכשיו try/catch תופס
+}</code></pre>
+</blockquote>
+
+<h3>רשתות ביטחון גלובליות</h3>
+<pre><code>process.on("unhandledRejection", (reason) =&gt; {
+  console.error("Unhandled rejection:", reason);
+  // log, ואז יציאה מבוקרת — לא להמשיך במצב לא-ידוע
+});
+
+process.on("uncaughtException", (err) =&gt; {
+  console.error("Uncaught exception:", err);
+  process.exit(1);   // המצב לא בטוח — צא ותן ל-orchestrator להרים מחדש
+});</code></pre>
+
+<blockquote>
+<p><strong>עיקרון חשוב:</strong> אלה רשתות ביטחון ל-<em>logging</em> ויציאה מבוקרת — <strong>לא</strong> תחליף לטיפול נכון בשגיאות. אחרי <code>uncaughtException</code>, התהליך במצב לא-ידוע ומסוכן להמשיך — עדיף לצאת ולתת ל-Docker/K8s להרים instance נקי (זוכר self-healing ו-restart ממדריך DevOps?). "crash fast, restart clean" עדיף על "המשך במצב שבור".</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13">13. Worker Threads, Child Processes ו-Cluster</h2>
+
+<p>Node הוא single-threaded — אז מה עושים עם משימה CPU כבדה שחוסמת את ה-event loop, או עם מכונה מרובת-cores? שלושה כלים, לשלושה צרכים שונים.</p>
+
+<h3>Worker Threads — למשימות CPU</h3>
+<p>הבעיה: חישוב כבד (עיבוד תמונה, hashing, פענוח גדול) חוסם את ה-thread היחיד ומקפיא את השרת (הכלל הזהב מפרק 2). הפתרון: <strong>worker thread</strong> — thread נפרד שמריץ את החישוב הכבד במקביל, בלי לחסום את ה-main thread:</p>
+<pre><code>import { Worker } from "node:worker_threads";
+
+// מעביר חישוב כבד ל-thread נפרד:
+const worker = new Worker("./heavy-computation.js");
+worker.on("message", (result) =&gt; console.log("Done:", result));
+// ה-event loop הראשי נשאר חופשי לטפל בבקשות</code></pre>
+
+<h3>Child Processes — להריץ תוכניות אחרות</h3>
+<p>להריץ תהליך נפרד לגמרי — פקודת shell, סקריפט Python, כלי CLI:</p>
+<pre><code>import { spawn } from "node:child_process";
+const ls = spawn("ls", ["-la"]);
+ls.stdout.on("data", (data) =&gt; console.log(data.toString()));</code></pre>
+
+<h3>Cluster — לנצל את כל ה-Cores</h3>
+<p>מכונה עם 8 cores, אבל Node רץ על core אחד. <strong>cluster</strong> מריץ כמה עותקים (workers) של האפליקציה — אחד לכל core — עם load balancing ביניהם. זה מנצל את כל המכונה:</p>
+<pre><code>import cluster from "node:cluster";
+import { cpus } from "node:os";
+
+if (cluster.isPrimary) {
+  for (let i = 0; i &lt; cpus().length; i++) cluster.fork();   // worker לכל core
+} else {
+  // כל worker מריץ את השרת
+  startServer();
+}</code></pre>
+
+<blockquote>
+<p><strong>מעשי ל-production:</strong> בפועל, לרוב <strong>לא</strong> תשתמש ב-cluster ידנית — כלים כמו PM2, או פשוט להריץ כמה containers מאחורי load balancer (זוכר horizontal scaling ממדריך System Design?), עושים את אותו דבר בצורה נקייה יותר. worker threads כן שימושיים ישירות למשימות CPU נקודתיות. הכלל: Node מבריק ל-I/O; למשימות CPU כבדות — worker threads או, עדיף, הוצא את זה לשירות נפרד. אם רוב העבודה שלך CPU-bound, ייתכן ש-Node הוא הכלי הלא-נכון מלכתחילה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13f">זרקור: Advanced Node — AsyncLocalStorage, Atomics, perf_hooks, N-API</h2>
+
+<p>הנושאים המתקדמים-נישתיים שלא תיגע בהם כל יום, אבל כשתצטרך אותם — טוב לדעת שהם קיימים. אלה מפרידים בין מי שמכיר Node למי ששולט בו.</p>
+
+<h3>1. AsyncLocalStorage — "context" שעובר לאורך async</h3>
+<blockquote>
+<p>הבעיה: ב-Node single-threaded עם המון בקשות אסינכרוניות מעורבבות, איך מצמידים context (למשל <strong>request ID</strong>, user, trace) לכל ה-logs של בקשה מסוימת — בלי להעביר אותו ידנית דרך כל פונקציה? ב-thread-per-request פשוט היו משתמשים ב-thread-local, אבל אין כזה ב-Node.</p>
+<p><strong>AsyncLocalStorage</strong> (מ-<code>node:async_hooks</code>) פותר בדיוק את זה — הוא שומר ערך ש"נוסע" לאורך שרשרת ה-async של בקשה, וזמין בכל מקום בתוכה:</p>
+<pre><code>import { AsyncLocalStorage } from "node:async_hooks";
+const als = new AsyncLocalStorage();
+
+// middleware: מריץ את הבקשה עם context
+app.use((req, res, next) =&gt; {
+  als.run({ requestId: crypto.randomUUID() }, () =&gt; next());
+});
+
+// בכל מקום עמוק בקוד — בלי להעביר את זה כפרמטר:
+function log(msg) {
+  const { requestId } = als.getStore();   // זמין אוטומטית!
+  console.log(`[${requestId}] ${msg}`);
+}</code></pre>
+<p>זה הבסיס ל-<strong>request-scoped logging</strong> ו-<strong>distributed tracing</strong> ב-Node (זוכר observability ממדריך System Design?). NestJS ו-ספריות logging משתמשות בזה מתחת. יש לו overhead קטן, אז לא לשים בו הכל — רק context אמיתי.</p>
+</blockquote>
+
+<h3>2. SharedArrayBuffer + Atomics — זיכרון משותף אמיתי בין threads</h3>
+<blockquote>
+<p>זוכר שworker threads מתקשרים דרך העברת הודעות (מעתיק נתונים)? לעבודה מרובת-threads על נתונים גדולים זה יקר. <strong>SharedArrayBuffer</strong> הוא בלוק זיכרון ש<strong>כמה worker threads חולקים ישירות</strong> — בלי העתקה. אבל עכשיו יש לך את כל בעיות ה-concurrency (זוכר את מדריך ה-systems? race conditions!), אז משתמשים ב-<strong>Atomics</strong> לפעולות אטומיות בטוחות על הזיכרון המשותף:</p>
+<pre><code>const shared = new SharedArrayBuffer(1024);
+const view = new Int32Array(shared);
+// מעבירים את shared ל-worker (בלי העתקה — משותף)
+Atomics.add(view, 0, 1);      // increment אטומי — בטוח בין threads
+Atomics.load(view, 0);        // קריאה אטומית
+Atomics.wait(view, 0, 0);     // המתנה עד שערך משתנה (כמו condition variable!)</code></pre>
+<p>זה בדיוק ה-<strong>atomics ו-CAS</strong> ממדריך ה-systems, ברמת JavaScript. שימושי לחישוב מקבילי כבד (עיבוד תמונה/וידאו, סימולציות). נדיר בקוד Backend רגיל, אבל זו הדרך היחידה ל-shared state אמיתי בין workers.</p>
+</blockquote>
+
+<h3>3. perf_hooks — מדידת ביצועים מדויקת</h3>
+<p>ל-profiling מדויק בקוד (לא רק כלים חיצוניים), <code>node:perf_hooks</code> נותן מדידות ברמת דיוק גבוהה — כולל מדידת <strong>event loop lag</strong> ישירות (זוכר את האויב מספר אחת מפרק 14?):</p>
+<pre><code>import { performance, monitorEventLoopDelay } from "node:perf_hooks";
+
+const start = performance.now();
+doWork();
+console.log(`Took ${performance.now() - start}ms`);   // דיוק תת-מילישנייה
+
+// ניטור event loop lag — קריטי ל-production:
+const h = monitorEventLoopDelay();
+h.enable();
+// אחרי זמן: h.mean, h.max — כמה ה-event loop "נתקע"</code></pre>
+<p>זה מה ש-APM tools (Datadog וכו') משתמשים בו מתחת כדי להתריע על event loop lag. שימושי לבנות מדדים משלך.</p>
+
+<h3>4. Native Addons (N-API) — לקרוא C++ מ-Node</h3>
+<p>כשצריך ביצועים שמעבר ל-JS (חישוב כבד, גישה לחומרה, ספריית C קיימת), אפשר לכתוב <strong>native addon</strong> ב-C++ ולקרוא לו מ-Node דרך <strong>N-API</strong> (ממשק יציב). ספריות כמו <code>bcrypt</code> (זוכר מ-Auth?), <code>sharp</code> (עיבוד תמונות), ו-drivers של DB הן native addons מתחת — זו הסיבה שהן מהירות. אתה כמעט אף פעם לא תכתוב אחד, אבל טוב להבין <em>למה</em> חלק מ-<code>npm install</code> "מקמפל" דברים (native code שצריך build לפלטפורמה שלך).</p>
+
+<h3>5. Diagnostics מתקדם — Heap Snapshots ו-Flame Graphs</h3>
+<p>לדיבוג memory leaks ובעיות ביצועים עמוקות:</p>
+<ul>
+<li><strong>Heap snapshots</strong> — צילום של כל ה-heap ברגע נתון. משווים שני snapshots לאורך זמן כדי לראות <em>מה</em> גדל ולא משתחרר (מוצא memory leaks — זוכר מפרק 14?). דרך <code>node --inspect</code> + Chrome DevTools.</li>
+<li><strong>Flame graphs</strong> — ויזואליזציה של איפה ה-CPU מבלה זמן (איזו פונקציה "רחבה" = אוכלת CPU). הכלי הכי טוב למצוא bottlenecks. דרך <code>--prof</code> או כלים כמו <code>0x</code>.</li>
+<li><strong><code>node --inspect</code></strong> — מחבר את Node ל-Chrome DevTools לדיבוג עם breakpoints, profiling, ו-memory analysis מלא.</li>
+</ul>
+
+<blockquote>
+<p><strong>מתי להגיע לאלה:</strong> אל תלמד אותם עכשיו בעל-פה — הם למקרים ספציפיים. AsyncLocalStorage תפגוש כשתבנה logging/tracing רציני. perf_hooks ו-diagnostics כשתדבג בעיית ביצועים אמיתית ב-production. Atomics/SharedArrayBuffer רק אם תיגע בחישוב מקבילי כבד. N-API — כמעט לעולם לא ישירות. הנקודה: לדעת <strong>שהם קיימים ומה הם פותרים</strong>, כדי שכשתיתקל בבעיה — תדע לאן לפנות. זה ההבדל בין "לא ידעתי שאפשר" ל"אני יודע בדיוק איזה כלי צריך".</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. Performance ו-Profiling</h2>
+
+<p>מכיוון ש-Node הוא single-threaded, בעיות ביצועים שונות מבשפות מרובות-threads. שני האויבים העיקריים: <strong>חסימת ה-event loop</strong> ו-<strong>memory leaks</strong>.</p>
+
+<h3>Event Loop Lag — האויב מספר אחת</h3>
+<p>אם קוד סינכרוני חוסם את ה-event loop, <em>כל</em> הבקשות מתעכבות. זה נמדד כ-"event loop lag" — כמה זמן ה-loop מתעכב מלהגיע לפאזה הבאה. סימנים: latency שקופץ תחת עומס, בקשות שנתקעות. הגורמים הנפוצים:</p>
+<ul>
+<li>לולאות ארוכות / עיבוד מערכים ענקיים סינכרונית.</li>
+<li><code>JSON.parse</code>/<code>stringify</code> על נתונים גדולים.</li>
+<li>פעולות <code>*Sync</code> (readFileSync וכו').</li>
+<li>Regex מסובך על טקסט גדול (ReDoS).</li>
+</ul>
+<p>הפתרון: לפרק עבודה לחתיכות (עם <code>setImmediate</code> בין חתיכות), או worker threads.</p>
+
+<h3>Memory Leaks</h3>
+<p>הזיכרון גדל ולא משתחרר עד קריסה (<code>out of memory</code>). גורמים נפוצים ב-Node:</p>
+<ul>
+<li><strong>מאזיני events שלא הוסרו</strong> (פרק 7) — מצטברים.</li>
+<li><strong>closures שמחזיקים אובייקטים גדולים</strong> בטעות.</li>
+<li><strong>caches שגדלים בלי גבול</strong> — בלי eviction (זוכר LRU ממדריך System Design?).</li>
+<li><strong>global arrays/maps</strong> שרק דוחפים אליהם.</li>
+</ul>
+
+<h3>כלים</h3>
+<pre><code>node --inspect app.js        # מאפשר debugging + profiling ב-Chrome DevTools
+node --prof app.js           # CPU profiling
+process.memoryUsage()        # מדידת זיכרון נוכחי בקוד</code></pre>
+<p>ב-production, APM (Datadog, New Relic — זוכר observability?) מנטר event loop lag וזיכרון, ומתריע לפני קריסה.</p>
+
+<blockquote>
+<p><strong>הכלל:</strong> אל תאופטמז מראש (זוכר את העיקרון מכל הסדרה?). קוד ברור קודם, ואם יש בעיית ביצועים — <strong>מדוד</strong> (profile) לפני שאתה מנחש. רוב "האטות ה-Node" הן event loop שנחסם או N+1 queries (זוכר ממדריך SQL?) — לא ה-CPU. profiler מראה לך בדיוק איפה, במקום לנחש.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s15">15. אבטחה ו-Tooling</h2>
+
+<h3>אבטחה ספציפית ל-Node</h3>
+<ul>
+<li><strong>תלויות</strong> — הסיכון הגדול. פרויקט Node טיפוסי גורר מאות חבילות. הרץ <code>npm audit</code> לזיהוי חולשות ידועות, ועדכן. חבילה זדונית/פרוצה = פרצה ישירה.</li>
+<li><strong>אל תריץ <code>eval</code> על קלט</strong> — הרצת קוד שרירותי.</li>
+<li><strong>Injection</strong> — SQL injection (מדריך SQL — השתמש ב-parameterized queries), command injection ב-<code>child_process</code> (אל תשרשר קלט לפקודות shell).</li>
+<li><strong>ReDoS</strong> — regex מסובך על קלט משתמש יכול לתקוע את ה-event loop.</li>
+<li><strong>Secrets</strong> — ב-env, לא בקוד (מדריכי DevOps/Auth/Git).</li>
+<li><strong>validate כל קלט</strong> — zod/class-validator (מדריכי TypeScript/NestJS).</li>
+</ul>
+
+<h3>Tooling מודרני</h3>
+<ul>
+<li><strong>Testing</strong> — ל-Node יש <code>node:test</code> מובנה; פופולריים: Vitest, Jest.</li>
+<li><strong>Linting/Formatting</strong> — ESLint + Prettier. תופסים באגים וסגנון.</li>
+<li><strong>tsx / ts-node</strong> — הרצת TypeScript ישירות בפיתוח (מדריך TypeScript).</li>
+<li><strong>Debugging</strong> — <code>node --inspect</code> + Chrome DevTools, או ה-debugger של VS Code (breakpoints, לא <code>console.log</code>).</li>
+<li><strong>nodemon / --watch</strong> — restart אוטומטי בשינוי קוד בפיתוח.</li>
+</ul>
+
+<hr>
+
+<h2 id="s16">16. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>אל תחסום את ה-event loop</strong> — הכלל הזהב. async תמיד, בלי <code>*Sync</code> ב-request handlers, בלי CPU כבד על ה-main thread.</li>
+<li><strong>async/await + try/catch</strong> — לא callback hell. ותמיד <code>await</code> (או <code>.catch</code>) כל Promise.</li>
+<li><strong>Promise.all לעבודה מקבילה</strong> — לא <code>await</code> סדרתי לדברים עצמאיים.</li>
+<li><strong>streams לנתונים גדולים</strong> — לא לטעון הכל לזיכרון. <code>pipeline</code> ל-backpressure.</li>
+<li><strong>graceful shutdown</strong> — תפוס SIGTERM, סגור משאבים.</li>
+<li><strong>טפל בשגיאות async נכון</strong> — unhandled rejection מפיל את התהליך.</li>
+<li><strong>commit את ה-lockfile, <code>npm ci</code> ב-CI</strong> — reproducibility.</li>
+<li><strong>env vars הם strings</strong> — המר טיפוסים.</li>
+<li><strong>worker threads ל-CPU</strong>, לא על ה-main thread.</li>
+<li><strong>מדוד לפני אופטימיזציה</strong> — profile, אל תנחש.</li>
+</ol>
+
+<h3>טעויות נפוצות</h3>
+<ul>
+<li><strong>קוד סינכרוני כבד</strong> שחוסם את ה-event loop ומקפיא את השרת.</li>
+<li><strong>לשכוח <code>await</code></strong> — unhandled rejection / התנהגות לא-צפויה.</li>
+<li><strong><code>await</code> סדרתי</strong> לדברים שיכלו לרוץ במקביל — איטי.</li>
+<li><strong>טעינת קובץ ענק לזיכרון</strong> במקום stream.</li>
+<li><strong>מאזיני events שלא מוסרים</strong> — memory leak.</li>
+<li><strong>לא לתפוס SIGTERM</strong> — deploys קוטעים בקשות.</li>
+<li><strong>לבלבל בין CJS ל-ESM</strong> — require/import errors.</li>
+<li><strong>להתעלם מ-<code>npm audit</code></strong> — תלויות פרוצות.</li>
+</ul>
+
+<hr>
+
+<h2 id="s17">17. תרגילים</h2>
+
+<p><strong>1 — Event Loop.</strong> נבא את סדר הפלט של קוד עם <code>console.log</code>, <code>setTimeout(0)</code>, <code>Promise.resolve().then</code>, ו-<code>process.nextTick</code>. הרץ ובדוק אם צדקת. (זה מבחן ההבנה של פרק 2).</p>
+
+<p><strong>2 — HTTP גולמי.</strong> בנה שרת REST פשוט עם מודול <code>http</code> בלבד (בלי Express) — שני endpoints, JSON, status codes נכונים. תעריך כמה NestJS חוסך לך.</p>
+
+<p><strong>3 — Streams.</strong> כתוב סקריפט שקורא קובץ CSV גדול, מסנן שורות, וכותב לקובץ חדש — הכל ב-streaming עם <code>pipeline</code>, בלי לטעון את הכל לזיכרון.</p>
+
+<p><strong>4 — Async מקבילי.</strong> כתוב פונקציה שמביאה נתונים מ-3 APIs עצמאיים. ממש אותה קודם סדרתית ואז עם <code>Promise.all</code>, ומדוד את ההפרש בזמן.</p>
+
+<p><strong>5 — Worker Thread.</strong> כתוב חישוב כבד (למשל, מספרים ראשוניים עד מיליון) שחוסם את השרת, ואז העבר אותו ל-worker thread כדי שהשרת יישאר responsive. בדוק את ההבדל.</p>
+
+<p><strong>6 — Graceful Shutdown.</strong> הוסף לשרת טיפול ב-SIGTERM שסוגר חיבורים בחן. בדוק עם <code>Ctrl+C</code>.</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>הדבר האחד לקחת: <strong>הכל ב-Node חוזר ל-event loop.</strong> thread אחד, non-blocking I/O, ו"אל תחסום את ה-loop" — מזה נגזרים async/await, streams, worker threads, וכל דפוסי הביצועים. ברגע שהמודל הזה מתיישב בראש, Node מפסיק להפתיע אותך.</p>
+
+<p>שים לב כמה מהמדריך חיבר את הסדרה מלמטה: NestJS הוא <code>http.createServer</code> עם שכבות; async/await הם הטיפוסים מ-TypeScript בפעולה; streams וזיכרון קשורים ל-System Design; env ו-graceful shutdown ל-DevOps. עכשיו אתה מבין את הרצפה שכל השאר עומד עליה.</p>
+
+<p>יש לך עכשיו 12 מדריכים ב-<code>C:\claude-folder</code>. ובאמת — עכשיו יש לך את כל ה-runtime, השפה, וה-framework. <strong>אין עוד רצפה ללמוד לפני שבונים.</strong> קח את פרויקט ה-RAG, פתח terminal, ותתחיל. כל שאלה שתעלה תוך כדי בנייה — תלמד ממנה פי עשרה מהמדריך ה-13. 🚀</p>
+
+</body>
+</html>

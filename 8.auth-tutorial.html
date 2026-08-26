@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authentication — JWT, Sessions, Cookies ו-OAuth 2.0 — המדריך המלא</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #6d28d9; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #6d28d9; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #4c1d95; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #f3effc; }
+  a { color: #6d28d9; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f7f4fd; border: 1px solid #e2d9f7; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f7f4fd; border: 1px solid #e2d9f7; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; }
+</style>
+</head>
+<body>
+
+<h1>Authentication — JWT, Sessions, Cookies ו-OAuth 2.0</h1>
+
+<blockquote>
+<p>המשך לסדרה (TypeScript, NestJS). המדריך הזה מסביר איך אפליקציית Backend יודעת <strong>מי</strong> המשתמש ו<strong>מה</strong> מותר לו — ואת ההבדל האמיתי בין ארבעת המושגים שכולם מבלבלים ביניהם.</p>
+<p>ההסברים בעברית, הקוד והמונחים באנגלית. הדוגמאות ממוקדות Node/NestJS.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">Authentication מול Authorization — ההבחנה הבסיסית</a></li>
+<li><a href="#s2">המפה: למה אלה לא ארבעה מתחרים</a></li>
+<li><a href="#s3">Cookies — מנגנון התעבורה</a></li>
+<li><a href="#s4">Session-based Auth — הגישה ה-Stateful</a></li>
+<li><a href="#s5">JWT — הגישה ה-Stateless</a></li>
+<li><a href="#s6">Session מול JWT — ההשוואה האמיתית</a></li>
+<li><a href="#s7">Access Token ו-Refresh Token</a></li>
+<li><a href="#s8">OAuth 2.0 — Framework להרשאה מבוזרת</a></li>
+<li><a href="#s9">OpenID Connect (OIDC) — Login דרך OAuth</a></li>
+<li><a href="#s10">איפה כל אחד יושב — טבלת השכבות</a></li>
+<li><a href="#s11">מימוש בפועל ב-NestJS</a></li>
+<li><a href="#s12">אבטחה — XSS, CSRF ואיפה לשמור טוקנים</a></li>
+<li><a href="#s13">מדריך החלטה — מה לבחור מתי</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. Authentication מול Authorization — ההבחנה הבסיסית</h2>
+
+<p>לפני הכל, שני מושגים שאנשים מבלבלים כל הזמן. הם נשמעים דומה (שניהם "Auth") אבל עונים על שאלות שונות:</p>
+
+<ul>
+<li><strong>Authentication (אימות, "authn")</strong> — <strong>מי אתה?</strong> להוכיח זהות. login עם סיסמה, טביעת אצבע, קוד מה-SMS.</li>
+<li><strong>Authorization (הרשאה, "authz")</strong> — <strong>מה מותר לך?</strong> בהינתן שאתה מזוהה, אילו פעולות ומשאבים פתוחים בפניך. admin מול user רגיל.</li>
+</ul>
+
+<p>הסדר תמיד קבוע: <strong>קודם authentication, אחר כך authorization.</strong> אי אפשר להחליט מה מותר למישהו לפני שיודעים מי הוא. ארבעת הנושאים במדריך הזה עוסקים בעיקר ב-authentication ובשמירת הזהות לאורך זמן — חוץ מ-OAuth, שהוא בעצם על authorization מבוזר (עוד נגיע לזה).</p>
+
+<h3>הבעיה הבסיסית: HTTP הוא stateless</h3>
+<p>הנה הליבה של כל הנושא. פרוטוקול HTTP <strong>חסר זיכרון</strong> — כל request הוא עצמאי לחלוטין. השרת לא זוכר שום דבר מה-request הקודם. כשאתה מתחבר עם סיסמה בבקשה אחת, ובבקשה הבאה מבקש את הפרופיל שלך — מבחינת HTTP אלה שני זרים מוחלטים.</p>
+
+<p>אז נוצרת השאלה שכל מנגנוני ה-auth מנסים לפתור: <strong>אחרי שהמשתמש הוכיח את זהותו פעם אחת, איך השרת "זוכר" אותו בבקשות הבאות בלי לבקש סיסמה כל פעם?</strong></p>
+
+<p>כל מה שנלמד — cookies, sessions, JWT — הוא בסופו של דבר תשובה שונה לשאלה הזו: איך נושאים הוכחת זהות מבקשה לבקשה.</p>
+
+<hr>
+
+<h2 id="s2">2. המפה: למה אלה לא ארבעה מתחרים</h2>
+
+<p>זו הנקודה הכי חשובה במדריך, אז נעצור עליה לפני כל פרט טכני. אנשים שואלים "JWT או Session או Cookie או OAuth?" כאילו צריך לבחור אחד. <strong>זו שאלה שגויה.</strong> הם חיים בשלוש שכבות שונות:</p>
+
+<table>
+<tr><th>מושג</th><th>איזו שכבה</th><th>עונה על השאלה</th></tr>
+<tr><td><strong>Cookie</strong></td><td>מנגנון תעבורה</td><td>איפה שומרים את הזהות בדפדפן ואיך שולחים אותה אוטומטית בכל בקשה?</td></tr>
+<tr><td><strong>Session</strong></td><td>אסטרטגיית זהות (stateful)</td><td>השרת זוכר את המשתמש — מחזיק state בצד שלו</td></tr>
+<tr><td><strong>JWT</strong></td><td>אסטרטגיית זהות (stateless)</td><td>המשתמש נושא איתו טוקן חתום — השרת לא זוכר כלום</td></tr>
+<tr><td><strong>OAuth 2.0</strong></td><td>Framework להרשאה מבוזרת</td><td>איך אפליקציה מקבלת גישה בשם המשתמש לשירות אחר (Google, GitHub)?</td></tr>
+</table>
+
+<h3>איך הם מתחברים בפועל</h3>
+<p>הנה הקסם — הם עובדים <strong>יחד</strong>, לא במקום זה את זה:</p>
+<ul>
+<li>Session-based auth <strong>משתמש ב-cookie</strong> כדי לשלוח את ה-session ID. (Session + Cookie)</li>
+<li>JWT אפשר לשלוח <strong>בתוך cookie</strong>, או ב-header. (JWT + Cookie, או JWT לבד)</li>
+<li>OAuth 2.0 <strong>מנפיק לך בסוף טוקנים</strong> — שלרוב הם JWT. (OAuth + JWT)</li>
+</ul>
+
+<p>אז צירוף אמיתי בפרויקט יכול להיות: "התחברות דרך Google (OAuth 2.0 + OIDC), שמנפיקה JWT, שנשמר ב-HttpOnly cookie". שלושה מהמושגים בפעולה בו-זמנית. ברגע שתפנים שאלה שכבות ולא מתחרים — כל הנושא מתבהר.</p>
+
+<blockquote>
+<p><strong>המשפט לזכור:</strong> Cookie זה <em>איפה</em>, Session ו-JWT זה <em>איך זוכרים</em> (בשרת או אצל הלקוח), ו-OAuth זה <em>איך נותנים לאפליקציה שלישית גישה</em>. שאלה נכונה היא לא "מי מנצח" אלא "איזה שילוב מתאים לי".</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s3">3. Cookies — מנגנון התעבורה</h2>
+
+<p>נתחיל מהתשתית, כי הכל בנוי עליה. Cookie הוא פיסת מידע קטנה שהשרת מבקש מהדפדפן <strong>לשמור</strong>, והדפדפן <strong>שולח אותה אוטומטית</strong> בכל בקשה עתידית לאותו domain. זהו — זה כל הרעיון. Cookie בעצמו לא "auth", הוא רק צינור.</p>
+
+<h3>איך זה עובד</h3>
+<div class="flow">
+1. Server response:  Set-Cookie: sessionId=abc123; HttpOnly; Secure<br>
+2. Browser stores the cookie<br>
+3. Every next request:  Cookie: sessionId=abc123   (אוטומטית, בלי קוד)
+</div>
+
+<p>היתרון המרכזי: <strong>אוטומטי</strong>. אתה לא צריך לכתוב קוד שמצרף את ה-cookie — הדפדפן עושה את זה לבד לכל בקשה לאותו domain. זו בדיוק הסיבה שהוא מתאים כל כך ל-auth.</p>
+
+<h3>ה-attributes שחייבים להכיר</h3>
+<p>כאן נמצאת רוב האבטחה. cookie בלי ה-attributes הנכונים הוא חור אבטחה:</p>
+
+<pre><code>Set-Cookie: sessionId=abc123;
+  HttpOnly;              // JavaScript לא יכול לקרוא את ה-cookie — הגנה מ-XSS
+  Secure;                // נשלח רק על HTTPS, אף פעם לא על HTTP
+  SameSite=Strict;       // לא נשלח בבקשות cross-site — הגנה מ-CSRF
+  Max-Age=3600;          // תוקף בשניות (או Expires עם תאריך)
+  Path=/;                // לאילו נתיבים ה-cookie שייך
+  Domain=example.com     // לאיזה domain</code></pre>
+
+<ul>
+<li><strong><code>HttpOnly</code></strong> — הכי חשוב לאבטחה. הופך את ה-cookie לבלתי-נגיש ל-JavaScript (<code>document.cookie</code> לא יראה אותו). זה מה שמגן על טוקן גם אם יש XSS בדף.</li>
+<li><strong><code>Secure</code></strong> — ה-cookie נשלח רק על חיבור מוצפן (HTTPS). חובה ב-production.</li>
+<li><strong><code>SameSite</code></strong> — שולט אם ה-cookie נשלח בבקשות מ-sites אחרים. <code>Strict</code> (הכי מחמיר), <code>Lax</code> (ברירת מחדל סבירה), <code>None</code> (מחייב Secure). זה קו ההגנה המרכזי מפני CSRF.</li>
+</ul>
+
+<blockquote>
+<p><strong>נקודה קריטית:</strong> השילוב <code>HttpOnly + Secure + SameSite</code> הוא מה שהופך cookie לדרך <em>בטוחה</em> לשמור טוקן. בלי <code>HttpOnly</code>, כל סקריפט זדוני בדף יכול לגנוב את הטוקן. נחזור לזה בפרק האבטחה — זה ההבדל המעשי הגדול בין אחסון ב-cookie לאחסון ב-<code>localStorage</code>.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s4">4. Session-based Auth — הגישה ה-Stateful</h2>
+
+<p>זו הגישה הוותיקה והפשוטה מבחינה מושגית. הרעיון: <strong>השרת זוכר את המשתמש.</strong> כשמתחברים, השרת יוצר "session" — רשומה בצד שלו — ונותן ללקוח רק מזהה קטן (session ID) שמצביע עליה.</p>
+
+<h3>הזרימה המלאה</h3>
+<div class="flow">
+1. POST /login  { email, password }<br>
+2. Server: מאמת סיסמה → יוצר session ב-store → session id = "abc123"<br>
+3. Server response:  Set-Cookie: sessionId=abc123; HttpOnly; Secure<br>
+4. כל בקשה הבאה:  Cookie: sessionId=abc123<br>
+5. Server: מחפש "abc123" ב-store → מוצא { userId: 42 } → יודע מי המשתמש
+</div>
+
+<p>הנקודה המרכזית: <strong>ה-session ID לבדו הוא חסר משמעות</strong> — הוא סתם מחרוזת אקראית. כל המידע האמיתי (מי המשתמש, מתי התחבר, ההרשאות) יושב <strong>בשרת</strong>. ה-ID הוא רק מפתח שמצביע לרשומה.</p>
+
+<h3>איפה ה-session נשמר בשרת</h3>
+<p>ה-session store הוא מסד נתונים כלשהו שמחזיק את הרשומות:</p>
+<ul>
+<li><strong>בזיכרון (in-memory)</strong> — הכי פשוט, אבל נעלם ב-restart ולא עובד עם כמה שרתים. רק לפיתוח.</li>
+<li><strong>Redis</strong> — הבחירה הנפוצה ל-production. מהיר, משותף בין שרתים, תומך ב-expiry אוטומטי.</li>
+<li><strong>מסד נתונים (Postgres וכו')</strong> — עמיד, אבל איטי יותר לגישה בכל בקשה.</li>
+</ul>
+
+<h3>היתרון הגדול: revocation מיידי</h3>
+<p>זה המקום שבו sessions זורחים. רוצה לנתק משתמש עכשיו (לחצן "התנתק מכל המכשירים", חשבון שנפרץ)? <strong>פשוט מוחקים את הרשומה מה-store.</strong> הבקשה הבאה עם אותו session ID לא תמצא רשומה — והמשתמש מנותק מיידית. שליטה מלאה ומיידית על מי מחובר.</p>
+
+<h3>החיסרון: state שצריך לנהל ולסקיילר</h3>
+<p>כל בקשה מחייבת חיפוש ב-store (round-trip ל-Redis/DB). וברגע שיש לך כמה שרתים, כולם חייבים גישה לאותו store משותף. זה עובד מצוין, אבל זה תלות תשתיתית שצריך לתחזק — וזו בדיוק הנקודה ש-JWT מנסה לפתור.</p>
+
+<hr>
+
+<h2 id="s5">5. JWT — הגישה ה-Stateless</h2>
+
+<p>JWT (JSON Web Token, מבטאים "jot") הופך את המודל על הראש. במקום שהשרת יזכור את המשתמש, <strong>המשתמש נושא איתו את כל המידע</strong> — בתוך טוקן חתום דיגיטלית. השרת לא שומר כלום; הוא רק <strong>מאמת את החתימה</strong>.</p>
+
+<h3>המבנה: שלושה חלקים מופרדים בנקודה</h3>
+<p>JWT הוא מחרוזת אחת בפורמט <code>xxxxx.yyyyy.zzzzz</code> — שלושה חלקים מקודדים ב-Base64URL:</p>
+
+<pre><code>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiIsIm5hbWUiOiJFbGl5YSJ9.dBjftJeZ4CVP...
+└──── Header ────┘ └──────── Payload ────────┘ └─── Signature ───┘</code></pre>
+
+<p><strong>1. Header</strong> — איזה אלגוריתם חתימה:</p>
+<pre><code>{ "alg": "HS256", "typ": "JWT" }</code></pre>
+
+<p><strong>2. Payload (claims)</strong> — המידע עצמו. כאן שמים את זהות המשתמש והמטא-דאטה:</p>
+<pre><code>{
+  "sub": "42",          // subject — מזהה המשתמש
+  "name": "Eliya",
+  "role": "admin",
+  "iat": 1735680000,    // issued at — מתי נוצר
+  "exp": 1735683600     // expiration — מתי פג (חובה!)
+}</code></pre>
+
+<p><strong>3. Signature</strong> — חתימה קריפטוגרפית של ה-header וה-payload עם מפתח סודי שרק השרת מכיר:</p>
+<pre><code>HMACSHA256( base64(header) + "." + base64(payload), secret )</code></pre>
+
+<h3>הנקודה הקריטית ביותר להבין ב-JWT</h3>
+<blockquote>
+<p><strong>ה-payload מקודד, לא מוצפן.</strong> כל אחד יכול לפענח Base64 ולקרוא את התוכן — נסה להדביק JWT ב-<a href="https://jwt.io">jwt.io</a> ותראה הכל. אז <strong>לעולם אל תשים ב-JWT מידע רגיש</strong> (סיסמאות, מספרי כרטיס). מה שמגן על ה-JWT זה לא סודיות התוכן אלא <strong>החתימה</strong>: אם מישהו ישנה ולו תו אחד ב-payload, החתימה לא תתאים והשרת ידחה את הטוקן. החתימה מבטיחה <em>שלמות ואותנטיות</em>, לא סודיות.</p>
+</blockquote>
+
+<h3>הזרימה</h3>
+<div class="flow">
+1. POST /login  { email, password }<br>
+2. Server: מאמת → חותם JWT עם ה-secret → מחזיר את הטוקן<br>
+3. הלקוח שומר את הטוקן ושולח אותו בכל בקשה:<br>
+&nbsp;&nbsp;&nbsp;Authorization: Bearer eyJhbGc...<br>
+4. Server: מאמת את החתימה בלבד → קורא את ה-payload → יודע מי המשתמש<br>
+&nbsp;&nbsp;&nbsp;(שום גישה ל-DB או store!)
+</div>
+
+<p>שים לב לשלב 4: השרת <strong>לא פונה לשום מקום</strong>. הוא מוודא את החתימה מתמטית עם ה-secret, וזהו. זה מה ש"stateless" אומר — כל המידע הדרוש נמצא בטוקן עצמו.</p>
+
+<h3>היתרון: סקיילינג בלי state משותף</h3>
+<p>כל שרת שמכיר את ה-secret יכול לאמת את הטוקן, לבד, בלי Redis ובלי DB. זה הופך את הסקיילינג לפשוט — הוסף שרתים כרצונך, אין store משותף לתחזק. זו הסיבה ש-JWT פופולרי ב-microservices וב-APIs.</p>
+
+<h3>החיסרון הגדול: אי אפשר לבטל טוקן בקלות</h3>
+<p>וכאן ה-tradeoff שהופך את היתרון לחיסרון. אם השרת לא זוכר כלום, <strong>איך מבטלים טוקן לפני שפג?</strong> משתמש נפרץ, לחצת "התנתק" — אבל הטוקן החתום עדיין תקף עד ה-<code>exp</code> שלו, וכל שרת יקבל אותו. אין "מחיקת רשומה" כמו ב-session, כי אין רשומה.</p>
+
+<p>הפתרונות (כולם מוסיפים בחזרה קצת state, קצת אירוני):</p>
+<ul>
+<li><strong>תוקף קצר</strong> — לתת ל-access token לחיות דקות ספורות, כך שגם אם נגנב הוא כמעט חסר ערך. זה מוביל ישר לדפוס refresh token (פרק הבא).</li>
+<li><strong>Blocklist</strong> — לנהל רשימת טוקנים שבוטלו (ב-Redis). אבל זה מחזיר את ה-state שרצינו להימנע ממנו.</li>
+</ul>
+
+<hr>
+
+<h2 id="s6">6. Session מול JWT — ההשוואה האמיתית</h2>
+
+<p>עכשיו כשמבינים את שניהם, הנה ההשוואה הישירה. זו לא שאלה של "מי טוב יותר" אלא של tradeoffs:</p>
+
+<table>
+<tr><th>קריטריון</th><th>Session (stateful)</th><th>JWT (stateless)</th></tr>
+<tr><td>איפה ה-state</td><td>בשרת (store)</td><td>אצל הלקוח (בטוקן)</td></tr>
+<tr><td>אימות בקשה</td><td>חיפוש ב-store (round-trip)</td><td>אימות חתימה מקומי (מהיר)</td></tr>
+<tr><td>ביטול מיידי</td><td>✅ קל — מוחקים רשומה</td><td>❌ קשה — הטוקן תקף עד exp</td></tr>
+<tr><td>סקיילינג</td><td>צריך store משותף (Redis)</td><td>✅ פשוט — אין state משותף</td></tr>
+<tr><td>גודל בכל בקשה</td><td>קטן (רק ID)</td><td>גדול יותר (כל ה-payload)</td></tr>
+<tr><td>מתאים ל-</td><td>אפליקציות web מונוליטיות, כשצריך שליטה</td><td>APIs, microservices, mobile</td></tr>
+</table>
+
+<blockquote>
+<p><strong>האמת הלא-פופולרית:</strong> הרבה מפתחים בוחרים JWT כברירת מחדל כי זה "מודרני", ואז נאבקים בבעיית ה-revocation ומוסיפים blocklist ב-Redis — ובכך בונים מחדש session, רק יותר מסובך. <strong>אם יש לך אפליקציית web קלאסית עם שרת אחד או כמה מאחורי load balancer, session עם Redis לרוב פשוט יותר ובטוח יותר.</strong> בחר JWT כשאתה באמת צריך stateless (APIs חוצי-שירותים, mobile, אין לך רצון לתחזק store). אל תבחר לפי אופנה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s7">7. Access Token ו-Refresh Token</h2>
+
+<p>הדפוס הזה פותר את הבעיה המרכזית של JWT (אי-ביטול) ומשלב את הטוב משני העולמות. הרעיון: <strong>שני טוקנים במקום אחד.</strong></p>
+
+<ul>
+<li><strong>Access Token</strong> — JWT קצר-חיים (5–15 דקות). נשלח בכל בקשה. אם נגנב — פג כמעט מיד, נזק מוגבל.</li>
+<li><strong>Refresh Token</strong> — ארוך-חיים (ימים/שבועות). נשמר בבטחה (HttpOnly cookie), ומשמש <strong>רק</strong> כדי לקבל access token חדש כשהישן פג.</li>
+</ul>
+
+<h3>הזרימה</h3>
+<div class="flow">
+1. Login → מקבלים access token (15 דק') + refresh token (7 ימים)<br>
+2. עובדים עם access token רגיל בכל בקשה<br>
+3. אחרי 15 דק' ה-access token פג → בקשה מחזירה 401<br>
+4. הלקוח שולח את ה-refresh token ל-POST /refresh<br>
+5. Server מאמת → מנפיק access token חדש (בלי login מחדש)<br>
+6. חוזרים לשלב 2
+</div>
+
+<p>למה זה חכם: ה-access token קצר כל כך שהבעיה של "אי אפשר לבטל" כמעט לא רלוונטית — גם אם נגנב, הוא מת תוך דקות. וה-refresh token, שחי הרבה זמן, <strong>כן</strong> נשמר בצד השרת (או לפחות ניתן לביטול), אז אפשר לנתק משתמש על ידי ביטולו. קיבלת סקיילינג של JWT לבקשות היומיומיות, עם יכולת revocation דרך ה-refresh.</p>
+
+<blockquote>
+<p><strong>Best practice:</strong> refresh token נשמר ב-<code>HttpOnly Secure</code> cookie (לא ב-localStorage), ורצוי עם <strong>rotation</strong> — כל שימוש ב-refresh מנפיק refresh חדש ומבטל את הישן, כך שאם נגנב אחד, מזהים שימוש כפול ומנתקים הכל.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. OAuth 2.0 — Framework להרשאה מבוזרת</h2>
+
+<p>OAuth 2.0 שונה מכל השאר, ולכן הכי מבלבל. הוא לא דרך לזכור משתמש — הוא <strong>framework שמאפשר לאפליקציה לקבל גישה מוגבלת למשאבים של משתמש בשירות אחר, בלי שהמשתמש ייתן לה את הסיסמה שלו.</strong></p>
+
+<h3>הבעיה ש-OAuth פותר</h3>
+<p>דמיין אפליקציה שרוצה לגשת לקבצי Google Drive שלך. הפתרון הנאיבי: תיתן לה את סיסמת ה-Google שלך. <strong>נורא</strong> — עכשיו יש לה גישה מלאה לכל חשבון Google שלך, לתמיד. OAuth נותן פתרון: המשתמש מאשר ל-Google לתת לאפליקציה <strong>טוקן עם הרשאה מוגבלת</strong> ("קריאת קבצים בלבד"), בלי לחשוף את הסיסמה, וניתן לביטול בכל רגע.</p>
+
+<p>זו הסיבה שכפתור "Sign in with Google / GitHub" קיים — מאחוריו רץ OAuth.</p>
+
+<h3>ארבעת התפקידים (Roles)</h3>
+<ul>
+<li><strong>Resource Owner</strong> — המשתמש (בעל הנתונים).</li>
+<li><strong>Client</strong> — האפליקציה שרוצה גישה (שלך).</li>
+<li><strong>Authorization Server</strong> — מי שמנפיק טוקנים (למשל השרת של Google).</li>
+<li><strong>Resource Server</strong> — ה-API שמחזיק את המשאבים (Google Drive API).</li>
+</ul>
+
+<h3>ה-Flow הנפוץ: Authorization Code + PKCE</h3>
+<p>מבין כמה "grant types", זה המומלץ כיום לרוב האפליקציות (web ו-mobile). PKCE (מבטאים "pixie") הוא תוסף אבטחה שמונע גניבת ה-code בדרך:</p>
+
+<div class="flow">
+1. המשתמש לוחץ "Sign in with Google" באפליקציה שלך<br>
+2. הפניה ל-Google:  "האפליקציה X מבקשת גישה ל-email ו-profile"<br>
+3. המשתמש מתחבר ל-Google ומאשר<br>
+4. Google מפנה חזרה לאפליקציה עם authorization code זמני<br>
+5. השרת שלך מחליף את ה-code (+ secret/PKCE) מול Google → access token<br>
+6. עכשיו האפליקציה משתמשת ב-access token מול ה-Google API
+</div>
+
+<p>הנקודה החשובה: <strong>הסיסמה של המשתמש אף פעם לא עוברת דרך האפליקציה שלך.</strong> היא נשארת בין המשתמש ל-Google. האפליקציה מקבלת רק טוקן מוגבל. וה-<code>scopes</code> (למשל <code>read:email</code>) קובעים בדיוק מה מותר לטוקן — הרשאה מדויקת ולא הכל-או-כלום.</p>
+
+<blockquote>
+<p><strong>הבהרה שחוסכת בלבול נפוץ:</strong> OAuth 2.0 <strong>לבדו הוא על authorization, לא authentication.</strong> הוא אומר "לאפליקציה הזו מותר לגשת ל-X", לא "המשתמש הזה הוא באמת אליה". להוכחת <em>זהות</em> (login) בנו שכבה מעל OAuth שנקראת OpenID Connect — הפרק הבא. אנשים אומרים "התחברתי עם OAuth" אבל מתכוונים בעצם ל-OIDC.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. OpenID Connect (OIDC) — Login דרך OAuth</h2>
+
+<p>OIDC הוא <strong>שכבה דקה מעל OAuth 2.0</strong> שמוסיפה את החלק החסר: הוכחת זהות. אם OAuth נותן "access token" (מה מותר), OIDC מוסיף <strong>ID Token</strong> — שהוא JWT שאומר מי המשתמש (email, name, מזהה ייחודי).</p>
+
+<p>זה מה שבאמת רץ מאחורי "Sign in with Google" כשהמטרה היא <em>להתחבר</em> (ולא לגשת לקבצים). הזרימה זהה ל-OAuth, אבל בסוף מקבלים גם ID Token שממנו האפליקציה יודעת בוודאות מי התחבר.</p>
+
+<table>
+<tr><th></th><th>OAuth 2.0</th><th>OIDC</th></tr>
+<tr><td>מטרה</td><td>Authorization (גישה)</td><td>Authentication (זהות)</td></tr>
+<tr><td>מנפיק</td><td>Access Token</td><td>Access Token + ID Token</td></tr>
+<tr><td>עונה על</td><td>"מה מותר לאפליקציה"</td><td>"מי המשתמש"</td></tr>
+</table>
+
+<p>הכלל הפשוט: רוצה שמשתמש <strong>יתחבר</strong> דרך ספק חיצוני → OIDC. רוצה גישה ל-<strong>API</strong> של ספק חיצוני בשם המשתמש → OAuth. בפועל, ספריות "social login" מטפלות בשניהם יחד.</p>
+
+<hr>
+
+<h2 id="s10">10. איפה כל אחד יושב — טבלת השכבות</h2>
+
+<p>סיכום המפה מהתחלה, עכשיו כשכל החלקים מוכרים:</p>
+
+<table>
+<tr><th>מושג</th><th>קטגוריה</th><th>מה הוא נותן</th><th>עובד עם</th></tr>
+<tr><td>Cookie</td><td>תעבורה</td><td>אחסון ושליחה אוטומטית בדפדפן</td><td>Session, JWT</td></tr>
+<tr><td>Session</td><td>זהות (stateful)</td><td>השרת זוכר; ביטול מיידי</td><td>Cookie, Redis</td></tr>
+<tr><td>JWT</td><td>זהות (stateless)</td><td>טוקן חתום נישא; סקיילינג קל</td><td>Cookie/Header, OAuth</td></tr>
+<tr><td>Access + Refresh</td><td>דפוס על JWT</td><td>אבטחה + יכולת ביטול</td><td>JWT, Cookie</td></tr>
+<tr><td>OAuth 2.0</td><td>הרשאה מבוזרת</td><td>גישה בשם משתמש לשירות אחר</td><td>JWT (כטוקנים)</td></tr>
+<tr><td>OIDC</td><td>אימות מבוזר</td><td>login דרך ספק חיצוני</td><td>OAuth, JWT</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s11">11. מימוש בפועל ב-NestJS</h2>
+
+<p>עכשיו נחבר לקוד. NestJS משתמש ב-<strong>Passport</strong> (ספריית auth הסטנדרטית של Node) דרך <code>@nestjs/passport</code>, יחד עם guards שכבר הכרת מהמדריך הקודם.</p>
+
+<h3>שלב 1: אף פעם לא לשמור סיסמה כטקסט — bcrypt</h3>
+<p>לפני הכל, כלל הזהב: סיסמאות נשמרות ב-DB רק אחרי <strong>hashing</strong> (לא הצפנה — hashing חד-כיווני). התקן <code>bcrypt</code>:</p>
+
+<pre><code>import * as bcrypt from "bcrypt";
+
+// בהרשמה — שומרים hash, לא את הסיסמה:
+const hash = await bcrypt.hash(password, 10);   // 10 = salt rounds
+
+// בהתחברות — משווים:
+const isValid = await bcrypt.compare(password, user.passwordHash);</code></pre>
+
+<p><code>bcrypt</code> מוסיף salt אוטומטית ואיטי בכוונה (כדי להקשות על brute-force). לעולם אל תשתמש ב-MD5/SHA לסיסמאות — הם מהירים מדי ולכן לא בטוחים לכך.</p>
+
+<h3>שלב 2: הנפקת JWT ב-login</h3>
+<pre><code>import { JwtService } from "@nestjs/jwt";
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+  ) {}
+
+  async login(email: string, password: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new UnauthorizedException("Invalid credentials");
+    }
+    // ה-payload של ה-JWT — מה שיהיה בטוקן
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return { accessToken: this.jwtService.sign(payload) };
+  }
+}</code></pre>
+
+<h3>שלב 3: JWT Strategy — איך מאמתים את הטוקן בבקשות</h3>
+<pre><code>import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(config: ConfigService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: config.get("JWT_SECRET"),   // ה-secret לאימות החתימה
+    });
+  }
+
+  // מה שחוזר מכאן מוזרק ל-request.user
+  async validate(payload: any) {
+    return { userId: payload.sub, email: payload.email, role: payload.role };
+  }
+}</code></pre>
+
+<h3>שלב 4: הגנה על routes עם Guard</h3>
+<p>זוכר guards מהמדריך של NestJS? זה בדיוק אותו רעיון:</p>
+<pre><code>@Controller("profile")
+export class ProfileController {
+  @Get()
+  @UseGuards(AuthGuard("jwt"))       // רק בקשות עם JWT תקין יעברו
+  getProfile(@Req() req) {
+    return req.user;                 // המידע מ-validate() למעלה
+  }
+}</code></pre>
+
+<p>הכל מתחבר: ה-guard מפעיל את ה-strategy, שמאמתת את החתימה, ש-<code>validate</code> שלה מזריקה את המשתמש ל-request. אותו מודל של "decorator + guard" שכבר ראית.</p>
+
+<hr>
+
+<h2 id="s12">12. אבטחה — XSS, CSRF ואיפה לשמור טוקנים</h2>
+
+<p>הפרק הכי חשוב מעשית. שתי מתקפות מגדירות את כל ההחלטות של איפה ואיך לשמור טוקן.</p>
+
+<h3>XSS (Cross-Site Scripting)</h3>
+<p>קוד JavaScript זדוני שרץ בדף שלך (למשל דרך input לא מסונן) ויכול <strong>לקרוא כל דבר שנגיש ל-JS</strong> — כולל <code>localStorage</code>. זו הסיבה המרכזית שאחסון טוקן ב-<code>localStorage</code> מסוכן: XSS אחד = הטוקן נגנב.</p>
+
+<h3>CSRF (Cross-Site Request Forgery)</h3>
+<p>אתר זדוני גורם לדפדפן שלך לשלוח בקשה לאתר שאתה מחובר אליו, <strong>מנצל את זה שהדפדפן שולח cookies אוטומטית</strong>. זו דווקא חולשה של cookies — ולכן קיים <code>SameSite</code>.</p>
+
+<h3>הטבלה שמכריעה: איפה לשמור את הטוקן</h3>
+<table>
+<tr><th>מקום</th><th>חשוף ל-XSS?</th><th>חשוף ל-CSRF?</th><th>שורה תחתונה</th></tr>
+<tr><td><code>localStorage</code></td><td>❌ כן (JS קורא)</td><td>✅ לא</td><td>נוח, אבל מסוכן ל-XSS. הימנע לטוקנים.</td></tr>
+<tr><td><code>HttpOnly</code> Cookie</td><td>✅ לא (JS חסום)</td><td>❌ כן — אבל <code>SameSite</code> מגן</td><td>המומלץ: HttpOnly + Secure + SameSite</td></tr>
+</table>
+
+<blockquote>
+<p><strong>ההמלצה הפרקטית:</strong> שמור טוקנים ב-<code>HttpOnly Secure SameSite</code> cookie, לא ב-<code>localStorage</code>. כך XSS לא יכול לגנוב את הטוקן (הוא לא נגיש ל-JS), ו-<code>SameSite</code> חוסם את רוב מתקפות ה-CSRF. זה השילוב שנותן הגנה כפולה.</p>
+</blockquote>
+
+<h3>עוד כללי ברזל</h3>
+<ul>
+<li><strong>HTTPS תמיד</strong> ב-production. בלי זה כל טוקן נשלח בטקסט גלוי וניתן ליירוט.</li>
+<li><strong>תוקף קצר ל-access token</strong> — מגביל את חלון הנזק אם נגנב.</li>
+<li><strong>אל תשים מידע רגיש ב-JWT payload</strong> — הוא קריא לכולם.</li>
+<li><strong>secret חזק ל-JWT</strong> (ארוך, אקראי, ב-env), ולעולם לא בקוד.</li>
+<li><strong>rate limiting על login</strong> — מונע brute-force על סיסמאות.</li>
+<li><strong>אמת קלט תמיד</strong> (זוכר את class-validator?) — XSS מתחיל בקלט לא מסונן.</li>
+</ul>
+
+<hr>
+
+<h2 id="s13">13. מדריך החלטה — מה לבחור מתי</h2>
+
+<p>אין תשובה אחת נכונה, אבל יש התאמות טובות. הנה איך אני הייתי בוחר:</p>
+
+<table>
+<tr><th>התרחיש</th><th>הבחירה המומלצת</th><th>למה</th></tr>
+<tr><td>אפליקציית web מונוליטית, שרת אחד/כמה</td><td>Session + Cookie (Redis)</td><td>פשוט, בטוח, ביטול מיידי</td></tr>
+<tr><td>REST API ל-SPA או mobile</td><td>JWT (access + refresh)</td><td>stateless, מתאים ל-clients מגוונים</td></tr>
+<tr><td>Microservices</td><td>JWT</td><td>כל שירות מאמת לבד בלי store משותף</td></tr>
+<tr><td>"התחבר עם Google/GitHub"</td><td>OAuth 2.0 + OIDC</td><td>לא מנהלים סיסמאות בעצמך</td></tr>
+<tr><td>גישה ל-API של צד שלישי בשם המשתמש</td><td>OAuth 2.0</td><td>הרשאה מוגבלת בלי סיסמה</td></tr>
+</table>
+
+<blockquote>
+<p><strong>העצה החשובה ביותר:</strong> אל תבנה auth מאפס ב-production אם אתה יכול להימנע. השתמש בספריות בדוקות (Passport, <code>@nestjs/jwt</code>) או בשירותים מנוהלים (Auth0, Clerk, Supabase Auth, AWS Cognito). auth הוא תחום שבו באג קטן = פריצה, וספרייה שעברה ביקורת אבטחה עדיפה כמעט תמיד על מימוש עצמי. תלמד איך זה עובד (כמו במדריך הזה) — אבל תישען על קוד בדוק.</p>
+</blockquote>
+
+<hr>
+
+<h2>סיכום</h2>
+
+<p>הדבר האחד לקחת מהמדריך הזה: <strong>אלה לא מתחרים אלא שכבות.</strong> Cookie זה איפה שומרים ואיך שולחים. Session ו-JWT הן שתי תשובות לאותה שאלה — "איך זוכרים משתמש" — אחת בשרת (stateful, ביטול קל) ואחת אצל הלקוח (stateless, סקיילינג קל). OAuth 2.0 (עם OIDC) הוא רובד אחר לגמרי: איך נותנים לאפליקציה גישה או login דרך ספק חיצוני.</p>
+
+<p>בפרויקט אמיתי תשלב אותם: למשל login עם Google (OIDC), שמנפיק JWT, שנשמר ב-HttpOnly cookie, עם refresh token לביטול. עכשיו כשאתה מבין כל חלק בנפרד — הצירופים הגיוניים.</p>
+
+<p>הצעד הבא: קח פרויקט NestJS מהמדריך הקודם, והוסף לו auth מלא — bcrypt, JWT strategy, guards, refresh tokens. זה מגבש את הכל.</p>
+
+<p>בהצלחה. 🔐</p>
+
+</body>
+</html>

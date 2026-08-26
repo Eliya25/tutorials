@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeScript — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #3178c6; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #3178c6; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #235a97; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; }
+  th { background: #f2f4f7; }
+  a { color: #3178c6; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f7f9fc; border: 1px solid #e0e6ef; border-radius: 8px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>TypeScript — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>נכתב עבור מפתח שכבר יודע לתכנת (Python / Node / JavaScript) ורוצה לשלוט ב-TypeScript לעומק — עד רמה שמספיקה גם ל-NestJS ומעבר.</p>
+<p>ההסברים בעברית, הקוד והמונחים הטכניים באנגלית. כל פרק בונה על הקודם, אז כדאי לקרוא לפי הסדר בפעם הראשונה, ואחר כך להשתמש בזה כ-reference.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מה זה TypeScript ולמה הוא קיים</a></li>
+<li><a href="#s2">התקנה, הרצה ו-tsconfig ראשוני</a></li>
+<li><a href="#s3">טיפוסים בסיסיים</a></li>
+<li><a href="#s4">מערכים, Tuples ו-Enums</a></li>
+<li><a href="#s5">Objects, Interfaces ו-Type Aliases</a></li>
+<li><a href="#s6">Union, Intersection, Literal Types ו-Narrowing</a></li>
+<li><a href="#s7">Functions</a></li>
+<li><a href="#s8">Generics</a></li>
+<li><a href="#s9">Advanced Types — הכוח האמיתי של TypeScript</a></li>
+<li><a href="#s10">Classes</a></li>
+<li><a href="#s11">Decorators — הבסיס של NestJS</a></li>
+<li><a href="#s12">Modules ו-ארגון קוד</a></li>
+<li><a href="#s13">Async, Promises ו-Error Handling</a></li>
+<li><a href="#s14">tsconfig לעומק</a></li>
+<li><a href="#s15">TypeScript ב-Backend אמיתי (Node / NestJS)</a></li>
+<li><a href="#s16">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s17">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מה זה TypeScript ולמה הוא קיים</h2>
+
+<p>TypeScript הוא <strong>superset של JavaScript</strong>. כלומר: כל קוד JavaScript תקין הוא גם קוד TypeScript תקין. מה ש-TypeScript מוסיף זה <strong>מערכת טיפוסים סטטית</strong> (static type system) — היכולת לתאר מראש איזה סוג ערך יש בכל משתנה, פרמטר, ומה מחזירה כל פונקציה.</p>
+
+<h3>הרעיון המרכזי: בדיקה בזמן קומפילציה, לא בזמן ריצה</h3>
+
+<p>ב-JavaScript הטעות מתגלה רק כשהקוד רץ:</p>
+
+<pre><code>// JavaScript
+function getUserName(user) {
+  return user.name.toUpperCase();
+}
+
+getUserName(undefined); // 💥 TypeError קורס רק בזמן ריצה</code></pre>
+
+<p>ב-TypeScript הטעות מתגלה כבר בזמן הכתיבה, לפני שהקוד בכלל רץ:</p>
+
+<pre><code>// TypeScript
+function getUserName(user: { name: string }): string {
+  return user.name.toUpperCase();
+}
+
+getUserName(undefined);
+// ❌ Argument of type 'undefined' is not assignable to parameter of type '{ name: string }'.</code></pre>
+
+<p>זה ההבדל המהותי: TypeScript מזיז את גילוי הבאגים <strong>שמאלה</strong> על ציר הזמן — מ-runtime ל-compile time. בשביל Backend זה קריטי, כי runtime error ב-production זה request שנכשל או תהליך שקורס.</p>
+
+<h3>עובדה שחייבים להבין: Type Erasure</h3>
+
+<p>זו הנקודה שהכי מבלבלת מתחילים, אז נעצור עליה. <strong>הטיפוסים של TypeScript נמחקים לגמרי בזמן הקומפילציה.</strong> הם לא קיימים ב-runtime.</p>
+
+<p>הקוד הזה:</p>
+
+<pre><code>let age: number = 30;
+interface User { name: string; }</code></pre>
+
+<p>מתקמפל ל-JavaScript הזה:</p>
+
+<pre><code>let age = 30;
+// ה-interface נעלם לחלוטין — אין לו שום ייצוג ב-runtime</code></pre>
+
+<p>המשמעויות המעשיות:</p>
+<ul>
+<li>אי אפשר לבדוק טיפוס של TypeScript ב-runtime. אין <code>if (x instanceof User)</code> על interface.</li>
+<li>הטיפוסים לא מגנים עליך מפני data שמגיע מבחוץ (מ-HTTP request, מ-DB, מ-JSON). TypeScript מאמין למה שאתה מצהיר. לכן ב-Backend צריך <strong>validation אמיתי בזמן ריצה</strong> (כמו <code>class-validator</code> ב-NestJS או <code>zod</code>) בנוסף לטיפוסים.</li>
+</ul>
+
+<p>תזכור את המשפט הזה: <strong>טיפוסים הם הבטחה למקמפל, לא בדיקה ב-runtime.</strong></p>
+
+<pre><code>קוד .ts  ──►  tsc (TypeScript compiler)  ──►  קוד .js  ──►  Node מריץ
+              │
+              └─► תוך כדי: type checking. אם יש שגיאת טיפוס — מדווח.</code></pre>
+
+<hr>
+
+<h2 id="s2">2. התקנה, הרצה ו-tsconfig ראשוני</h2>
+
+<h3>התקנה</h3>
+<p>TypeScript עצמו הוא חבילת npm. בפרויקט אמיתי מתקינים אותו כ-dev dependency:</p>
+
+<pre><code>npm init -y
+npm install --save-dev typescript
+npx tsc --version</code></pre>
+
+<p><code>tsc</code> הוא ה-compiler. <code>npx</code> מריץ אותו מתוך <code>node_modules</code> המקומי (עדיף על התקנה גלובלית, כי כל פרויקט נעול לגרסה משלו).</p>
+
+<h3>הקובץ tsconfig.json</h3>
+<p>זה קובץ ההגדרות של הקומפיילר. יוצרים אותו כך:</p>
+
+<pre><code>npx tsc --init</code></pre>
+
+<p>הנה גרסה מינימלית ושפויה להתחלה (נצלול לכל דגל בפרק 14):</p>
+
+<pre><code>{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"]
+}</code></pre>
+
+<p>הדגל הכי חשוב כאן הוא <code>"strict": true</code>. <strong>תמיד תעבוד עם strict מופעל.</strong> הוא מפעיל חבילה של בדיקות שהופכות את TypeScript מ"הצללה נחמדה" ל"רשת ביטחון אמיתית".</p>
+
+<h3>להריץ קוד TypeScript</h3>
+<p><strong>גישה 1 — קומפילציה ואז הרצה (מה שקורה ב-production):</strong></p>
+
+<pre><code>npx tsc          # מייצר קבצי .js בתיקיית dist
+node dist/index.js</code></pre>
+
+<p><strong>גישה 2 — הרצה ישירה בפיתוח (נוח יותר):</strong></p>
+
+<pre><code>npm install --save-dev tsx
+npx tsx src/index.ts    # מקמפל ומריץ בזיכרון, בלי לייצר קבצים</code></pre>
+
+<blockquote>
+<p><strong>הערה חשובה:</strong> <code>tsx</code>/<code>ts-node</code> בדרך כלל <strong>לא בודקים טיפוסים</strong> — הם רק ממירים ומריצים מהר. לכן צריך להריץ <code>tsc --noEmit</code> בנפרד (למשל ב-CI) כדי לקבל את בדיקות הטיפוסים בפועל. <code>--noEmit</code> אומר "רק תבדוק, אל תייצר קבצים".</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s3">3. טיפוסים בסיסיים</h2>
+
+<h3>הצהרת טיפוס — הסינטקס</h3>
+<pre><code>let username: string = "eliya";
+let age: number = 30;
+let isActive: boolean = true;</code></pre>
+
+<h3>Type Inference — למה לרוב לא צריך לכתוב את הטיפוס</h3>
+<p>TypeScript חכם מספיק להסיק את הטיפוס לבד מהערך. זה נקרא <strong>type inference</strong>:</p>
+
+<pre><code>let username = "eliya";  // TypeScript מסיק: string
+username = 42;           // ❌ Type 'number' is not assignable to type 'string'</code></pre>
+
+<p>הכלל המעשי: <strong>אל תכתוב טיפוס כשהוא ברור מההשמה.</strong> כתוב טיפוס מפורש כשהוא לא ברור — בעיקר בפרמטרים של פונקציות, בערכי החזרה חשובים, ובמשתנים שמאותחלים ל-<code>null</code>.</p>
+
+<pre><code>// מיותר — ה-inference עושה את העבודה:
+let count: number = 0;
+
+// טוב — כאן צריך, כי בלי זה TypeScript לא יודע מה יהיה בפנים:
+let user: User | null = null;</code></pre>
+
+<h3>הטיפוסים הפרימיטיביים</h3>
+<pre><code>let s: string = "hello";
+let n: number = 3.14;        // אין int/float נפרדים — הכל number
+let big: bigint = 100n;      // למספרים ענקיים
+let b: boolean = false;
+let sym: symbol = Symbol();
+let u: undefined = undefined;
+let nl: null = null;</code></pre>
+
+<h3>any — הבריחה ממערכת הטיפוסים (ולמה להימנע)</h3>
+<p><code>any</code> אומר ל-TypeScript "כבה את הבדיקות למשתנה הזה". כל פעולה מותרת עליו, וזה מדביק:</p>
+
+<pre><code>let data: any = "hello";
+data.foo.bar.baz();   // ✅ TypeScript לא מתלונן — וזה בדיוק הבעיה
+data = 42;            // ✅ מותר
+data.toUpperCase();   // ✅ מותר — יקרוס ב-runtime</code></pre>
+
+<p>הכלל: <strong>תתייחס לכל <code>any</code> בקוד שלך כאל באג פוטנציאלי.</strong></p>
+
+<h3>unknown — הגרסה הבטוחה של any</h3>
+<p><code>unknown</code> אומר "לא יודע מה זה עדיין". בניגוד ל-<code>any</code>, TypeScript <strong>מכריח אותך לבדוק</strong> לפני שאתה משתמש בו:</p>
+
+<pre><code>let value: unknown = fetchSomething();
+
+value.toUpperCase();
+// ❌ 'value' is of type 'unknown'. חייבים לצמצם קודם.
+
+if (typeof value === "string") {
+  value.toUpperCase(); // ✅ בתוך ה-if, TypeScript יודע שזה string
+}</code></pre>
+
+<p>זה הטיפוס הנכון לכל data שמגיע מבחוץ: תגובת API, <code>JSON.parse</code>, קלט משתמש.</p>
+
+<h3>void ו-never</h3>
+<pre><code>// void — הפונקציה לא מחזירה ערך שימושי
+function logMessage(msg: string): void {
+  console.log(msg);
+}
+
+// never — הפונקציה לעולם לא מסיימת נורמלית (זורקת שגיאה או לולאה אינסופית)
+function throwError(msg: string): never {
+  throw new Error(msg);
+}</code></pre>
+
+<h3>null, undefined ו-strictNullChecks</h3>
+<p>עם <code>strict</code> מופעל, אתה <strong>לא יכול</strong> לשים <code>null</code> או <code>undefined</code> במקום שמצפה לערך רגיל:</p>
+
+<pre><code>let name: string = null;   // ❌ Type 'null' is not assignable to type 'string'</code></pre>
+
+<p>אם ערך <em>יכול</em> להיות ריק, חייבים לומר את זה במפורש עם union:</p>
+
+<pre><code>let name: string | null = null;  // ✅ עכשיו מותר</code></pre>
+
+<p>זו אחת התכונות שמונעות הכי הרבה באגים — ה"billion dollar mistake" של null pointer מטופל כאן בזמן קומפילציה.</p>
+
+<hr>
+
+<h2 id="s4">4. מערכים, Tuples ו-Enums</h2>
+
+<h3>מערכים</h3>
+<p>שתי צורות כתיבה, זהות במשמעות:</p>
+<pre><code>let scores: number[] = [90, 85, 100];
+let names: Array&lt;string&gt; = ["a", "b"];   // צורה גנרית — נבין אותה בפרק Generics</code></pre>
+
+<p>מערך שיכול להכיל כמה טיפוסים — union בתוך המערך:</p>
+<pre><code>let mixed: (string | number)[] = ["a", 1, "b", 2];</code></pre>
+
+<h3>readonly arrays</h3>
+<pre><code>const config: readonly string[] = ["a", "b"];
+config.push("c");   // ❌ Property 'push' does not exist on type 'readonly string[]'
+config[0] = "x";    // ❌ Index signature is readonly</code></pre>
+
+<h3>Tuples — מערך באורך ובטיפוסים קבועים</h3>
+<p>Tuple הוא מערך שבו כל מיקום מוגדר מראש — גם האורך וגם הטיפוס של כל תא:</p>
+<pre><code>let point: [number, number] = [10, 20];
+let entry: [string, number] = ["age", 30];
+
+entry[0].toUpperCase();  // ✅ TypeScript יודע שזה string
+entry[1].toFixed(2);     // ✅ יודע שזה number
+
+let bad: [string, number] = [30, "age"]; // ❌ הסדר לא נכון</code></pre>
+
+<p>ב-Backend זה שימושי לפונקציות שמחזירות זוג ערכים, למשל <code>[error, result]</code>. אפשר גם tuple עם שמות:</p>
+<pre><code>let coord: [x: number, y: number] = [1, 2];</code></pre>
+
+<h3>Enums — קבוצת קבועים בעלי שם</h3>
+<pre><code>enum UserRole {
+  Admin,   // 0
+  Editor,  // 1
+  Viewer,  // 2
+}
+
+let role: UserRole = UserRole.Admin;</code></pre>
+
+<p>כברירת מחדל הערכים הם מספרים שרצים מ-0. ולרוב עדיף <strong>string enum</strong>, כי אז הערך קריא גם ב-logs וב-DB:</p>
+<pre><code>enum UserRole {
+  Admin = "ADMIN",
+  Editor = "EDITOR",
+  Viewer = "VIEWER",
+}
+
+console.log(UserRole.Admin); // "ADMIN"</code></pre>
+
+<blockquote>
+<p><strong>אזהרה חשובה:</strong> <code>enum</code> הוא אחד המקרים הבודדים שבהם TypeScript מייצר קוד JavaScript אמיתי ב-runtime (הוא לא נמחק כמו שאר הטיפוסים). הרבה קבוצות מעדיפות היום <strong>union of string literals</strong> במקום enum:</p>
+</blockquote>
+
+<pre><code>type UserRole = "ADMIN" | "EDITOR" | "VIEWER";
+
+let role: UserRole = "ADMIN";
+let bad: UserRole = "SUPERUSER"; // ❌ לא חלק מה-union</code></pre>
+
+<p>זה נמחק לגמרי ב-runtime, פשוט יותר, ולרוב מספיק. ב-NestJS ספציפית עדיין תראה <code>enum</code> הרבה, אז חשוב להכיר את שניהם.</p>
+
+<hr>
+
+<h2 id="s5">5. Objects, Interfaces ו-Type Aliases</h2>
+
+<h3>הצהרת object type inline</h3>
+<pre><code>function printUser(user: { name: string; age: number }): void {
+  console.log(user.name, user.age);
+}</code></pre>
+
+<h3>Interface</h3>
+<pre><code>interface User {
+  name: string;
+  age: number;
+  email: string;
+}
+
+function printUser(user: User): void {
+  console.log(user.name);
+}</code></pre>
+
+<h3>Type Alias</h3>
+<pre><code>type User = {
+  name: string;
+  age: number;
+  email: string;
+};</code></pre>
+
+<h3>מתי interface ומתי type?</h3>
+<ul>
+<li><strong><code>interface</code></strong> — מיועד לתיאור צורת object, תומך ב-declaration merging וב-<code>extends</code> נקי. זו הבחירה המקובלת ל-object shapes וב-OOP, ולכן זה מה שתראה הכי הרבה ב-NestJS.</li>
+<li><strong><code>type</code></strong> — כללי יותר. יכול לתאר גם union, tuple, primitive, mapped type — כל דבר, לא רק object.</li>
+</ul>
+
+<p>הכלל הפרקטי: <strong>השתמש ב-<code>interface</code> לצורות של objects/entities, וב-<code>type</code> לכל השאר (unions, tuples, טיפוסים מחושבים).</strong></p>
+
+<h3>Optional properties ו-readonly</h3>
+<pre><code>interface User {
+  name: string;
+  age?: number;          // אופציונלי — יכול להיות undefined או לא להופיע בכלל
+  readonly id: string;   // אפשר לקרוא, אסור לשנות אחרי היצירה
+}
+
+const u: User = { name: "eliya", id: "123" };
+u.id = "456";  // ❌ Cannot assign to 'id' because it is a read-only property</code></pre>
+
+<p><code>age?</code> פירושו שהטיפוס בפועל הוא <code>number | undefined</code>. חייבים לבדוק לפני שימוש:</p>
+<pre><code>function greet(user: User) {
+  // user.age.toFixed();  ❌ 'user.age' is possibly 'undefined'
+  if (user.age !== undefined) {
+    user.age.toFixed();   // ✅
+  }
+}</code></pre>
+
+<h3>Extends — הרחבת interface</h3>
+<pre><code>interface Entity {
+  id: string;
+  createdAt: Date;
+}
+
+interface User extends Entity {
+  name: string;
+  email: string;
+}
+// User עכשיו כולל id, createdAt, name, email</code></pre>
+
+<h3>Index signatures — object עם מפתחות דינמיים</h3>
+<pre><code>interface StringMap {
+  [key: string]: string;
+}
+
+const headers: StringMap = {
+  "content-type": "application/json",
+  "authorization": "Bearer xyz",
+};</code></pre>
+
+<p>השתמש בזה בזהירות — לרוב <code>Record&lt;string, string&gt;</code> קריא יותר לאותה מטרה.</p>
+
+<hr>
+
+<h2 id="s6">6. Union, Intersection, Literal Types ו-Narrowing</h2>
+
+<p>זה אחד הפרקים הכי חשובים. מערכת הטיפוסים של TypeScript בנויה סביב היכולת לומר "זה <strong>או</strong> זה", ואז לצמצם בבטחה.</p>
+
+<h3>Union Types — "או"</h3>
+<pre><code>type Id = string | number;
+
+let userId: Id = "abc";
+userId = 123;      // ✅
+userId = true;     // ❌ boolean לא חלק מה-union</code></pre>
+
+<h3>Literal Types — ערך ספציפי כטיפוס</h3>
+<pre><code>type Direction = "up" | "down" | "left" | "right";
+
+let move: Direction = "up";   // ✅
+let bad: Direction = "north"; // ❌</code></pre>
+
+<p>משתמשים בזה כל הזמן ל-HTTP methods, ל-statuses, ל-roles.</p>
+
+<h3>Intersection Types — "וגם"</h3>
+<pre><code>interface Timestamped { createdAt: Date; }
+interface Identifiable { id: string; }
+
+type Entity = Timestamped &amp; Identifiable;
+
+const e: Entity = {
+  createdAt: new Date(),
+  id: "123",
+};  // חייב את שני השדות</code></pre>
+
+<p>Union זה "אחד מ-", Intersection זה "הכל ביחד".</p>
+
+<h3>Narrowing — הלב של העבודה עם unions</h3>
+<p>כשיש לך union, אתה לא יכול להשתמש בו עד שתצמצם אותו לטיפוס ספציפי. TypeScript עוקב אחרי הבדיקות שלך ומצמצם אוטומטית.</p>
+
+<p><strong>צמצום עם <code>typeof</code>:</strong></p>
+<pre><code>function formatId(id: string | number): string {
+  if (typeof id === "string") {
+    return id.toUpperCase();   // ✅ כאן id הוא string
+  }
+  return id.toFixed(0);        // ✅ כאן id הוא number
+}</code></pre>
+
+<p><strong>צמצום עם <code>in</code> (בדיקת קיום property):</strong></p>
+<pre><code>interface Dog { bark(): void; }
+interface Cat { meow(): void; }
+
+function makeSound(animal: Dog | Cat) {
+  if ("bark" in animal) {
+    animal.bark();  // ✅ TypeScript יודע שזה Dog
+  } else {
+    animal.meow();  // ✅ זה Cat
+  }
+}</code></pre>
+
+<p><strong>צמצום עם <code>instanceof</code> (למחלקות אמיתיות):</strong></p>
+<pre><code>function handle(err: Error | string) {
+  if (err instanceof Error) {
+    console.log(err.message);  // ✅ Error
+  } else {
+    console.log(err);          // ✅ string
+  }
+}</code></pre>
+
+<h3>Discriminated Unions — הדפוס החשוב ביותר</h3>
+<p>לכל חבר ב-union יש שדה משותף עם literal type שמזהה אותו (ה-"discriminant"):</p>
+<pre><code>type ApiResponse =
+  | { status: "success"; data: string }
+  | { status: "error"; message: string }
+  | { status: "loading" };
+
+function handleResponse(res: ApiResponse) {
+  switch (res.status) {
+    case "success":
+      console.log(res.data);     // ✅ TypeScript יודע שיש כאן data
+      break;
+    case "error":
+      console.log(res.message);  // ✅ יש כאן message
+      break;
+    case "loading":
+      console.log("...");
+      break;
+  }
+}</code></pre>
+
+<h3>Exhaustiveness Checking עם never</h3>
+<pre><code>function handleResponse(res: ApiResponse): string {
+  switch (res.status) {
+    case "success": return res.data;
+    case "error":   return res.message;
+    case "loading": return "loading";
+    default:
+      // אם כל המקרים טופלו, res כאן הוא never.
+      const _exhaustive: never = res;
+      throw new Error(`Unhandled status: ${JSON.stringify(res)}`);
+  }
+}</code></pre>
+
+<p>אם מישהו יוסיף מחר <code>{ status: "timeout" }</code> וישכח לטפל בו, השורה <code>const _exhaustive: never = res</code> תיכשל בקומפילציה. זו טכניקה שמונעת באגים שלמים.</p>
+
+<hr>
+
+<h2 id="s7">7. Functions</h2>
+
+<h3>הצהרת טיפוסים לפרמטרים וערך החזרה</h3>
+<pre><code>function add(a: number, b: number): number {
+  return a + b;
+}</code></pre>
+
+<p>הפרמטרים כמעט תמיד צריכים טיפוס מפורש. ערך ההחזרה בדרך כלל מוסק אוטומטית, אבל <strong>מומלץ לכתוב אותו מפורשות בפונקציות ציבוריות/חשובות</strong>.</p>
+
+<h3>Optional, Default ו-Rest parameters</h3>
+<pre><code>// optional — עם ?
+function greet(name: string, greeting?: string): string {
+  return `${greeting ?? "Hello"}, ${name}`;
+}
+
+// default value
+function greet2(name: string, greeting: string = "Hello"): string {
+  return `${greeting}, ${name}`;
+}
+
+// rest — מספר לא ידוע של ארגומנטים
+function sum(...nums: number[]): number {
+  return nums.reduce((acc, n) => acc + n, 0);
+}
+sum(1, 2, 3, 4); // 10</code></pre>
+
+<p>פרמטר optional (<code>greeting?</code>) הופך אוטומטית ל-<code>string | undefined</code>. <code>??</code> (nullish coalescing) הוא הדרך הנקייה לתת ברירת מחדל.</p>
+
+<h3>Function types — פונקציה כערך</h3>
+<pre><code>// טיפוס: פונקציה שמקבלת number ומחזירה number
+type Transformer = (input: number) => number;
+
+const double: Transformer = (x) => x * 2;
+
+function applyTwice(fn: Transformer, value: number): number {
+  return fn(fn(value));
+}
+applyTwice(double, 5); // 20</code></pre>
+
+<p>בתוך <code>double</code> לא צריך לכתוב <code>(x: number)</code> — הטיפוס מוסק מ-<code>Transformer</code>. זה נקרא <strong>contextual typing</strong>.</p>
+
+<h3>Function Overloads</h3>
+<pre><code>function parseInput(input: string): string[];
+function parseInput(input: number): number[];
+function parseInput(input: string | number): string[] | number[] {
+  if (typeof input === "string") {
+    return input.split("");
+  }
+  return [input];
+}
+
+const a = parseInput("abc"); // הטיפוס: string[]
+const b = parseInput(42);    // הטיפוס: number[]</code></pre>
+
+<p>השורות הראשונות הן ה-overload signatures, והאחרונה היא ה-implementation. ב-Backend זה פחות שכיח — לרוב generics פותרים את זה יותר יפה.</p>
+
+<hr>
+
+<h2 id="s8">8. Generics</h2>
+
+<p>זה השער בין "כותב TypeScript" ל"מבין TypeScript". Generics הם היכולת לכתוב קוד שעובד על <strong>טיפוס שיוחלט בעתיד</strong>, בלי לוותר על בטיחות טיפוסים.</p>
+
+<h3>הבעיה ש-generics פותרים</h3>
+<pre><code>// גרסה 1 — עובדת רק על number:
+function firstNumber(arr: number[]): number { return arr[0]; }
+
+// גרסה 2 — עובדת על הכל, אבל מאבדת את הטיפוס:
+function firstAny(arr: any[]): any { return arr[0]; }
+const x = firstAny(["a", "b"]); // x הוא any — איבדנו הכל</code></pre>
+
+<p>Generics נותנים את הטוב משני העולמות:</p>
+<pre><code>function first&lt;T&gt;(arr: T[]): T {
+  return arr[0];
+}
+
+const a = first([1, 2, 3]);        // a: number
+const b = first(["x", "y"]);       // b: string
+const c = first([true, false]);    // c: boolean</code></pre>
+
+<h3>מה זה <code>&lt;T&gt;</code>?</h3>
+<p><code>T</code> הוא <strong>type parameter</strong> — משתנה, אבל לטיפוסים במקום לערכים. כשאתה קורא לפונקציה, TypeScript "ממלא" את <code>T</code> לפי הארגומנט. <strong>אתה כמעט אף פעם לא צריך לציין את <code>T</code> ידנית</strong> — TypeScript מסיק אותו.</p>
+
+<h3>Generic Constraints — הגבלת T</h3>
+<pre><code>// T חייב להיות משהו שיש לו .length
+function longest&lt;T extends { length: number }&gt;(a: T, b: T): T {
+  return a.length &gt;= b.length ? a : b;
+}
+
+longest("hello", "hi");        // ✅ ל-string יש length
+longest([1, 2, 3], [4]);       // ✅ למערך יש length
+longest(10, 20);               // ❌ ל-number אין length</code></pre>
+
+<h3>דוגמה מעשית: keyof עם generic constraint</h3>
+<pre><code>function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+const user = { name: "eliya", age: 30 };
+
+const name = getProperty(user, "name"); // name: string
+const age = getProperty(user, "age");   // age: number
+getProperty(user, "email");             // ❌ "email" אינו מפתח של user</code></pre>
+
+<h3>Generic Interfaces ו-Type Aliases</h3>
+<pre><code>interface ApiResult&lt;T&gt; {
+  data: T;
+  statusCode: number;
+  timestamp: Date;
+}
+
+const userResult: ApiResult&lt;User&gt; = {
+  data: { name: "eliya", age: 30, email: "e@x.com" },
+  statusCode: 200,
+  timestamp: new Date(),
+};
+
+const listResult: ApiResult&lt;User[]&gt; = { /* ... */ };</code></pre>
+
+<h3>Generic Classes</h3>
+<pre><code>class Repository&lt;T extends { id: string }&gt; {
+  private items: T[] = [];
+
+  add(item: T): void {
+    this.items.push(item);
+  }
+
+  findById(id: string): T | undefined {
+    return this.items.find((item) => item.id === id);
+  }
+}</code></pre>
+
+<hr>
+
+<h2 id="s9">9. Advanced Types — הכוח האמיתי של TypeScript</h2>
+
+<p>כאן TypeScript הופך משפה שמתארת טיפוסים לשפה ש<strong>מחשבת</strong> טיפוסים. זה מה שמאפשר לספריות כמו NestJS, Prisma ו-TypeORM לתת לך autocomplete מדויק.</p>
+
+<h3>keyof — כל המפתחות של טיפוס כ-union</h3>
+<pre><code>interface User {
+  name: string;
+  age: number;
+  email: string;
+}
+
+type UserKeys = keyof User; // "name" | "age" | "email"</code></pre>
+
+<h3>typeof — לקחת טיפוס מתוך ערך קיים</h3>
+<pre><code>const defaultConfig = {
+  port: 3000,
+  host: "localhost",
+  debug: false,
+};
+
+type Config = typeof defaultConfig;
+// { port: number; host: string; debug: boolean }</code></pre>
+
+<p>מגדירים object קונפיגורציה פעם אחת, ומקבלים ממנו את הטיפוס בחינם.</p>
+
+<h3>Indexed Access Types — לשלוף טיפוס של property</h3>
+<pre><code>interface User {
+  name: string;
+  address: { city: string; zip: string };
+}
+
+type UserName = User["name"];        // string
+type City = User["address"]["city"]; // string</code></pre>
+
+<h3>Mapped Types — לייצר טיפוס מטיפוס אחר</h3>
+<p>הכלי שמייצר טיפוס חדש על ידי מעבר על כל המפתחות של טיפוס קיים — כמו "for loop על מפתחות":</p>
+<pre><code>type Optional&lt;T&gt; = {
+  [K in keyof T]?: T[K];
+};
+
+interface User { name: string; age: number; }
+
+type PartialUser = Optional&lt;User&gt;;
+// { name?: string; age?: number }</code></pre>
+
+<p>אפשר גם להוסיף/להסיר <code>readonly</code> ו-<code>?</code>:</p>
+<pre><code>type Mutable&lt;T&gt; = {
+  -readonly [K in keyof T]: T[K];  // מסיר readonly
+};
+
+type Required&lt;T&gt; = {
+  [K in keyof T]-?: T[K];  // מסיר את האופציונליות
+};</code></pre>
+
+<h3>Conditional Types — טיפוס שתלוי בתנאי</h3>
+<pre><code>type IsString&lt;T&gt; = T extends string ? "yes" : "no";
+
+type A = IsString&lt;string&gt;;  // "yes"
+type B = IsString&lt;number&gt;;  // "no"</code></pre>
+
+<p>עם <code>infer</code> אפשר "לחלץ" טיפוס מתוך טיפוס אחר:</p>
+<pre><code>type Unwrap&lt;T&gt; = T extends Promise&lt;infer U&gt; ? U : T;
+
+type A = Unwrap&lt;Promise&lt;string&gt;&gt;; // string
+type B = Unwrap&lt;number&gt;;          // number</code></pre>
+
+<h3>Template Literal Types</h3>
+<pre><code>type Method = "GET" | "POST";
+type Endpoint = "/users" | "/posts";
+
+type Route = `${Method} ${Endpoint}`;
+// "GET /users" | "GET /posts" | "POST /users" | "POST /posts"</code></pre>
+
+<h3>Utility Types — הכלים המובנים שתשתמש בהם כל יום</h3>
+<pre><code>interface User {
+  id: string;
+  name: string;
+  email: string;
+  age: number;
+}
+
+// Partial&lt;T&gt; — כל השדות אופציונליים. מושלם ל-update DTOs.
+type UserUpdate = Partial&lt;User&gt;;
+
+// Required&lt;T&gt; — כל השדות חובה (ההפך).
+type FullUser = Required&lt;User&gt;;
+
+// Pick&lt;T, K&gt; — לבחור רק חלק מהשדות.
+type UserPreview = Pick&lt;User, "id" | "name"&gt;;
+
+// Omit&lt;T, K&gt; — להסיר שדות.
+type UserWithoutId = Omit&lt;User, "id"&gt;;
+
+// Readonly&lt;T&gt; — כל השדות for-read-only.
+type ImmutableUser = Readonly&lt;User&gt;;
+
+// Record&lt;K, V&gt; — object עם מפתחות מטיפוס K וערכים מטיפוס V.
+type RolePermissions = Record&lt;"admin" | "user", string[]&gt;;
+
+// Exclude&lt;T, U&gt; — להסיר מ-union.
+type T1 = Exclude&lt;"a" | "b" | "c", "a"&gt;; // "b" | "c"
+
+// Extract&lt;T, U&gt; — לשמור מ-union רק מה שתואם.
+type T2 = Extract&lt;"a" | "b" | "c", "a" | "b"&gt;; // "a" | "b"
+
+// NonNullable&lt;T&gt; — להסיר null ו-undefined.
+type T3 = NonNullable&lt;string | null | undefined&gt;; // string
+
+// ReturnType&lt;T&gt; — הטיפוס שפונקציה מחזירה.
+function createUser() { return { id: "1", name: "x" }; }
+type CreatedUser = ReturnType&lt;typeof createUser&gt;;
+
+// Parameters&lt;T&gt; — tuple של טיפוסי הפרמטרים.
+type CreateParams = Parameters&lt;typeof createUser&gt;;
+
+// Awaited&lt;T&gt; — הטיפוס שבתוך Promise.
+type Data = Awaited&lt;Promise&lt;string&gt;&gt;; // string</code></pre>
+
+<p><code>Partial</code>, <code>Pick</code>, <code>Omit</code>, <code>Record</code> ו-<code>ReturnType</code> — אלה החמישה שתשתמש בהם הכי הרבה ב-Backend.</p>
+
+<hr>
+
+<h2 id="s10">10. Classes</h2>
+
+<p>TypeScript מוסיף למחלקות של JavaScript שכבת טיפוסים ו-access modifiers. זה חשוב במיוחד כי <strong>NestJS בנוי כולו על מחלקות</strong>.</p>
+
+<h3>מחלקה בסיסית</h3>
+<pre><code>class User {
+  name: string;
+  age: number;
+
+  constructor(name: string, age: number) {
+    this.name = name;
+    this.age = age;
+  }
+
+  greet(): string {
+    return `Hi, I'm ${this.name}`;
+  }
+}
+
+const u = new User("eliya", 30);</code></pre>
+
+<h3>Access Modifiers — public, private, protected</h3>
+<pre><code>class BankAccount {
+  public owner: string;      // נגיש מכל מקום (ברירת מחדל)
+  private balance: number;   // רק בתוך המחלקה
+  protected id: string;      // בתוך המחלקה ומחלקות שיורשות ממנה
+
+  constructor(owner: string, balance: number) {
+    this.owner = owner;
+    this.balance = balance;
+    this.id = crypto.randomUUID();
+  }
+
+  deposit(amount: number): void {
+    this.balance += amount;
+  }
+}
+
+const acc = new BankAccount("eliya", 100);
+acc.owner;    // ✅ public
+acc.balance;  // ❌ Property 'balance' is private</code></pre>
+
+<blockquote>
+<p><strong>חשוב לזכור:</strong> <code>private</code> של TypeScript נאכף רק בזמן קומפילציה. אם צריך פרטיות אמיתית ב-runtime, יש <code>#field</code> של JavaScript:</p>
+<pre><code>class Secret {
+  #token = "xyz";   // פרטי אמיתי גם ב-runtime
+}</code></pre>
+</blockquote>
+
+<h3>Parameter Properties — קיצור שתראה הרבה ב-NestJS</h3>
+<pre><code>// במקום זה:
+class UserService {
+  private repo: UserRepository;
+  constructor(repo: UserRepository) {
+    this.repo = repo;
+  }
+}
+
+// כותבים כך — זהה לגמרי:
+class UserService {
+  constructor(private repo: UserRepository) {}
+}</code></pre>
+
+<p>ה-<code>private repo</code> בפרמטר יוצר אוטומטית שדה <code>this.repo</code> ומשים אליו. <strong>זה בדיוק הדפוס של dependency injection ב-NestJS</strong> — וזו תכונה של TypeScript עצמו, לא קסם של NestJS.</p>
+
+<h3>Abstract Classes</h3>
+<pre><code>abstract class BaseRepository&lt;T&gt; {
+  abstract findById(id: string): T | undefined;   // חייבים לממש
+
+  exists(id: string): boolean {
+    return this.findById(id) !== undefined;
+  }
+}
+
+class UserRepository extends BaseRepository&lt;User&gt; {
+  findById(id: string): User | undefined {
+    return undefined; // מימוש אמיתי כאן
+  }
+}
+
+new BaseRepository(); // ❌ Cannot create an instance of an abstract class</code></pre>
+
+<h3>Implements — מחלקה שמקיימת interface</h3>
+<pre><code>interface Logger {
+  log(message: string): void;
+}
+
+class ConsoleLogger implements Logger {
+  log(message: string): void {
+    console.log(message);
+  }
+}</code></pre>
+
+<p><code>implements</code> אומר "המחלקה חייבת לספק את כל מה שה-interface דורש". זה הבסיס ל-programming to interfaces — דפוס מרכזי ב-Backend נקי.</p>
+
+<hr>
+
+<h2 id="s11">11. Decorators — הבסיס של NestJS</h2>
+
+<p>Decorators הם אולי הנושא הכי חשוב עבורך ספציפית, כי <strong>כל NestJS בנוי עליהם</strong>. <code>@Controller</code>, <code>@Injectable</code>, <code>@Get</code>, <code>@Body</code> — כולם decorators.</p>
+
+<h3>מה זה decorator</h3>
+<p>Decorator הוא פונקציה שמצמידים לפני class, method, property או parameter, והיא "עוטפת" או "מתייגת" אותם:</p>
+<pre><code>@Controller("users")
+class UsersController {
+  @Get()
+  findAll() {
+    return [];
+  }
+}</code></pre>
+
+<h3>איך זה עובד מתחת למכסה</h3>
+<pre><code>function LogClass(constructor: Function) {
+  console.log(`Class defined: ${constructor.name}`);
+}
+
+@LogClass
+class MyService {}
+// בזמן טעינת הקובץ יודפס: "Class defined: MyService"</code></pre>
+
+<p>NestJS משתמש ב-decorators כדי <strong>לצרף metadata</strong> למחלקות — למשל "זה controller שמטפל בנתיב /users". ה-framework קורא את ה-metadata ובונה ממנו את ה-routing וה-DI.</p>
+
+<h3>הפעלת decorators ב-tsconfig</h3>
+<pre><code>{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}</code></pre>
+
+<ul>
+<li><code>experimentalDecorators</code> — מפעיל את התחביר.</li>
+<li><code>emitDecoratorMetadata</code> — גורם ל-TypeScript לפלוט מידע על טיפוסים ל-runtime (דרך <code>reflect-metadata</code>). זה מה שמאפשר ל-NestJS לדעת אילו dependencies להזריק לפי הטיפוסים בלבד.</li>
+</ul>
+
+<blockquote>
+<p><strong>הבהרה שחוסכת בלבול:</strong> יש שתי גרסאות של decorators — ה-"legacy" (מה ש-NestJS משתמש בו, מופעל עם <code>experimentalDecorators</code>), וה-standard החדש של ECMAScript. לעבודה עם NestJS אתה רוצה את ה-legacy עם שני הדגלים למעלה. אל תערבב ביניהם.</p>
+</blockquote>
+
+<p>בפועל כמעט אף פעם לא תכתוב decorators בעצמך — תשתמש באלה של NestJS. אבל להבין ש<strong>decorator הוא פונקציה שמצרפת metadata</strong> יעזור לך להפסיק לראות ב-NestJS "קסם".</p>
+
+<hr>
+
+<h2 id="s12">12. Modules ו-ארגון קוד</h2>
+
+<h3>import / export</h3>
+<pre><code>// user.ts
+export interface User {
+  id: string;
+  name: string;
+}
+
+export function createUser(name: string): User {
+  return { id: crypto.randomUUID(), name };
+}
+
+// default export — אחד לכל קובץ
+export default class UserService {}</code></pre>
+
+<pre><code>// main.ts
+import UserService, { User, createUser } from "./user";</code></pre>
+
+<p><strong>ההמלצה הרווחת ב-Backend: העדף named exports</strong> — הם עקביים, ידידותיים ל-refactoring ול-autocomplete. NestJS משתמש כמעט אך ורק ב-named exports.</p>
+
+<h3>import type — יבוא של טיפוסים בלבד</h3>
+<pre><code>import type { User } from "./user";
+import { createUser } from "./user";</code></pre>
+
+<p>זה מבהיר שהיבוא נמחק בקומפילציה, מונע בעיות circular dependencies וחשוב לביצועי build.</p>
+
+<h3>CommonJS מול ES Modules — הבלבול הגדול של Node</h3>
+<ul>
+<li><strong>CommonJS (CJS)</strong> — הישן: <code>require()</code> ו-<code>module.exports</code>. עדיין ברירת המחדל בהרבה פרויקטי Node ו-NestJS.</li>
+<li><strong>ES Modules (ESM)</strong> — הסטנדרט המודרני: <code>import</code>/<code>export</code>.</li>
+</ul>
+
+<p>אם אתה מתחיל עם NestJS, לרוב תעבוד ב-CommonJS (זו ברירת המחדל של <code>nest new</code>). פשוט תדע שזה קיים כשתיתקל בשגיאת <code>Cannot use import statement outside a module</code>.</p>
+
+<h3>Path aliases — לוותר על ../../../</h3>
+<pre><code>{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/*"]
+    }
+  }
+}</code></pre>
+
+<pre><code>import { User } from "@app/users/user";  // במקום ../../users/user</code></pre>
+
+<blockquote>
+<p><strong>מלכודת:</strong> path aliases הם תכונה של TypeScript בלבד. Node ב-runtime לא מכיר אותם. צריך כלי שיתרגם אותם ב-build (<code>tsc-alias</code>, <code>tsconfig-paths</code>, או ה-bundler). NestJS מטפל בזה דרך ה-CLI שלו.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13">13. Async, Promises ו-Error Handling</h2>
+
+<h3>Promise types</h3>
+<pre><code>async function fetchUser(id: string): Promise&lt;User&gt; {
+  const res = await fetch(`/api/users/${id}`);
+  return res.json() as Promise&lt;User&gt;;
+}
+
+const user = await fetchUser("123"); // user: User (ה-Promise "נפרם" ע"י await)</code></pre>
+
+<p><code>async</code> function <strong>תמיד</strong> מחזירה <code>Promise</code>. <code>await</code> הוא זה ש"פורם" את ה-Promise חזרה לערך.</p>
+
+<h3>מלכודת נפוצה: JSON מגיע כ-any/unknown</h3>
+<pre><code>const data = await res.json();       // data: any — מסוכן
+const user = data as User;           // TypeScript מאמין לך — אבל אין בדיקה אמיתית</code></pre>
+
+<p>הפתרון הנכון ב-Backend: <strong>validation בזמן ריצה</strong>. מחוץ ל-NestJS פופולרי מאוד <code>zod</code>:</p>
+<pre><code>import { z } from "zod";
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  age: z.number(),
+});
+
+const data: unknown = await res.json();
+const user = UserSchema.parse(data);  // זורק אם ה-data לא תואם — בדיקה אמיתית ב-runtime!</code></pre>
+
+<p>הלקח הכי חשוב למפתח Backend: <strong>טיפוסים סטטיים לא מחליפים validation.</strong> הם משלימים אותו.</p>
+
+<h3>Error handling — הטיפוס של catch הוא unknown</h3>
+<pre><code>try {
+  await riskyOperation();
+} catch (err) {
+  // err: unknown
+  if (err instanceof Error) {
+    console.error(err.message);   // ✅ עכשיו זה Error
+  } else {
+    console.error("Unknown error:", err);
+  }
+}</code></pre>
+
+<h3>Promise.all עם טיפוסים</h3>
+<pre><code>const [user, posts] = await Promise.all([
+  fetchUser("1"),      // Promise&lt;User&gt;
+  fetchPosts("1"),     // Promise&lt;Post[]&gt;
+]);
+// user: User, posts: Post[]  ✅ הטיפוסים נשמרים לפי הסדר</code></pre>
+
+<hr>
+
+<h2 id="s14">14. tsconfig לעומק</h2>
+
+<p><code>tsconfig.json</code> הוא ה-control panel של הפרויקט. הבנת הדגלים החשובים תחסוך לך שעות של תסכול.</p>
+
+<h3>דגלי היעד והמודולים</h3>
+<pre><code>{
+  "compilerOptions": {
+    "target": "ES2022",         // לאיזו גרסת JS לקמפל
+    "module": "NodeNext",       // איזו מערכת modules לפלוט
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],          // אילו APIs מובנים זמינים (ל-Backend בלי DOM)
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
+}</code></pre>
+
+<h3>דגלי ה-strict — הקבוצה החשובה ביותר</h3>
+<p><code>"strict": true</code> הוא קיצור שמפעיל את כל הדגלים הבאים:</p>
+<ul>
+<li><strong><code>strictNullChecks</code></strong> — הכי חשוב. <code>null</code>/<code>undefined</code> לא מתקבלים אוטומטית. מונע את רוב ה-null pointer errors.</li>
+<li><strong><code>noImplicitAny</code></strong> — אוסר על <code>any</code> "שקט".</li>
+<li><strong><code>strictFunctionTypes</code></strong> — בדיקת תאימות מחמירה לטיפוסי פונקציות.</li>
+<li><strong><code>strictPropertyInitialization</code></strong> — מכריח לאתחל properties של מחלקה.</li>
+<li><strong><code>useUnknownInCatchVariables</code></strong> — משתנה ה-catch הוא <code>unknown</code>.</li>
+</ul>
+
+<p><strong>תמיד תפעיל <code>strict: true</code>.</strong></p>
+
+<h3>דגלים נוספים ששווה להפעיל</h3>
+<pre><code>{
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,  // גישה לפי אינדקס מחזירה T | undefined
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true
+  }
+}</code></pre>
+
+<p><code>noUncheckedIndexedAccess</code> שווה במיוחד ל-Backend:</p>
+<pre><code>const arr = [1, 2, 3];
+const x = arr[10];  // עם הדגל: הטיפוס הוא number | undefined
+x.toFixed();        // ❌ possibly undefined — TypeScript מכריח אותך לבדוק</code></pre>
+
+<h3>דגלים לפיתוח נוח</h3>
+<pre><code>{
+  "compilerOptions": {
+    "sourceMap": true,
+    "declaration": true,
+    "incremental": true,
+    "skipLibCheck": true,     // מדלג על בדיקת .d.ts של ספריות — build מהיר
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}</code></pre>
+
+<hr>
+
+<h2 id="s15">15. TypeScript ב-Backend אמיתי (Node / NestJS)</h2>
+
+<h3>Typings לספריות — @types</h3>
+<pre><code>npm install express
+npm install --save-dev @types/express   # הטיפוסים ל-express</code></pre>
+
+<p>ספריות מודרניות (כולל NestJS, Prisma, zod) מגיעות עם טיפוסים מובנים. אם אתה מקבל "Could not find a declaration file for module 'x'" — כנראה חסר לך <code>@types/x</code>.</p>
+
+<h3>DTOs — Data Transfer Objects</h3>
+<pre><code>interface User {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;   // לעולם לא נחזיר את זה ב-API
+  createdAt: Date;
+}
+
+// מה שהלקוח שולח כדי ליצור user:
+type CreateUserDto = Pick&lt;User, "name" | "email"&gt; &amp; { password: string };
+
+// מה שמחזירים ללקוח — בלי ה-hash:
+type UserResponseDto = Omit&lt;User, "passwordHash"&gt;;
+
+// update — הכל אופציונלי:
+type UpdateUserDto = Partial&lt;CreateUserDto&gt;;</code></pre>
+
+<p>משנים את ה-entity, וכל ה-DTOs מתעדכנים אוטומטית.</p>
+
+<h3>דוגמה: repository גנרי טיפוסי</h3>
+<pre><code>interface Entity {
+  id: string;
+}
+
+interface Repository&lt;T extends Entity&gt; {
+  findById(id: string): Promise&lt;T | null&gt;;
+  findAll(): Promise&lt;T[]&gt;;
+  create(data: Omit&lt;T, "id"&gt;): Promise&lt;T&gt;;
+  delete(id: string): Promise&lt;void&gt;;
+}
+
+class InMemoryRepository&lt;T extends Entity&gt; implements Repository&lt;T&gt; {
+  private store = new Map&lt;string, T&gt;();
+
+  async findById(id: string): Promise&lt;T | null&gt; {
+    return this.store.get(id) ?? null;
+  }
+
+  async findAll(): Promise&lt;T[]&gt; {
+    return [...this.store.values()];
+  }
+
+  async create(data: Omit&lt;T, "id"&gt;): Promise&lt;T&gt; {
+    const entity = { ...data, id: crypto.randomUUID() } as T;
+    this.store.set(entity.id, entity);
+    return entity;
+  }
+
+  async delete(id: string): Promise&lt;void&gt; {
+    this.store.delete(id);
+  }
+}</code></pre>
+
+<p>שילוב של כמעט כל מה שלמדנו: interface גנרי, constraint, <code>implements</code>, <code>Omit</code>, <code>Promise</code>, ו-<code>Map</code> גנרי.</p>
+
+<h3>איך זה נראה ב-NestJS</h3>
+<pre><code>@Injectable()
+export class UsersService {
+  // parameter property = dependency injection
+  constructor(private readonly repo: UserRepository) {}
+
+  async findOne(id: string): Promise&lt;UserResponseDto&gt; {
+    const user = await this.repo.findById(id);
+    if (!user) throw new NotFoundException();
+    return user;
+  }
+}
+
+@Controller("users")
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get(":id")
+  findOne(@Param("id") id: string): Promise&lt;UserResponseDto&gt; {
+    return this.usersService.findOne(id);
+  }
+
+  @Post()
+  create(@Body() dto: CreateUserDto) {
+    // ה-ValidationPipe של NestJS מבצע validation אמיתי ב-runtime על dto
+    return this.usersService.create(dto);
+  }
+}</code></pre>
+
+<p>הכל כאן זה TypeScript שכבר מכיר: decorators שמצרפים metadata, parameter properties ל-DI, ו-<code>Promise&lt;T&gt;</code>. NestJS לא ממציא שפה חדשה — הוא רק מרכיב את התכונות של TypeScript לתוך framework.</p>
+
+<hr>
+
+<h2 id="s16">16. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong><code>strict: true</code> תמיד, <code>any</code> אף פעם.</strong> אם אתה חייב טיפוס לא ידוע, <code>unknown</code> ואז narrowing.</li>
+<li><strong>תן ל-inference לעבוד, אבל תכתוב טיפוסים מפורשים בגבולות.</strong> משתנים מקומיים — inference. פרמטרים, ערכי החזרה ציבוריים, API boundaries — מפורש.</li>
+<li><strong>טיפוסים ≠ validation.</strong> כל data מבחוץ (HTTP, DB, קבצים, env vars) חייב validation ב-runtime.</li>
+<li><strong>אל תשתמש ב-<code>as</code> כדי "לשתוק" שגיאות.</strong> <code>const user = {} as User;</code> הוא שקר שיקרוס ב-runtime.</li>
+<li><strong>העדף טיפוסים נגזרים על פני שכפול.</strong> <code>Pick</code>/<code>Omit</code>/<code>Partial</code> במקום לכתוב טיפוסים פעמיים.</li>
+<li><strong>Discriminated unions לכל state עם וריאנטים</strong>, עם exhaustiveness check עם <code>never</code>.</li>
+<li><strong>הימנע מ-<code>enum</code>, העדף union של string literals</strong> — אלא אם אתה באמת צריך את ההתנהגות של enum.</li>
+<li><strong><code>import type</code> לטיפוסים.</strong></li>
+<li><strong>אל תילחם ב-compiler.</strong> אם הוא מתלונן, לרוב הוא צודק. הוא ה-code reviewer הכי זול שיש לך.</li>
+<li><strong>שגיאות טיפוס — קרא מלמטה למעלה.</strong> השורה האחרונה בדרך כלל הכי קונקרטית.</li>
+</ol>
+
+<h3>טעויות נפוצות שכדאי לזהות מוקדם</h3>
+<ul>
+<li>לצפות ש-<code>private</code> יגן ב-runtime — הוא compile-time בלבד. השתמש ב-<code>#field</code>.</li>
+<li>לשכוח שפרמטר <code>?</code> הוא <code>T | undefined</code> — חייבים לבדוק לפני שימוש.</li>
+<li>לחשוב ש-enum "חינמי" — הוא מייצר קוד runtime.</li>
+<li>להסתמך על טיפוסים ל-data חיצוני — הטעות הכי מסוכנת ב-Backend. תמיד validate.</li>
+</ul>
+
+<hr>
+
+<h2 id="s17">17. תרגילים</h2>
+
+<p><strong>תרגיל 1 — Narrowing.</strong> כתוב פונקציה <code>formatValue(value: string | number | boolean): string</code> שמחזירה: string ב-uppercase, number עם שתי ספרות אחרי הנקודה, ו-boolean כ-<code>"yes"</code>/<code>"no"</code>.</p>
+
+<p><strong>תרגיל 2 — Generics.</strong> כתוב פונקציה גנרית <code>groupBy&lt;T, K extends keyof T&gt;(items: T[], key: K): Map&lt;T[K], T[]&gt;</code> שמקבצת מערך של objects לפי ערך של property מסוים.</p>
+
+<p><strong>תרגיל 3 — Discriminated Union.</strong> דגם טיפוס <code>PaymentResult</code> עם שלושה מצבים: <code>approved</code> (עם <code>transactionId</code>), <code>declined</code> (עם <code>reason</code>), ו-<code>pending</code> (עם <code>retryAfter</code>). כתוב פונקציה שמטפלת בכל המקרים עם <code>switch</code> ו-exhaustiveness check עם <code>never</code>.</p>
+
+<p><strong>תרגיל 4 — Utility Types.</strong> נתון <code>interface Product { id: string; name: string; price: number; internalCost: number; createdAt: Date; }</code>. הגדר: <code>CreateProductDto</code> (בלי id, createdAt, internalCost), <code>PublicProduct</code> (בלי internalCost), ו-<code>UpdateProductDto</code> (כל השדות של Create אבל אופציונליים). השתמש רק ב-utility types.</p>
+
+<p><strong>תרגיל 5 — Advanced.</strong> כתוב mapped type בשם <code>Nullable&lt;T&gt;</code> שהופך את כל השדות של T ל-<code>T[K] | null</code>.</p>
+
+<p><strong>תרגיל 6 — שילוב מלא.</strong> בנה מחלקה גנרית <code>Cache&lt;T&gt;</code> עם: <code>set(key: string, value: T, ttlMs: number): void</code>, <code>get(key: string): T | null</code> (מחזיר null אם פג התוקף), ו-<code>has(key: string): boolean</code>.</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>כיסינו את כל הבסיס ומעבר: מהמודל המנטלי (type erasure, compile-time מול runtime), דרך הטיפוסים, generics, ה-advanced types, ועד לדפוסי Backend אמיתיים ו-NestJS.</p>
+
+<p>הצעד הכי חשוב עכשיו הוא <strong>לכתוב קוד</strong>. פתח פרויקט עם <code>strict: true</code>, כבה לעצמך את היכולת להשתמש ב-<code>any</code>, ותתאמן. הכאב הראשוני של להילחם ב-compiler הוא בדיוק תהליך הלמידה.</p>
+
+<p>כשתרגיש בנוח עם כל הפרקים כאן, אתה מוכן לצלול ל-NestJS לעומק — וכפי שראית בפרק 15, לא תפגוש שם כמעט שום דבר חדש מבחינת TypeScript. זה אותם כלים, מורכבים לתוך framework.</p>
+
+<p>בהצלחה. 🚀</p>
+
+</body>
+</html>

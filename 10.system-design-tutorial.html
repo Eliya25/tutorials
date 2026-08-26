@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Design — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #c2410c; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #c2410c; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #9a3412; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #7c2d12; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #fff1e8; }
+  a { color: #c2410c; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #fff7f2; border: 1px solid #fadfce; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #fff7f2; border: 1px solid #fadfce; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>System Design — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>המשך לסדרה (TypeScript, NestJS, Authentication, Networking, SQL). זהו הנושא שמחבר את כל השאר: איך מרכיבים ממערכות בודדות מערכת אחת שעומדת בעומס, לא נופלת, ונשארת מהירה.</p>
+<p><strong>הרעיון המרכזי לאורך כל המדריך:</strong> system design הוא תהליך של <strong>tradeoffs מול requirements</strong>, לא רשימת רכיבים לשנן. לכל החלטה יש מחיר. עברית להסבר, אנגלית למונחים.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: מה זה System Design ואיך חושבים עליו</a></li>
+<li><a href="#s2">עקרונות היסוד — Scalability, Availability, Latency</a></li>
+<li><a href="#s3">Scaling — Vertical מול Horizontal</a></li>
+<li><a href="#s4">Load Balancing</a></li>
+<li><a href="#s5">Caching — הכלי הכי חשוב לביצועים</a></li>
+<li><a href="#s6">Databases at Scale — Replication ו-Sharding</a></li>
+<li><a href="#s7">CAP Theorem ומודלי Consistency</a></li>
+<li><a href="#s8">סוגי Storage — SQL, NoSQL ומעבר</a></li>
+<li><a href="#s9">Message Queues ו-Async Processing</a></li>
+<li><a href="#s10">Monolith מול Microservices</a></li>
+<li><a href="#s11">תקשורת בין שירותים — REST, gRPC, GraphQL</a></li>
+<li><a href="#s12">Rate Limiting ו-Throttling</a></li>
+<li><a href="#s13">Reliability — Redundancy, Failover, Circuit Breaker</a></li>
+<li><a href="#s14">Observability — Logs, Metrics, Traces</a></li>
+<li><a href="#s15">Estimation — Back-of-the-Envelope</a></li>
+<li><a href="#s16">המסגרת לפתרון שאלת System Design</a></li>
+<li><a href="#s17">Case Study מלא: מקצרן קישורים</a></li>
+<li><a href="#s18">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: מה זה System Design ואיך חושבים עליו</h2>
+
+<p>System Design הוא האמנות של להרכיב רכיבים (שרתים, DBs, caches, queues) למערכת שעומדת בדרישות — עומס, מהירות, זמינות, עלות. עד עכשיו בנינו רכיבים בודדים; כאן לומדים איך הם עובדים יחד בקנה מידה גדול.</p>
+
+<h3>הטעות מספר אחת שאסור לך לעשות</h3>
+<p>אנשים ניגשים ל-system design כמו לחידון: "מתי משתמשים ב-Kafka? מה זה sharding?" — ומשננים רכיבים. <strong>זו הדרך הלא נכונה.</strong> אין תשובה "נכונה" בעיצוב מערכות; יש רק <strong>tradeoffs</strong>. כל החלטה שאתה מקבל (עוד cache, עוד שרת, DB אחר) קונה לך משהו ועולה לך משהו אחר — כסף, מורכבות, עקביות. המיומנות האמיתית היא לנמק את הבחירות מול הדרישות, לא לזרוק שמות של רכיבים.</p>
+
+<blockquote>
+<p><strong>הכלל שיחסוך לך את רוב הטעויות:</strong> אל תעצב לסקייל שאין לך. מערכת ל-1,000 משתמשים ומערכת ל-100 מיליון הן עיצובים שונים לגמרי, ו-over-engineering (microservices, sharding, Kafka) לסטארטאפ קטן זו טעות קלאסית שהורגת מהירות פיתוח. תמיד תתחיל פשוט, ותוסיף מורכבות רק כשהמספרים מכריחים. "פשוט ומשעמם" מנצח "מתוחכם ושביר" כמעט תמיד.</p>
+</blockquote>
+
+<h3>שלוש השאלות שמנחות כל עיצוב</h3>
+<ul>
+<li><strong>מה ה-requirements?</strong> functional (מה המערכת עושה) ו-non-functional (כמה מהר, כמה זמין, כמה גדול). בלי זה אתה מעצב באוויר.</li>
+<li><strong>מה קנה המידה?</strong> כמה משתמשים, כמה בקשות בשנייה, כמה data. המספרים משנים הכל.</li>
+<li><strong>מה ה-tradeoffs?</strong> על מה אתה מוכן להתפשר (עקביות? עלות? מורכבות?) כדי לקבל מה שאתה צריך.</li>
+</ul>
+
+<hr>
+
+<h2 id="s2">2. עקרונות היסוד — Scalability, Availability, Latency</h2>
+
+<p>המושגים שכל שיחת system design סובבת סביבם. חייבים לדבר אותם שוטף.</p>
+
+<h3>Scalability</h3>
+<p>היכולת של המערכת לגדול ולטפל ביותר עומס. מערכת scalable מוסיפה קיבולת ביחס ליותר משאבים. ההפך — מערכת שקורסת כשמכפילים את המשתמשים.</p>
+
+<h3>Availability</h3>
+<p>אחוז הזמן שהמערכת פעילה. נמדד ב"תשעיות":</p>
+<table>
+<tr><th>Availability</th><th>Downtime בשנה</th></tr>
+<tr><td>99% ("two nines")</td><td>~3.65 ימים</td></tr>
+<tr><td>99.9% ("three nines")</td><td>~8.76 שעות</td></tr>
+<tr><td>99.99% ("four nines")</td><td>~52 דקות</td></tr>
+<tr><td>99.999% ("five nines")</td><td>~5 דקות</td></tr>
+</table>
+<p>כל תשע נוספת עולה הרבה יותר כסף ומורכבות. חלק מה-tradeoff הוא להחליט כמה זמינות אתה <em>באמת</em> צריך — five nines לבלוג זה בזבוז.</p>
+
+<h3>Reliability</h3>
+<p>המערכת עובדת נכון גם כשחלקים נכשלים. availability זה "פועל"; reliability זה "פועל <em>נכון</em>". מערכת יכולה להיות זמינה אבל לא אמינה (עונה, אבל תשובות שגויות).</p>
+
+<h3>Latency מול Throughput</h3>
+<p>שני מדדי ביצועים שמבלבלים:</p>
+<ul>
+<li><strong>Latency</strong> — כמה זמן לוקח לבקשה <em>אחת</em> (מילישניות). "כמה מהר".</li>
+<li><strong>Throughput</strong> — כמה בקשות בשנייה המערכת מטפלת. "כמה הרבה".</li>
+</ul>
+<p>אנלוגיה: latency = כמה זמן לוקח למכונית אחת לחצות את הגשר. throughput = כמה מכוניות חוצות בשעה. אפשר לשפר throughput (יותר נתיבים) בלי לשפר latency (המכונית הבודדת עדיין באותה מהירות). מדידה נכונה של latency היא ב-<strong>percentiles</strong> (p50, p95, p99) ולא ממוצע — כי הממוצע מסתיר את ה-outliers שפוגעים במשתמשים.</p>
+
+<hr>
+
+<h2 id="s3">3. Scaling — Vertical מול Horizontal</h2>
+
+<p>שתי הדרכים לגדול, וההבחנה ביניהן היא מהיסודות.</p>
+
+<h3>Vertical Scaling (Scale Up)</h3>
+<p>לתת לשרת <strong>יותר כוח</strong> — עוד CPU, RAM, דיסק. פשוט: לא צריך לשנות קוד. אבל יש תקרה פיזית (אי אפשר להוסיף RAM אינסופי), וזו <strong>single point of failure</strong> — השרת נופל, הכל נופל. יקר בקצה העליון.</p>
+
+<h3>Horizontal Scaling (Scale Out)</h3>
+<p>להוסיף <strong>עוד שרתים</strong> ולפזר את העומס ביניהם. אין תקרה תיאורטית, ועמידות טובה (שרת נופל, השאר ממשיכים). אבל מורכב יותר — צריך load balancer, וצריך שהאפליקציה תהיה <strong>stateless</strong> כדי שכל שרת יוכל לטפל בכל בקשה.</p>
+
+<blockquote>
+<p><strong>חיבור למדריך Authentication:</strong> זוכר את ה-tradeoff JWT מול session? הנה למה הוא קריטי כאן. horizontal scaling דורש שרתים stateless — ו-JWT (stateless) עובד על כל שרת בלי תיאום, בעוד session (stateful) מחייב store משותף (Redis) או sticky sessions. עכשיו רואים איך ההחלטה על auth היא בעצם החלטת system design.</p>
+</blockquote>
+
+<p>בפועל: מתחילים vertical (פשוט), עוברים horizontal כשמגיעים לתקרה. רוב המערכות הגדולות הן horizontal, כי זו הדרך היחידה להגיע לקנה מידה אמיתי ולזמינות גבוהה.</p>
+
+<hr>
+
+<h2 id="s4">4. Load Balancing</h2>
+
+<p>ברגע שיש כמה שרתים, צריך משהו שמפזר אליהם את התעבורה. זה ה-<strong>load balancer</strong> — כיסינו אותו במדריך Networking, וכאן נעמיק בהיבט העיצובי.</p>
+
+<h3>מה הוא נותן</h3>
+<ul>
+<li><strong>פיזור עומס</strong> בין שרתים — אף שרת לא נחנק.</li>
+<li><strong>High availability</strong> — health checks מזהים שרת שנפל ומפסיקים לשלוח אליו.</li>
+<li><strong>Zero-downtime deploys</strong> — מוציאים שרת מהרוטציה, מעדכנים, מחזירים.</li>
+</ul>
+
+<h3>אלגוריתמי פיזור</h3>
+<table>
+<tr><th>אלגוריתם</th><th>איך</th><th>מתי</th></tr>
+<tr><td>Round Robin</td><td>שרת אחרי שרת בתור</td><td>שרתים זהים, בקשות אחידות</td></tr>
+<tr><td>Least Connections</td><td>לשרת עם הכי פחות חיבורים</td><td>בקשות באורך משתנה</td></tr>
+<tr><td>IP Hash</td><td>אותו client → אותו שרת</td><td>כשצריך sticky sessions</td></tr>
+<tr><td>Weighted</td><td>לפי משקל (שרת חזק מקבל יותר)</td><td>שרתים לא-זהים</td></tr>
+</table>
+
+<h3>L4 מול L7</h3>
+<ul>
+<li><strong>L4 (Transport)</strong> — מפזר לפי IP/port בלבד, מהיר, לא מסתכל בתוכן.</li>
+<li><strong>L7 (Application)</strong> — מבין HTTP, יכול לנתב לפי path/header (למשל <code>/api</code> לשרת אחד, <code>/images</code> לאחר). גמיש יותר, מעט איטי יותר.</li>
+</ul>
+
+<hr>
+
+<h2 id="s5">5. Caching — הכלי הכי חשוב לביצועים</h2>
+
+<p>Cache הוא אחסון מהיר של נתונים שמבוקשים הרבה, כדי לא לחשב/לשלוף אותם שוב. [Certain] זה כנראה הכלי היחיד עם ההשפעה הגדולה ביותר על ביצועים — קריאה מ-cache בזיכרון היא פי אלפים מהירה מקריאה מ-DB.</p>
+
+<h3>איפה יש caches (שכבות)</h3>
+<div class="flow">
+Client (browser cache)<br>
+&nbsp;&nbsp;↓<br>
+CDN (edge cache — תוכן סטטי קרוב למשתמש)<br>
+&nbsp;&nbsp;↓<br>
+Load Balancer / Reverse Proxy cache<br>
+&nbsp;&nbsp;↓<br>
+Application cache (Redis / Memcached) ← הכי נפוץ ב-Backend<br>
+&nbsp;&nbsp;↓<br>
+Database cache (query cache, buffer pool)
+</div>
+
+<h3>אסטרטגיות caching</h3>
+<ul>
+<li><strong>Cache-Aside (lazy loading)</strong> — הנפוץ ביותר. האפליקציה בודקת cache; אם אין (miss), שולפת מ-DB ושומרת ב-cache. פשוט, אבל הנתון הראשון תמיד איטי (cold cache).</li>
+<li><strong>Write-Through</strong> — כותבים ל-cache ול-DB בו-זמנית. ה-cache תמיד עדכני, אבל כתיבה איטית יותר.</li>
+<li><strong>Write-Back (write-behind)</strong> — כותבים ל-cache, ומאוחר יותר ל-DB. מהיר, אבל סיכון לאיבוד נתונים אם ה-cache נופל לפני הכתיבה ל-DB.</li>
+</ul>
+
+<h3>Eviction — מה זורקים כשה-cache מתמלא</h3>
+<p>ה-cache מוגבל בגודל, אז צריך מדיניות פינוי. <strong>LRU (Least Recently Used)</strong> — זורק את מה שלא נגעו בו הכי הרבה זמן — הוא הנפוץ ביותר. אחרים: LFU (least frequently used), FIFO. בנוסף לכל entry יש לרוב <strong>TTL</strong> (תפוגה בזמן).</p>
+
+<h3>הבעיה הקשה: Cache Invalidation</h3>
+<blockquote>
+<p>יש אמרה מפורסמת: "there are only two hard things in computer science: cache invalidation and naming things". הבעיה: כשהנתון ב-DB משתנה, ה-cache מחזיק גרסה ישנה (stale). איך יודעים לרענן? זה ה-tradeoff המרכזי של caching — <strong>מהירות מול טריות הנתונים</strong>. פתרונות: TTL קצר (פשוט, אבל עדיין stale זמנית), invalidation מפורש בכל כתיבה (מדויק, אבל מסובך ומועד לבאגים), או event-based. אין פתרון מושלם — בוחרים כמה stale-ness אפשר לסבול.</p>
+</blockquote>
+
+<p>עוד סכנה: <strong>cache stampede</strong> — כשמפתח פופולרי פג, אלפי בקשות פונות ל-DB בבת אחת. פתרונות: locking, או רענון יזום לפני התפוגה.</p>
+
+<hr>
+
+<h2 id="s6">6. Databases at Scale — Replication ו-Sharding</h2>
+
+<p>ה-DB הוא כמעט תמיד ה-bottleneck הראשון כשגדלים. שתי טכניקות מרכזיות לגרום לו לעמוד בעומס.</p>
+
+<h3>Replication — עותקים של אותם נתונים</h3>
+<p>מחזיקים כמה עותקים של ה-DB. הדפוס הנפוץ הוא <strong>primary-replica</strong> (פעם קראו master-slave):</p>
+<div class="flow">
+Writes → Primary (עותק אחד לכתיבה)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓ (משכפל)<br>
+Reads ← Replica 1, Replica 2, Replica 3 (עותקים לקריאה)
+</div>
+<p>הרעיון: רוב האפליקציות קוראות הרבה יותר משהן כותבות. אז מפנים את כל הקריאות ל-<strong>read replicas</strong> ואת הכתיבות ל-primary. זה מפזר עומס קריאה ומוסיף עמידות (replica יכול להפוך ל-primary אם הוא נופל — failover).</p>
+
+<p>ה-tradeoff: <strong>replication lag</strong>. השכפול לוקח זמן (מילישניות עד שניות), אז replica עלול להחזיר נתון מעט ישן. זה מוביל ישר ל-CAP theorem (פרק הבא). דוגמה קלאסית: משתמש כותב תגובה, מיד קורא — ואם הקריאה הלכה ל-replica שעוד לא התעדכן, הוא לא רואה את התגובה שלו. פתרון: "read your own writes" — קריאות מסוימות מכוונות ל-primary.</p>
+
+<h3>Partitioning ו-Sharding — פיצול הנתונים</h3>
+<p>Replication משכפל את <em>כל</em> הנתונים. אבל מה אם הנתונים גדולים מדי לשרת אחד? מפצלים אותם — <strong>sharding</strong> = פיזור נתונים על פני כמה DBs, כל אחד מחזיק חלק:</p>
+
+<ul>
+<li><strong>Horizontal partitioning (sharding)</strong> — מפצלים <em>שורות</em>. למשל users A–M ב-shard 1, N–Z ב-shard 2. כל shard הוא DB עצמאי.</li>
+<li><strong>Vertical partitioning</strong> — מפצלים <em>עמודות</em>/טבלאות לפי תחום (טבלאות users בשרת אחד, טבלאות analytics באחר).</li>
+</ul>
+
+<h4>Shard key — ההחלטה הקריטית</h4>
+<p>איך מחליטים לאיזה shard שורה שייכת? לפי <strong>shard key</strong> (למשל <code>user_id</code>). זו ההחלטה הכי חשובה וקשה לתיקון ב-sharding:</p>
+<ul>
+<li><strong>Hash-based</strong> — <code>hash(user_id) % N</code>. פיזור אחיד, אבל הוספת shard מחייבת re-hashing כואב (פתרון: consistent hashing).</li>
+<li><strong>Range-based</strong> — לפי טווח. פשוט, אבל עלול ליצור "hot shards" (shard אחד עמוס).</li>
+</ul>
+
+<blockquote>
+<p><strong>אזהרה חשובה:</strong> sharding הוא מורכב מאוד ו"בדרך אחת" — קשה מאוד לבטל או לשנות shard key אחרי שיש נתונים. הוא גם שובר דברים: JOINs בין shards כמעט בלתי אפשריים, transactions חוצות-shard מסובכות. <strong>אל תשרד לפני שאתה חייב.</strong> קודם נסה: read replicas, caching, אינדוקס טוב (מדריך SQL), ו-vertical scaling. sharding הוא המוצא האחרון, לא הראשון.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s7">7. CAP Theorem ומודלי Consistency</h2>
+
+<p>אחד המושגים התיאורטיים החשובים ביותר, ומהנשאלים בכל ראיון. CAP קובע שבמערכת מבוזרת אפשר להבטיח רק <strong>שניים מתוך שלושה</strong>:</p>
+
+<ul>
+<li><strong>Consistency</strong> — כל קריאה מקבלת את הכתיבה האחרונה (או שגיאה). כולם רואים אותו נתון.</li>
+<li><strong>Availability</strong> — כל בקשה מקבלת תשובה (לא בהכרח העדכנית ביותר).</li>
+<li><strong>Partition tolerance</strong> — המערכת ממשיכה לעבוד גם כשיש נתק תקשורת בין nodes.</li>
+</ul>
+
+<h3>הנקודה שרוב האנשים מפספסים</h3>
+<p>במערכת מבוזרת אמיתית, <strong>partitions (נתקי רשת) הם עובדת חיים — הם יקרו.</strong> אז P אינו באמת אופציונלי. המשמעות: הבחירה האמיתית היא בין <strong>C ל-A</strong> כשקורה partition:</p>
+<ul>
+<li><strong>CP</strong> — כשיש נתק, מעדיפים עקביות: דוחים בקשות במקום להחזיר נתון אולי-ישן. (למשל DBs פיננסיים).</li>
+<li><strong>AP</strong> — כשיש נתק, מעדיפים זמינות: עונים עם נתון אולי-ישן ומתקנים אחר כך. (למשל feeds, DNS).</li>
+</ul>
+
+<h3>מודלי Consistency</h3>
+<ul>
+<li><strong>Strong consistency</strong> — אחרי כתיבה, כל קריאה רואה אותה מיד. פשוט להבין, אבל עולה ב-latency וזמינות.</li>
+<li><strong>Eventual consistency</strong> — הנתון יתעדכן בכל העותקים "בסופו של דבר". מהיר וזמין, אבל ייתכן חלון של נתונים ישנים. זה מה שרוב המערכות בקנה מידה גדול בוחרות (למשל, מונה לייקים שמתעדכן בעיכוב זה בסדר).</li>
+</ul>
+
+<blockquote>
+<p><strong>מעשי:</strong> הבחירה תלויה בדומיין. יתרת בנק → strong consistency (CP), אסור להראות סכום שגוי. מונה צפיות ביוטיוב → eventual (AP), למי אכפת אם זה 1,000,203 או 1,000,198 לרגע. חלק מהאמנות של system design הוא לזהות אילו נתונים דורשים strong ואילו יכולים לחיות עם eventual.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. סוגי Storage — SQL, NoSQL ומעבר</h2>
+
+<p>לא כל נתון שייך ל-Postgres. חלק מהעיצוב הוא לבחור את סוג האחסון הנכון לכל צורך ("polyglot persistence").</p>
+
+<h3>SQL (Relational)</h3>
+<p>Postgres, MySQL. מובנה, עם schema, transactions ו-ACID (מדריך SQL). ברירת המחדל הנכונה לרוב הנתונים — נתונים מובנים עם קשרים, כשצריך עקביות. אל תברח מזה בלי סיבה.</p>
+
+<h3>משפחות NoSQL</h3>
+<table>
+<tr><th>סוג</th><th>מודל</th><th>דוגמאות</th><th>מתי</th></tr>
+<tr><td>Key-Value</td><td>מפתח → ערך</td><td>Redis, DynamoDB</td><td>caching, sessions, מהירות קיצונית</td></tr>
+<tr><td>Document</td><td>מסמכי JSON</td><td>MongoDB</td><td>נתונים semi-structured, schema גמיש</td></tr>
+<tr><td>Wide-Column</td><td>טבלאות ענק מבוזרות</td><td>Cassandra</td><td>כתיבות מסיביות, time-series, סקייל עצום</td></tr>
+<tr><td>Graph</td><td>צמתים וקשתות</td><td>Neo4j</td><td>קשרים מורכבים (רשתות חברתיות, המלצות)</td></tr>
+</table>
+
+<h3>אחסון מיוחד</h3>
+<ul>
+<li><strong>Object Storage</strong> (S3) — קבצים גדולים, תמונות, וידאו, backups. זול, עמיד, לא ל-queries.</li>
+<li><strong>Search engines</strong> (Elasticsearch) — full-text search מתקדם, aggregations. (זוכר שב-Postgres יש FTS מובנה למקרים פשוטים?)</li>
+<li><strong>Time-Series DBs</strong> (InfluxDB, TimescaleDB) — מטריקות, IoT, נתונים לפי זמן.</li>
+</ul>
+
+<blockquote>
+<p><strong>הדעה שלי (ורוב המהנדסים המנוסים):</strong> התחל עם SQL (Postgres). הוא מטפל ברוב הצרכים — כולל JSON, full-text, ואפילו vectors עם pgvector. הוסף אחסון מיוחד רק כשיש צורך מוכח: Redis ל-caching, S3 לקבצים, Elasticsearch לחיפוש כבד. הטעות הנפוצה: לבחור MongoDB "כי זה מודרני" ואז להיאבק בחוסר transactions ו-joins. בחר לפי הצורך, לא לפי אופנה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Message Queues ו-Async Processing</h2>
+
+<p>עד כה הכל היה סינכרוני: בקשה → עיבוד → תשובה. אבל הרבה עבודה לא צריכה לקרות <em>עכשיו</em> — שליחת מייל, עיבוד תמונה, יצירת דוח. Message queue מאפשר עיבוד <strong>אסינכרוני</strong>: מכניסים משימה לתור, ומחזירים תשובה מיד; worker מעבד ברקע.</p>
+
+<h3>הדפוס</h3>
+<div class="flow">
+Producer (API) → [ Queue ] → Consumer (Worker)<br>
+<br>
+1. משתמש מעלה וידאו → API שם משימה "encode video" בתור ומחזיר 202<br>
+2. המשתמש לא מחכה — הוא ממשיך<br>
+3. Worker מושך מהתור, מקודד את הווידאו ברקע, מעדכן כשסיים
+</div>
+
+<h3>מה queues נותנים</h3>
+<ul>
+<li><strong>Decoupling</strong> — ה-producer וה-consumer לא תלויים זה בזה. אפשר לשנות/לשדרג כל צד בנפרד.</li>
+<li><strong>ספיגת עומס (buffering)</strong> — spike של בקשות נכנס לתור ומעובד בקצב שהמערכת עומדת בו, במקום להפיל אותה.</li>
+<li><strong>Resilience</strong> — אם ה-worker נופל, המשימות מחכות בתור ולא הולכות לאיבוד.</li>
+<li><strong>עבודה כבדה ברקע</strong> — המשתמש לא ממתין לפעולות איטיות.</li>
+</ul>
+
+<h3>Pub/Sub מול Queue</h3>
+<ul>
+<li><strong>Queue (point-to-point)</strong> — כל הודעה נצרכת על ידי consumer <em>אחד</em>. לחלוקת עבודה. (SQS, RabbitMQ).</li>
+<li><strong>Pub/Sub</strong> — כל הודעה מגיעה ל<em>כל</em> ה-subscribers. לאירועים שכמה מערכות מגיבות להם. (Kafka, Redis Pub/Sub, SNS).</li>
+</ul>
+
+<h3>Event-Driven Architecture</h3>
+<p>ברמה גבוהה יותר: מערכת שבה שירותים מתקשרים דרך <strong>events</strong> ("OrderPlaced", "UserRegistered") במקום קריאות ישירות. שירות מפרסם event, ואחרים מגיבים. זה מפרק תלויות ומאפשר לכל שירות להתפתח בנפרד — אבל מסבך את המעקב (איזה event הפעיל מה) ואת ה-debugging. Kafka הוא הפלטפורמה המובילה לזה.</p>
+
+<blockquote>
+<p><strong>שים לב ל-tradeoff:</strong> async מוסיף מורכבות אמיתית — צריך לטפל בכשלים, ב-retries, ובמקרה שהודעה מעובדת פעמיים (חשוב: תעצב consumers שיהיו <strong>idempotent</strong> — זוכר את המושג ממדריך Networking? עיבוד כפול של אותה הודעה לא צריך להזיק). אל תהפוך הכל ל-async. השתמש ב-queue רק כשהעבודה באמת יכולה/צריכה להיות ברקע.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s10">10. Monolith מול Microservices</h2>
+
+<p>שאלת הארכיטקטורה הגדולה, וגם המקום שבו עושים הכי הרבה טעויות over-engineering.</p>
+
+<h3>Monolith</h3>
+<p>כל האפליקציה כיחידה אחת שנפרסת יחד (למשל אפליקציית NestJS אחת עם כל ה-modules). יתרונות: <strong>פשוט</strong> — קל לפתח, לבדוק, לפרוס, ולדבג. transactions ו-calls בין חלקים הם פשוט קריאות פונקציה. חיסרון: בקנה מידה גדול מאוד — קשה לתחזק codebase ענק, וכל הצוותים תלויים באותו deploy.</p>
+
+<h3>Microservices</h3>
+<p>פיצול לשירותים קטנים ועצמאיים, כל אחד עם ה-DB שלו, נפרסים בנפרד (למשל: <code>auth-service</code>, <code>orders-service</code>, <code>payments-service</code>). יתרונות: כל צוות עצמאי, scaling נפרד לכל שירות, כשל מבודד. אבל המחיר <strong>עצום</strong>:</p>
+<ul>
+<li>מורכבות רשת — קריאות בין שירותים על הרשת (latency, כשלים).</li>
+<li>אין transactions פשוטות בין שירותים (צריך דפוסים כמו Saga).</li>
+<li>Distributed debugging — קשה מאוד לעקוב אחרי בקשה שעוברת 5 שירותים.</li>
+<li>Overhead תפעולי — deployment, monitoring, service discovery לכל שירות.</li>
+</ul>
+
+<blockquote>
+<p><strong>העצה הכי חשובה בפרק הזה, וברוב system design:</strong> <strong>כמעט תמיד תתחיל ב-monolith.</strong> ההייפ סביב microservices גרם לאינספור סטארטאפים לפצל מוקדם מדי ולשלם מחיר מורכבות שהרג להם את המהירות. חברות כמו Amazon ו-Netflix עברו ל-microservices כי הגיעו לגבול של monolith עם אלפי מהנדסים — לא כי זה "נכון". הכלל: <strong>monolith first</strong>, ופצל שירות החוצה רק כשיש כאב מוכח (צוות שנחסם, רכיב שצריך scaling שונה מהותית). "monolith מודולרי" נותן את רוב היתרונות בלי המחיר.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. תקשורת בין שירותים — REST, gRPC, GraphQL</h2>
+
+<p>כשיש כמה שירותים (או client ו-server), איך הם מדברים? שלוש הגישות הנפוצות:</p>
+
+<table>
+<tr><th></th><th>REST</th><th>gRPC</th><th>GraphQL</th></tr>
+<tr><td>פורמט</td><td>JSON over HTTP</td><td>Protobuf (בינארי) over HTTP/2</td><td>JSON, query language</td></tr>
+<tr><td>מהירות</td><td>סטנדרטי</td><td>מהיר מאוד</td><td>סטנדרטי</td></tr>
+<tr><td>חוזק</td><td>פשוט, אוניברסלי, cache קל</td><td>ביצועים, typed, streaming</td><td>הלקוח בוחר בדיוק מה שהוא צריך</td></tr>
+<tr><td>מתאים ל-</td><td>APIs ציבוריים, רוב המקרים</td><td>תקשורת פנימית בין microservices</td><td>frontends עם צרכי data מגוונים</td></tr>
+</table>
+
+<ul>
+<li><strong>REST</strong> — ברירת המחדל הבטוחה. מוכר לך ממדריך NestJS. פשוט, כולם מבינים, cache-friendly.</li>
+<li><strong>gRPC</strong> — כשצריך ביצועים בתקשורת פנימית בין שירותים. בינארי ו-typed (Protobuf), מהיר, תומך streaming. פחות נוח מדפדפן.</li>
+<li><strong>GraphQL</strong> — פותר over-fetching/under-fetching: הלקוח מבקש בדיוק את השדות שהוא צריך בבקשה אחת. מצוין ל-frontends מורכבים, אבל מסבך caching ואבטחה.</li>
+</ul>
+
+<p>עוד הבחנה: <strong>synchronous</strong> (הקורא מחכה לתשובה — REST/gRPC) מול <strong>asynchronous</strong> (דרך queue/events — פרק 9). בין microservices, מעדיפים async כשאפשר, כדי להפחית תלות.</p>
+
+<hr>
+
+<h2 id="s12">12. Rate Limiting ו-Throttling</h2>
+
+<p>הגנה על המערכת מפני שימוש-יתר — בין אם זה מתקפה (DDoS), באג בלקוח, או פשוט משתמש אחד שצורך יותר מדי. Rate limiting מגביל כמה בקשות מקור מסוים יכול לשלוח בפרק זמן.</p>
+
+<h3>אלגוריתמים נפוצים</h3>
+<ul>
+<li><strong>Token Bucket</strong> — "דלי" עם tokens שמתמלא בקצב קבוע; כל בקשה צורכת token. מאפשר bursts. הנפוץ ביותר.</li>
+<li><strong>Leaky Bucket</strong> — בקשות נכנסות לתור ומעובדות בקצב קבוע. מחליק את התעבורה.</li>
+<li><strong>Fixed / Sliding Window</strong> — סופר בקשות בחלון זמן.</li>
+</ul>
+
+<p>בפועל, לרוב מיישמים rate limiting ב-Redis (מונה מבוזר משותף בין כל השרתים), ומחזירים <code>429 Too Many Requests</code> עם header <code>Retry-After</code>. חשוב: המימוש חייב לעבוד <strong>בין כל השרתים</strong> — לכן Redis משותף ולא state מקומי בכל שרת.</p>
+
+<hr>
+
+<h2 id="s13">13. Reliability — Redundancy, Failover, Circuit Breaker</h2>
+
+<p>בקנה מידה גדול, כשלים הם <strong>ודאות</strong>, לא אפשרות. שרתים נופלים, רשתות מתנתקות, שירותים איטיים. מערכת טובה מתוכננת להיכשל בחן (graceful degradation), לא להתרסק. הנה הדפוסים.</p>
+
+<h3>Redundancy ו-Failover</h3>
+<p>אין single point of failure. כל רכיב קריטי צריך גיבוי: כמה שרתי אפליקציה, primary + replicas ל-DB, כמה availability zones. <strong>Failover</strong> = כשרכיב נופל, אחר לוקח את מקומו אוטומטית (replica הופך ל-primary, LB מפנה לשרת בריא).</p>
+
+<h3>Retries — בזהירות</h3>
+<p>כשל רשת זמני? נסה שוב. אבל בלי מחשבה, retries מסוכנים: אם שירות עמוס ואתה מפציץ אותו ב-retries, אתה מחמיר את המצב (retry storm). הכללים:</p>
+<ul>
+<li><strong>Exponential backoff</strong> — המתן זמן הולך וגדל בין ניסיונות (1s, 2s, 4s...).</li>
+<li><strong>Jitter</strong> — הוסף אקראיות כדי שכל ה-clients לא ינסו שוב באותו רגע.</li>
+<li>נסה שוב רק פעולות <strong>idempotent</strong> (זוכר ממדריך Networking/SQL? retry על POST לא-idempotent = כפילות).</li>
+</ul>
+
+<h3>Circuit Breaker — הדפוס החשוב</h3>
+<p>מושאל מחשמל. אם שירות שאתה קורא לו נכשל שוב ושוב, ה-circuit breaker "נפתח" ומפסיק לנסות לזמן מה — מחזיר שגיאה מיד במקום לחכות ל-timeout כל פעם. זה מונע <strong>cascading failure</strong>: שירות אחד איטי לא גורם לכל השרשרת מעליו להיתקע ולקרוס.</p>
+<div class="flow">
+Closed (הכל תקין, בקשות עוברות)<br>
+&nbsp;&nbsp;→ יותר מדי כשלים → Open (חוסם, מחזיר שגיאה מיד)<br>
+&nbsp;&nbsp;→ אחרי timeout → Half-Open (מנסה בקשה אחת)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;→ הצליחה? חזרה ל-Closed. נכשלה? חזרה ל-Open.
+</div>
+
+<h3>עוד דפוסי עמידות</h3>
+<ul>
+<li><strong>Timeouts</strong> — לעולם אל תחכה לתשובה לנצח. הגדר timeout לכל קריאה חיצונית.</li>
+<li><strong>Bulkheads</strong> — בודדים משאבים כך שכשל בחלק אחד לא מנקז את כל המערכת.</li>
+<li><strong>Graceful degradation</strong> — כשרכיב לא-קריטי נופל, המשך לעבוד בפונקציונליות מופחתת (למשל, אם שירות ההמלצות נפל — הצג מוצרים פופולריים במקום דף שבור).</li>
+</ul>
+
+<hr>
+
+<h2 id="s14">14. Observability — Logs, Metrics, Traces</h2>
+
+<p>אי אפשר לתקן מה שאי אפשר לראות. בקנה מידה גדול, observability אינו מותרות — הוא ההבדל בין לזהות בעיה תוך דקות לבין לגשש בחושך. שלושת "העמודים":</p>
+
+<ul>
+<li><strong>Logs</strong> — רשומות אירועים ("user 42 logged in", "payment failed"). מפורטות, טובות ל-debugging נקודתי. בקנה מידה — structured logging (JSON) וריכוז מרכזי (ELK, Loki).</li>
+<li><strong>Metrics</strong> — מספרים לאורך זמן (requests/sec, latency p99, CPU, error rate). קלים לגרף ולהתראה. (Prometheus + Grafana).</li>
+<li><strong>Traces</strong> — מעקב אחרי בקשה <em>אחת</em> דרך כל השירותים שהיא עברה. קריטי ל-microservices — מראה איפה הזמן הלך בבקשה שחצתה 5 שירותים. (OpenTelemetry, Jaeger).</li>
+</ul>
+
+<h3>Monitoring ו-Alerting</h3>
+<p>על גבי המטריקות בונים <strong>alerts</strong> — התראות אוטומטיות כשמשהו חורג ("error rate > 5%", "latency p99 > 1s"). המפתח: להתריע על <strong>סימפטומים שמשפיעים על משתמשים</strong> (איטיות, שגיאות), לא על כל תנודה, אחרת נוצר "alert fatigue" ומתעלמים מהכל. מדד טוב להתראה: SLO (Service Level Objective) — היעד שהגדרת (למשל "99.9% מהבקשות מתחת ל-200ms").</p>
+
+<blockquote>
+<p><strong>מעשי ל-Backend:</strong> מהיום הראשון של פרויקט — structured logging עם request IDs (שמאפשרים לעקוב אחרי בקשה על פני logs). בענן, כלים כמו Datadog/CloudWatch מרכזים הכל. ההשקעה ב-observability משתלמת ברגע הראשון של incident ב-production ב-3 לפנות בוקר.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s15">15. Estimation — Back-of-the-Envelope</h2>
+
+<p>חלק בלתי-נפרד מ-system design (ומראיונות): להעריך גסות אם עיצוב בכלל ריאלי. לא צריך דיוק — צריך order of magnitude. בשביל זה חייבים להכיר כמה מספרים.</p>
+
+<h3>Latency numbers שכל מהנדס צריך להכיר (בערך)</h3>
+<table>
+<tr><th>פעולה</th><th>זמן משוער</th></tr>
+<tr><td>קריאה מ-RAM / cache בזיכרון</td><td>~100 ננו-שנייה</td></tr>
+<tr><td>קריאה מ-SSD</td><td>~100 מיקרו-שנייה</td></tr>
+<tr><td>Round-trip באותו datacenter</td><td>~0.5 מילישנייה</td></tr>
+<tr><td>קריאה מדיסק מכני (HDD)</td><td>~10 מילישנייה</td></tr>
+<tr><td>Round-trip בין יבשות</td><td>~150 מילישנייה</td></tr>
+</table>
+<p>הלקח: זיכרון/cache מהיר בסדרי גודל מדיסק ומרשת. זו הסיבה שכל אופטימיזציה מתחילה ב"להביא נתונים קרוב יותר" — cache (פרק 5) ו-CDN.</p>
+
+<h3>יחידות שימושיות</h3>
+<ul>
+<li><strong>QPS מ-DAU</strong> — אם יש 1M משתמשים יומיים, כל אחד עושה ~10 בקשות ביום ≈ 10M בקשות/יום ÷ 86,400 שניות ≈ ~115 QPS ממוצע. הכפל ב-~2–3 ל-peak.</li>
+<li><strong>אחסון</strong> — 1M משתמשים × 1KB לפרופיל = ~1GB. 1M תמונות × 1MB = ~1TB. חשב לפי גודל × כמות.</li>
+<li><strong>המרות מהירות</strong> — 1 מיליון שניות ≈ 11.5 ימים. יום ≈ 86,400 שניות. שווה לזכור.</li>
+</ul>
+
+<blockquote>
+<p><strong>למה זה חשוב:</strong> estimation מונע עיצוב לא-ריאלי. אם חישבת ש-DB בודד צריך לטפל ב-500K QPS — אתה יודע מיד שצריך sharding/caching. אם זה 100 QPS — Postgres בודד מספיק, ואל תסבך. המספרים מכתיבים את הארכיטקטורה, לא להפך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s16">16. המסגרת לפתרון שאלת System Design</h2>
+
+<p>עכשיו נאסוף הכל לתהליך. זו המסגרת גם לראיונות וגם לעבודה אמיתית — היא מכריחה אותך לחשוב בסדר הנכון במקום לקפוץ לפתרון.</p>
+
+<h3>ששת השלבים</h3>
+<ol>
+<li><strong>הבהר requirements (5 דק').</strong> אל תמהר לצייר. שאל: מה בדיוק המערכת עושה (functional)? כמה משתמשים, כמה QPS, כמה data (non-functional)? מה קריטי — עקביות או זמינות? <strong>אף פעם אל תדלג על זה.</strong></li>
+<li><strong>Estimation.</strong> חשב QPS, storage, bandwidth (פרק 15). זה מכתיב את הסקייל של העיצוב.</li>
+<li><strong>API design.</strong> הגדר את ה-endpoints העיקריים — מה נכנס, מה יוצא. זה ממקד את הדיון.</li>
+<li><strong>Data model.</strong> אילו entities, אילו טבלאות, איזה DB. (מדריך SQL).</li>
+<li><strong>High-level design.</strong> צייר את הרכיבים: clients → LB → app servers → cache → DB → queue. חבר אותם.</li>
+<li><strong>Deep dive + bottlenecks.</strong> זהה את הצוואר (בד"כ ה-DB), והחל את הכלים: caching, replicas, sharding, queues. <strong>נמק כל בחירה ב-tradeoff.</strong></li>
+</ol>
+
+<blockquote>
+<p><strong>הסוד של ראיונות system design (ושל עיצוב טוב):</strong> המראיין לא מחפש את "התשובה הנכונה" — הוא מחפש איך אתה <em>חושב</em>. הצהר על הנחות, דבר על tradeoffs בקול ("אני אבחר eventual consistency כאן כי X, המחיר הוא Y"), התחל פשוט והוסף מורכבות רק כשהמספרים דורשים. מי שקופץ ישר ל"נשים Kafka ו-microservices ו-sharding" בלי לנמק — נכשל. מי שמתחיל פשוט ומצדיק כל שכבה — מצליח.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s17">17. Case Study מלא: מקצרן קישורים (URL Shortener)</h2>
+
+<p>נחבר הכל בדוגמה קלאסית — כמו bit.ly. עוקבים אחרי המסגרת מפרק 16.</p>
+
+<h3>שלב 1: Requirements</h3>
+<ul>
+<li><strong>Functional:</strong> לקבל URL ארוך ולהחזיר URL קצר; גישה לקצר מפנה לארוך.</li>
+<li><strong>Non-functional:</strong> read-heavy מאוד (הרבה יותר קליקים מיצירות), latency נמוך בהפניה, זמינות גבוהה.</li>
+</ul>
+
+<h3>שלב 2: Estimation</h3>
+<div class="flow">
+נניח 100M URLs חדשים בחודש → ~40 writes/sec<br>
+יחס read:write ~100:1 → ~4,000 reads/sec<br>
+אחסון: 100M/חודש × 5 שנים × ~500 bytes ≈ ~3TB<br>
+→ read-heavy מובהק. caching יהיה קריטי.
+</div>
+
+<h3>שלב 3: API</h3>
+<pre><code>POST /shorten   { "url": "https://very-long-url..." }  → { "short": "abc123" }
+GET  /{code}    → 301 redirect ל-URL המקורי</code></pre>
+
+<h3>שלב 4: Data Model</h3>
+<pre><code>urls (
+  code        VARCHAR(7) PRIMARY KEY,   -- הקוד הקצר
+  long_url    TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now()
+)</code></pre>
+<p>איך מייצרים <code>code</code>? הגישה הנקייה: מונה גלובלי שממופה ל-Base62 (a–z, A–Z, 0–9). 7 תווים ב-Base62 = ~3.5 טריליון אפשרויות — יותר ממספיק. (חלופה: hash של ה-URL, אבל צריך לטפל בהתנגשויות).</p>
+
+<h3>שלב 5: High-Level Design</h3>
+<div class="flow">
+Client → CDN/LB → App Servers (stateless, horizontally scaled)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+&nbsp;&nbsp;Redis Cache (code → long_url)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓ (cache miss)<br>
+&nbsp;&nbsp;Database (Postgres, + read replicas)
+</div>
+
+<h3>שלב 6: Deep Dive — למה כל בחירה</h3>
+<ul>
+<li><strong>Cache אגרסיבי (פרק 5):</strong> read-heavy + נתונים כמעט-אימוטבליים (URL קצר לא משתנה) = מקרה מושלם ל-caching. רוב ההפניות ייענו מ-Redis, לא נוגעות ב-DB. cache-aside עם TTL ארוך.</li>
+<li><strong>Read replicas (פרק 6):</strong> את הקריאות שכן מגיעות ל-DB מפזרים ל-replicas.</li>
+<li><strong>Stateless app servers (פרק 3):</strong> horizontal scaling פשוט מאחורי LB.</li>
+<li><strong>Consistency (פרק 7):</strong> eventual מספיק — אם URL חדש לוקח שנייה להתפשט ל-cache, לא נורא. בחרנו זמינות על עקביות מיידית.</li>
+<li><strong>Sharding (פרק 6):</strong> ב-3TB ו-4K QPS — Postgres בודד עם replicas ו-cache <em>כנראה מספיק</em>. לא נסביך עם sharding עד שנגדל בסדר גודל. (בדיוק העיקרון מפרק 1).</li>
+<li><strong>Analytics (כמה קליקים):</strong> נכתוב events ל-queue (פרק 9) ונעבד ברקע — כדי לא להאט את ההפניה עצמה.</li>
+</ul>
+
+<p>שים לב איך כל רכיב נבחר <strong>בגלל דרישה ספציפית</strong>, לא "כי זה נחמד". זה ההבדל בין system design אמיתי לרשימת buzzwords.</p>
+
+<hr>
+
+<h2 id="s18">18. תרגילים</h2>
+
+<p>לכל תרגיל, עבור לפי ששת השלבים מפרק 16. אין תשובה אחת נכונה — התרגול הוא בנימוק.</p>
+
+<p><strong>1 — Rate Limiter.</strong> עצב שירות rate limiting מבוזר שמגביל כל משתמש ל-100 בקשות/דקה, עובד על פני 50 שרתים. (רמז: Redis, פרק 12).</p>
+
+<p><strong>2 — News Feed.</strong> עצב feed כמו של טוויטר/אינסטגרם. הדילמה המרכזית: fan-out on write (לחשב feed מראש) מול fan-out on read (לחשב בזמן קריאה)? מה ה-tradeoff?</p>
+
+<p><strong>3 — Chat System.</strong> עצב מערכת צ'אט בזמן אמת (רמז: WebSockets ממדריך Networking, presence, message storage).</p>
+
+<p><strong>4 — Video Streaming.</strong> עצב שירות כמו YouTube. חשוב על אחסון (S3), CDN, encoding ב-queue, ו-metadata ב-DB.</p>
+
+<p><strong>5 — E-commerce checkout.</strong> עצב תהליך רכישה. כאן consistency קריטי (מלאי, תשלום) — איפה תשתמש ב-transactions וב-strong consistency, ואיפה ב-eventual?</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים לקחת מעל הכל: system design הוא <strong>tradeoffs מול requirements</strong>, לא רכיבים לשנן — כל בחירה קונה משהו ועולה משהו, והמיומנות היא לנמק. והשני: <strong>תתחיל פשוט.</strong> monolith, Postgres בודד, cache. הוסף מורכבות (replicas, queues, sharding, microservices) רק כשהמספרים מכריחים. over-engineering הוא הרוצח השקט של פרויקטים.</p>
+
+<p>שים לב כמה מהמדריך נשען על מה שכבר בנינו: caching ו-load balancing (Networking), transactions ו-replication (SQL), stateless scaling (Authentication), async (Networking). System design הוא הדבק שמחבר את כל הסדרה למערכת אחת.</p>
+
+<p>הצעד הבא: קח את ה-case study של מקצרן הקישורים ובנה אותו באמת — NestJS + Postgres + Redis. ואז נסה את התרגילים על נייר, לפי ששת השלבים. system design נלמד בעשייה ובנימוק, לא בשינון.</p>
+
+<p>וזהו — יש לך עכשיו את השבעה: TypeScript, NestJS, Authentication, Networking, SQL, ורשימת ה-AI — ועכשיו System Design שמחבר את כולם. 🚀</p>
+
+</body>
+</html>

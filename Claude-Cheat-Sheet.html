@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code — דף עזר מהיר</title>
+<style>
+  :root {
+    --ink: #1f1e1d; --muted: #6b6a67; --accent: #c15f3c;
+    --accent-soft: #f5e6df; --border: #e5e2dc; --bg: #faf9f5;
+    --code-bg: #262521; --code-ink: #e8e6e1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+    background: var(--bg); color: var(--ink); margin: 0;
+    line-height: 1.5; font-size: 13.5px;
+  }
+  .wrap { max-width: 1050px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .box {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+  }
+  .box.wide { grid-column: 1 / -1; }
+  h2 {
+    font-size: 15px; margin: 0 0 8px; color: var(--accent);
+    border-bottom: 2px solid var(--accent-soft); padding-bottom: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { border: 1px solid var(--border); padding: 4px 8px; text-align: right; }
+  th { background: var(--accent-soft); }
+  code {
+    background: #f0ede7; border-radius: 3px; padding: 0 5px;
+    font-family: Consolas, monospace; font-size: 12px;
+    direction: ltr; unicode-bidi: embed; white-space: nowrap;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 8px;
+    padding: 10px 12px; overflow-x: auto; direction: ltr; text-align: left;
+    font-size: 12px; line-height: 1.5; margin: 6px 0;
+  }
+  pre code { background: none; padding: 0; color: inherit; white-space: pre; }
+  ul { margin: 4px 0; padding-inline-start: 18px; }
+  li { margin: 2px 0; }
+  .k { color: var(--accent); font-weight: 600; }
+  @media print {
+    body { font-size: 11px; }
+    .box { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Claude Code — דף עזר מהיר</h1>
+<p class="sub">להדפסה או להשארה פתוח בצד · הגרסה המלאה בנוהל · אוגוסט 2026</p>
+
+<div class="grid">
+
+<div class="box">
+  <h2>הרצה</h2>
+  <table>
+    <tr><td><code>claude</code></td><td>סשן אינטראקטיבי</td></tr>
+    <tr><td><code>claude "משימה"</code></td><td>מתחיל עם משימה</td></tr>
+    <tr><td><code>claude -p "שאלה"</code></td><td>תשובה ויציאה (לסקריפטים)</td></tr>
+    <tr><td><code>claude -c</code></td><td>ממשיך שיחה אחרונה</td></tr>
+    <tr><td><code>claude --resume</code></td><td>בוחר שיחה קודמת</td></tr>
+    <tr><td><code>claude --add-dir ../x</code></td><td>גישה לתיקייה נוספת</td></tr>
+  </table>
+</div>
+
+<div class="box">
+  <h2>בתוך הסשן</h2>
+  <table>
+    <tr><td><code>/init</code></td><td>יצירת CLAUDE.md (פרויקט חדש)</td></tr>
+    <tr><td><code>/context</code></td><td>מה טעון בקונטקסט — דיבוג מס' 1</td></tr>
+    <tr><td><code>/memory</code></td><td>עריכת CLAUDE.md + זיכרון</td></tr>
+    <tr><td><code>/mcp</code></td><td>סטטוס ואימות שרתי MCP</td></tr>
+    <tr><td><code>/plugin</code></td><td>ניהול פלאגינים</td></tr>
+    <tr><td><code>/clear</code></td><td>שיחה חדשה (בין משימות!)</td></tr>
+    <tr><td><code>/compact</code></td><td>כיווץ כשהקונטקסט מלא</td></tr>
+    <tr><td><code>/doctor</code></td><td>בדיקת תקינות</td></tr>
+    <tr><td>Shift+Tab</td><td>Plan Mode (משימות גדולות)</td></tr>
+    <tr><td>Esc</td><td>עצירת קלוד באמצע ריצה</td></tr>
+  </table>
+</div>
+
+<div class="box">
+  <h2>MCP</h2>
+<pre><code>claude mcp add --transport http notion https://mcp.notion.com/mcp
+claude mcp add --transport http gh URL --header "Authorization: Bearer TOKEN"
+claude mcp add --transport stdio db -- npx -y some-mcp-server
+claude mcp list / get NAME / remove NAME</code></pre>
+  <ul>
+    <li><span class="k">Scope:</span> ברירת מחדל local · <code>--scope project</code> = לצוות (.mcp.json בגיט) · <code>--scope user</code> = כל הפרויקטים שלך</li>
+    <li>סודות: <code>${VAR}</code> בקונפיג, לא טוקנים בגיט</li>
+  </ul>
+</div>
+
+<div class="box">
+  <h2>Skill — שלד מינימלי</h2>
+<pre><code># ~/.claude/skills/NAME/SKILL.md
+---
+description: What it does. Use when...
+disable-model-invocation: true   # רק אתה מפעיל
+allowed-tools: Bash(git *)       # בלי חלונות אישור
+---
+Instructions here. $ARGUMENTS = user input.</code></pre>
+  <ul>
+    <li>הפעלה: <code>/NAME args</code> · שם התיקייה = שם הפקודה</li>
+    <li>אישי: <code>~/.claude/skills/</code> · פרויקט: <code>.claude/skills/</code></li>
+  </ul>
+</div>
+
+<div class="box wide">
+  <h2>מה שם? — טבלת החלטה</h2>
+  <table>
+    <tr><th>צריך ש...</th><th>כלי</th><th>צריך ש...</th><th>כלי</th></tr>
+    <tr><td>יידע תמיד (קונבנציות, build)</td><td><b>CLAUDE.md</b> (קצר! &lt;200 שורות)</td><td>ירוץ תמיד באירוע (lint אחרי עריכה)</td><td><b>Hook</b> — אכיפה, לא המלצה</td></tr>
+    <tr><td>חוקים רק לקבצים מסוימים</td><td><b>.claude/rules/</b> + <code>paths:</code></td><td>ידבר עם Jira / DB / Slack</td><td><b>MCP</b></td></tr>
+    <tr><td>תהליך לפי דרישה (deploy, review)</td><td><b>Skill</b></td><td>לשתף סטאפ שלם עם צוות</td><td><b>Plugin</b></td></tr>
+  </table>
+</div>
+
+<div class="box wide">
+  <h2>תבנית פרומפט למשימה + כלל הזהב</h2>
+<pre><code>המשימה: [מה, במשפט]  |  קבצים: @src/...  |  הקשר: [שגיאות מלאות, מה ניסיתי]
+אילוצים: [מה אסור לשבור]  |  הצלחה = [טסטים עוברים / X קורה]
+תתחיל בתוכנית קצרה לפני שאתה נוגע בקוד.</code></pre>
+  <ul>
+    <li><span class="k">כלל שני התיקונים:</span> קלוד טעה פעמיים ברצף? <code>/clear</code> ופרומפט חדש עם מה שלמדת. אל תתווכח עם סשן מלוכלך.</li>
+    <li><span class="k">כלל שתי הפעמים:</span> תיקנת אותו דבר פעמיים? → שורה ב-CLAUDE.md. חזרת על תהליך פעמיים? → Skill.</li>
+    <li>בסוף כל משימה: "תריץ טסטים" + סקירת diff. תמיד.</li>
+  </ul>
+</div>
+
+</div>
+</div>
+</body>
+</html>

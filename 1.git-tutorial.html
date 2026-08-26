@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git ו-Workflow — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #ea580c; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #ea580c; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #c2410c; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #9a3412; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #fff0e8; }
+  a { color: #ea580c; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #fff7f2; border: 1px solid #fadfce; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #fff7f2; border: 1px solid #fadfce; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>Git ו-Workflow — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>הכלי היומיומי הכי בסיסי שדילגנו עליו — ועכשיו סוגרים את הפער. Git הוא איך אתה שומר, מגרסן, ומשתף קוד, ואיך צוותים עובדים יחד בלי לדרוס זה את זה.</p>
+<p>המדריך מהמודל המנטלי ועד ה-workflow הצוותי המלא (branches, PRs, code review) והחלקים ה"מפחידים" (conflicts, ביטול שינויים). עברית להסבר, אנגלית לפקודות. בסוף — cheat sheet.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: מה זה Git והמודל המנטלי</a></li>
+<li><a href="#s2">שלושת האזורים — Working, Staging, Repo</a></li>
+<li><a href="#s3">הלולאה הבסיסית — add, commit, log</a></li>
+<li><a href="#s4">Branches — ענפים</a></li>
+<li><a href="#s5">Merge מול Rebase</a></li>
+<li><a href="#s6">Remotes ו-GitHub — push, pull, fetch</a></li>
+<li><a href="#s7">ה-Workflow הצוותי — Feature Branch + PR</a></li>
+<li><a href="#s8">Merge Conflicts — פתרון התנגשויות</a></li>
+<li><a href="#s9">ביטול שינויים — reset, revert, restore, stash</a></li>
+<li><a href="#s10">Commits טובים והודעות</a></li>
+<li><a href="#s11">.gitignore ומה לא לcommit</a></li>
+<li><a href="#s12">כלים מתקדמים — cherry-pick, rebase -i, bisect, tags</a></li>
+<li><a href="#s13">אסטרטגיות Branching</a></li>
+<li><a href="#s14">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s15">Cheat Sheet</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: מה זה Git והמודל המנטלי</h2>
+
+<p>Git הוא <strong>version control system</strong> מבוזר — כלי שעוקב אחרי כל שינוי בקוד, מאפשר לחזור אחורה, לעבוד על כמה דברים במקביל, ולשלב עבודה של כמה אנשים. הוא הסטנדרט המוחלט; כל פרויקט תוכנה משתמש בו.</p>
+
+<h3>"מבוזר" — למה זה חשוב</h3>
+<p>ב-Git, <strong>לכל מפתח יש עותק מלא של כל ההיסטוריה</strong> על המחשב שלו — לא רק הגרסה הנוכחית. אתה יכול לעשות commit, לעיין בהיסטוריה, ולעבוד על branches בלי חיבור לאינטרנט. GitHub הוא רק "עותק מרכזי משותף" לסנכרון — לא ה-git עצמו. (זוכר את ההבחנה מ-System Design בין מבוזר למרכזי? אותו רעיון).</p>
+
+<h3>המודל המנטלי החשוב: snapshots, לא diffs</h3>
+<blockquote>
+<p>הרבה אנשים חושבים ש-Git שומר "שינויים" (diffs). זה <strong>לא</strong> המודל הנכון. <strong>Git שומר snapshots</strong> — צילום מצב של כל הפרויקט בכל commit. כל commit הוא "תמונה" מלאה של הקבצים באותו רגע (בפועל, קבצים שלא השתנו מקושרים ולא משוכפלים, אבל תפיסתית — snapshot). כשאתה מבין את זה, branches ו-merges מפסיקים להיות קסם: branch הוא פשוט <strong>מצביע ל-snapshot מסוים</strong>, ו-Git עובר ביניהם.</p>
+</blockquote>
+
+<h3>Commit — יחידת השמירה</h3>
+<p>Commit הוא נקודת שמירה בהיסטוריה: snapshot + הודעה + מי ומתי. לכל commit יש <strong>hash</strong> ייחודי (למשל <code>a1b2c3d</code>) שמזהה אותו. ההיסטוריה היא שרשרת של commits, כל אחד מצביע לקודם שלו.</p>
+
+<h3>הגדרה ראשונית (פעם אחת)</h3>
+<pre><code>git config --global user.name "Eliya"
+git config --global user.email "eliya@x.com"
+# זה מה שיופיע בכל commit שלך</code></pre>
+
+<hr>
+
+<h2 id="s2">2. שלושת האזורים — Working, Staging, Repo</h2>
+
+<p>זו התפיסה שהכי מבלבלת מתחילים, ואם תבין אותה — 80% מ-Git יתבהר. ב-Git יש שלושה "אזורים" שקובץ עובר ביניהם:</p>
+
+<div class="flow">
+Working Directory  →  Staging Area (Index)  →  Repository<br>
+&nbsp;&nbsp;(הקבצים שלך)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(מה שיכנס ל-commit)&nbsp;&nbsp;&nbsp;(ההיסטוריה הקבועה)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;git add  →&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;git commit  →
+</div>
+
+<ul>
+<li><strong>Working Directory</strong> — הקבצים שאתה עורך בפועל. כאן אתה עובד.</li>
+<li><strong>Staging Area (Index)</strong> — "חדר המתנה". אתה בוחר אילו שינויים ייכנסו ל-commit הבא. זה מה ש-<code>git add</code> עושה.</li>
+<li><strong>Repository</strong> — ההיסטוריה הקבועה. <code>git commit</code> לוקח את מה שב-staging ושומר אותו כ-snapshot.</li>
+</ul>
+
+<h3>למה שני שלבים (add ואז commit)?</h3>
+<p>ה-staging area נראה מיותר בהתחלה, אבל הוא נותן לך <strong>שליטה עדינה</strong> — לבחור בדיוק אילו שינויים ייכנסו ל-commit. ערכת 3 קבצים אבל רוצה לחלק לשני commits לוגיים? מוסיפים ל-staging רק את הקבצים של ה-commit הראשון, עושים commit, ואז את השאר. זה מאפשר commits אטומיים ונקיים (פרק 10).</p>
+
+<h3>HEAD</h3>
+<p><strong>HEAD</strong> הוא מצביע ל-commit ה"נוכחי" שאתה עומד עליו (בדרך כלל הראש של ה-branch הפעיל). כשאתה עושה commit, HEAD זז קדימה. הרבה פקודות מתייחסות אליו — <code>HEAD~1</code> זה "commit אחד אחורה", <code>HEAD~2</code> שניים, וכו'.</p>
+
+<hr>
+
+<h2 id="s3">3. הלולאה הבסיסית — add, commit, log</h2>
+
+<h3>התחלה — init או clone</h3>
+<pre><code>git init                              # מתחיל repo חדש בתיקייה הנוכחית
+git clone https://github.com/user/repo.git   # מעתיק repo קיים</code></pre>
+
+<h3>הלולאה היומיומית</h3>
+<pre><code>git status                    # מה השתנה? מה ב-staging? — הפקודה שתריץ הכי הרבה
+git add file.ts               # מוסיף קובץ ל-staging
+git add .                     # מוסיף את כל השינויים
+git commit -m "Add user auth" # שומר snapshot עם הודעה
+git log                       # מציג את היסטוריית ה-commits
+git log --oneline             # גרסה קומפקטית (שורה per commit)</code></pre>
+
+<h3>לראות מה השתנה</h3>
+<pre><code>git diff                # שינויים ב-working dir שעדיין לא ב-staging
+git diff --staged       # שינויים שב-staging (מה שייכנס ל-commit)
+git show &lt;hash&gt;          # מה השתנה ב-commit מסוים</code></pre>
+
+<blockquote>
+<p><strong>ההרגל שיציל אותך:</strong> הרץ <code>git status</code> כל הזמן — לפני commit, אחרי, כשאתה מבולבל. הוא אומר לך בדיוק באיזה מצב אתה ומה הצעד הבא. מפתחים מנוסים מריצים אותו עשרות פעמים ביום. זה ה-<code>console.log</code> של Git.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s4">4. Branches — ענפים</h2>
+
+<p>Branch (ענף) הוא אחד הרעיונות החזקים ב-Git, ובזכות המודל של snapshots — הוא זול וקל. branch מאפשר לך לעבוד על feature בלי לגעת בקוד הראשי, ולשלב חזרה כשמוכן.</p>
+
+<h3>מה זה branch באמת</h3>
+<p>זוכר ש-Git שומר snapshots ו-branch הוא מצביע? <strong>branch הוא בסך הכול מצביע קליל ל-commit.</strong> יצירת branch = יצירת מצביע חדש. זו הסיבה ש-branching ב-Git מהיר ומיידי (בניגוד למערכות ישנות שהעתיקו קבצים). ה-branch הראשי נקרא בדרך כלל <code>main</code> (בעבר <code>master</code>).</p>
+
+<h3>הפקודות</h3>
+<pre><code>git branch                    # רשימת branches (הנוכחי מסומן ב-*)
+git branch feature-auth       # יוצר branch חדש
+git switch feature-auth       # עובר אליו (או: git checkout feature-auth)
+git switch -c feature-auth    # יוצר ועובר בבת אחת (קיצור נפוץ)
+
+git switch main               # חוזר ל-main
+git branch -d feature-auth    # מוחק branch (אחרי merge)</code></pre>
+
+<h3>הרעיון המרכזי: בידוד</h3>
+<p>כל feature/bugfix מקבל branch משלו. אתה עובד עליו, עושה commits, וה-<code>main</code> נשאר יציב ונקי. כשה-feature מוכן ובדוק — משלבים אותו חזרה ל-main (פרק 5). זה מאפשר לעבוד על כמה דברים במקביל, ולשמור על main תמיד במצב שאפשר לפרוס ממנו.</p>
+
+<div class="flow">
+main:     A —— B —————————— (merge) —— F<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/<br>
+feature:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C —— D —— E<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;עובדים על ה-feature בבידוד, ואז ממזגים חזרה
+</div>
+
+<hr>
+
+<h2 id="s5">5. Merge מול Rebase</h2>
+
+<p>שתי דרכים לשלב עבודה מ-branch אחד לאחר. זה אחד הנושאים הכי מבלבלים ב-Git — והכי נשאלים. נבין את שניהם ואת ה-tradeoff.</p>
+
+<h3>Merge — שילוב שמשמר היסטוריה</h3>
+<pre><code>git switch main
+git merge feature-auth        # מביא את ה-feature לתוך main</code></pre>
+<p><code>merge</code> יוצר <strong>merge commit</strong> חדש שמאחד את שתי ההיסטוריות. ה-history משמר את הצורה האמיתית — רואים שהיה branch שהתפצל והתאחד. יתרון: לא משכתב היסטוריה, בטוח. חיסרון: ההיסטוריה יכולה להיראות "מסועפת" ועמוסה ב-merge commits.</p>
+
+<h4>Fast-forward</h4>
+<p>אם ל-main לא היו commits חדשים מאז שיצרת את ה-branch, Git פשוט "מזיז את המצביע קדימה" בלי merge commit — זה נקרא fast-forward. נקי, אבל מאבד את המידע שהיה branch.</p>
+
+<h3>Rebase — שכתוב היסטוריה לקו ישר</h3>
+<pre><code>git switch feature-auth
+git rebase main               # "מעביר" את ה-commits של ה-feature לראש main</code></pre>
+<p><code>rebase</code> לוקח את ה-commits שלך ו"מדביק" אותם מחדש על ראש ה-main, כאילו כתבת אותם עכשיו. התוצאה: <strong>היסטוריה ישרה ונקייה</strong>, בלי merge commits. חיסרון: זה <strong>משכתב את ההיסטוריה</strong> (ה-commits מקבלים hashes חדשים).</p>
+
+<div class="flow">
+Merge:&nbsp;&nbsp; main ——A——B————M&nbsp;&nbsp;&nbsp;(M = merge commit, היסטוריה מסועפת)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\——C——D——/<br>
+<br>
+Rebase:&nbsp; main ——A——B——C'——D'&nbsp;&nbsp;(קו ישר, נקי, אבל C/D נכתבו מחדש)
+</div>
+
+<h3>הכלל הזהב של rebase</h3>
+<blockquote>
+<p><strong>לעולם אל תעשה rebase ל-branch שכבר דחפת ומישהו אחר עובד עליו (במיוחד main/master).</strong> כי rebase משכתב היסטוריה — ה-hashes משתנים — ואם מישהו אחר בנה על ה-commits הישנים, אתה שובר לו את העבודה ויוצר בלגן קשה. הכלל הפשוט: <strong>rebase רק על branch מקומי פרטי שלך, merge לשילוב לתוך branch משותף.</strong> הפרה של הכלל הזה היא אחד המקורות הגדולים ל"Git הרס לי הכל".</p>
+</blockquote>
+
+<h3>מתי מה — בפועל</h3>
+<ul>
+<li><strong>rebase</strong> את ה-feature branch המקומי שלך על main <em>לפני</em> שאתה פותח PR — כדי לקבל היסטוריה נקייה ולפתור conflicts מוקדם.</li>
+<li><strong>merge</strong> את ה-PR לתוך main (דרך GitHub) — לשילוב הרשמי.</li>
+<li>אם לא בטוח — <strong>merge</strong>. הוא בטוח יותר; אף פעם לא משכתב היסטוריה.</li>
+</ul>
+
+<hr>
+
+<h2 id="s6">6. Remotes ו-GitHub — push, pull, fetch</h2>
+
+<p>עד כה הכל היה מקומי. <strong>Remote</strong> הוא עותק של ה-repo בשרת (GitHub/GitLab), שמאפשר לשתף ולסנכרן. ה-remote ברירת המחדל נקרא <code>origin</code>.</p>
+
+<h3>הפקודות</h3>
+<pre><code>git remote -v                        # אילו remotes מוגדרים
+git remote add origin &lt;url&gt;           # מקשר ל-remote (אם עשית init מקומי)
+
+git push origin main                  # דוחף commits מקומיים ל-remote
+git push -u origin feature-auth       # דוחף branch חדש ומקשר אותו (-u פעם ראשונה)
+
+git fetch                             # מוריד שינויים מה-remote בלי לשלב
+git pull                              # fetch + merge (מוריד ומשלב מיד)</code></pre>
+
+<h3>ההבחנה החשובה: fetch מול pull</h3>
+<ul>
+<li><strong><code>fetch</code></strong> — מוריד את השינויים מה-remote אבל <em>לא</em> משלב אותם לקוד שלך. אתה יכול לבדוק מה השתנה קודם. בטוח.</li>
+<li><strong><code>pull</code></strong> — <code>fetch</code> + <code>merge</code> בבת אחת. נוח, אבל משלב מיד (ולפעמים יוצר merge commit או conflict לא צפוי).</li>
+</ul>
+<p>הרגל טוב: <code>git pull</code> לפני שאתה מתחיל לעבוד ולפני push — כדי שתהיה מסונכרן ותמנע conflicts.</p>
+
+<h3>Tracking branches</h3>
+<p>branch מקומי יכול "לעקוב" אחרי branch מרוחק — אז <code>git push</code>/<code>git pull</code> יודעים לאן. ה-<code>-u</code> (או <code>--set-upstream</code>) בפעם הראשונה מגדיר את הקישור הזה.</p>
+
+<hr>
+
+<h2 id="s7">7. ה-Workflow הצוותי — Feature Branch + PR</h2>
+
+<p>עכשיו נחבר הכל ל-workflow שכל צוות תוכנה עובד לפיו. זה כנראה החלק הכי חשוב מעשית — כי ככה עבודה אמיתית נראית.</p>
+
+<h3>מחזור העבודה המלא</h3>
+<div class="flow">
+1. git switch main && git pull&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# מתעדכן לאחרון<br>
+2. git switch -c feature-x&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# branch חדש ל-feature<br>
+3. ...עובד, git add, git commit...&nbsp;&nbsp;# commits קטנים ולוגיים<br>
+4. git push -u origin feature-x&nbsp;&nbsp;&nbsp;&nbsp;# דוחף את ה-branch<br>
+5. פותח Pull Request ב-GitHub&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# מבקש לשלב ל-main<br>
+6. Code Review — חברי צוות בודקים ומעירים<br>
+7. מתקן לפי הערות, דוחף עוד commits<br>
+8. אושר → Merge ל-main ב-GitHub<br>
+9. git switch main && git pull&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# מתעדכן, מוחק את ה-branch
+</div>
+
+<h3>Pull Request (PR) — הלב של העבודה הצוותית</h3>
+<p>PR הוא בקשה לשלב את ה-branch שלך ל-main. הוא לא רק "merge" — הוא <strong>נקודת ביקורת</strong>: מקום שבו חברי הצוות רואים את השינוי, מריצים עליו CI (זוכר ממדריך DevOps?), מעירים, ומאשרים. שום דבר לא נכנס ל-main בלי לעבור דרך PR ו-review. זה מה ששומר על איכות הקוד ומפיץ ידע בצוות.</p>
+
+<h3>Code Review — למה זה קריטי</h3>
+<ul>
+<li><strong>תופס באגים</strong> לפני production — עוד זוג עיניים.</li>
+<li><strong>מפיץ ידע</strong> — הצוות מכיר את הקוד, לא רק הכותב.</li>
+<li><strong>שומר עקביות</strong> — סטנדרטים אחידים.</li>
+<li><strong>בעידן ה-AI</strong> — [Likely] חשוב במיוחד: review של קוד שנוצר עם AI תופס hallucinations ובעיות אבטחה שה-AI פספס.</li>
+</ul>
+
+<blockquote>
+<p><strong>עצה ל-PRs טובים:</strong> שמור אותם <strong>קטנים וממוקדים</strong> — PR של 50 שורות מקבל review איכותי; PR של 2,000 שורות מקבל "LGTM 👍" בלי שאף אחד באמת קרא. PR = feature/fix אחד, לא "כל מה שעשיתי השבוע". זה גם מקביל ל-commits אטומיים (פרק 10) — יחידות קטנות וברורות מנצחות.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. Merge Conflicts — פתרון התנגשויות</h2>
+
+<p>ה-conflict הוא מה שהכי מפחיד מתחילים, אבל הוא פשוט ולא מסוכן ברגע שמבינים אותו. conflict קורה כש<strong>שני branches שינו את אותה שורה</strong> — Git לא יודע איזו גרסה נכונה, אז הוא מבקש ממך להחליט.</p>
+
+<h3>איך זה נראה</h3>
+<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+const timeout = 3000;        // הגרסה שלך (ב-branch הנוכחי)
+=======
+const timeout = 5000;        // הגרסה מה-branch שאתה ממזג
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature-x</code></pre>
+
+<p>Git מסמן את שני הצדדים. התפקיד שלך: <strong>למחוק את הסימונים ולהשאיר את הקוד הנכון</strong> (אחד מהם, שילוב, או משהו חדש לגמרי).</p>
+
+<h3>התהליך</h3>
+<pre><code>git merge feature-x           # → CONFLICT!
+# 1. git status מראה אילו קבצים בקונפליקט
+# 2. פותחים כל קובץ, מוצאים את &lt;&lt;&lt;/===/&gt;&gt;&gt;, בוחרים את הגרסה הנכונה, מוחקים הסימונים
+# 3. אחרי שפתרת:
+git add &lt;resolved-file&gt;       # מסמן שפתרת
+git commit                    # משלים את ה-merge
+# (אם נבהלת ורוצה לבטל: git merge --abort)</code></pre>
+
+<blockquote>
+<p><strong>הנקודה שמרגיעה:</strong> conflict הוא לא שגיאה ולא נזק — הוא Git ששואל אותך שאלה. שום דבר לא אבד; שתי הגרסאות שם. אתה פשוט בוחר. <code>git merge --abort</code> תמיד מחזיר אותך למצב שלפני ה-merge. וכדי למנוע conflicts גדולים: <code>pull</code> תכוף, branches קצרי-חיים, ו-PRs קטנים. ככל שה-branch חי יותר זמן, כך הוא מתרחק מ-main ויותר conflicts מצטברים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. ביטול שינויים — reset, revert, restore, stash</h2>
+
+<p>"עשיתי טעות, איך מבטלים?" — השאלה הכי נפוצה ב-Git, וגם הכי מלחיצה כי הפקודות דומות ומבלבלות. נעשה סדר. הכלל: <strong>לכל מצב יש פקודה שונה.</strong></p>
+
+<h3>הטבלה שמסדרת הכל</h3>
+<table>
+<tr><th>מה אתה רוצה</th><th>פקודה</th></tr>
+<tr><td>לבטל שינוי בקובץ שעדיין לא ב-staging</td><td><code>git restore file</code></td></tr>
+<tr><td>להוציא קובץ מ-staging (בלי לבטל שינוי)</td><td><code>git restore --staged file</code></td></tr>
+<tr><td>לתקן את הודעת ה-commit האחרון</td><td><code>git commit --amend</code></td></tr>
+<tr><td>לבטל commit אחרון, לשמור שינויים</td><td><code>git reset --soft HEAD~1</code></td></tr>
+<tr><td>לבטל commit אחרון, למחוק שינויים</td><td><code>git reset --hard HEAD~1</code> ⚠️</td></tr>
+<tr><td>לבטל commit שכבר דחפת (בטוח)</td><td><code>git revert &lt;hash&gt;</code></td></tr>
+<tr><td>לשמור שינויים זמנית בצד</td><td><code>git stash</code></td></tr>
+</table>
+
+<h3>ההבחנה הכי חשובה: reset מול revert</h3>
+<ul>
+<li><strong><code>reset</code></strong> — <strong>מוחק</strong> commits מההיסטוריה (מזיז את המצביע אחורה). משכתב היסטוריה. <strong>רק ל-commits מקומיים שלא דחפת.</strong></li>
+<li><strong><code>revert</code></strong> — יוצר commit <em>חדש</em> שמבטל את השינוי, בלי למחוק היסטוריה. <strong>זו הדרך הבטוחה לבטל משהו שכבר דחפת</strong> — כי היא לא משכתבת היסטוריה משותפת (זוכר את הכלל מ-rebase?).</li>
+</ul>
+
+<h3>⚠️ <code>--hard</code> — הזהירות</h3>
+<p><code>git reset --hard</code> <strong>מוחק שינויים ללא שאלה</strong>. זו הפקודה היח­ידה ב-Git שבאמת יכולה למחוק עבודה. השתמש בה רק כשאתה בטוח. (אבל גם ממנה יש דרך חזרה — reflog, למטה).</p>
+
+<h3>stash — "שמור בצד רגע"</h3>
+<pre><code>git stash              # שומר את השינויים בצד ומנקה את ה-working dir
+# ...עכשיו אתה נקי, יכול לעבור branch לתקן משהו דחוף...
+git stash pop          # מחזיר את השינויים ששמרת</code></pre>
+<p>שימושי כשאתה באמצע עבודה וצריך לקפוץ למשהו אחר בלי לעשות commit חצי-גמור.</p>
+
+<h3>reflog — רשת הביטחון הסודית</h3>
+<blockquote>
+<p><strong>הפקודה שתציל אותך ביום שתחשוב ש"הרסת הכל":</strong> <code>git reflog</code>. Git שומר לוג של <em>כל</em> מקום ש-HEAD היה בו — כולל commits ש"מחקת" עם reset. אז גם אחרי <code>reset --hard</code> שגוי, אתה יכול למצוא את ה-hash ב-reflog ולחזור אליו: <code>git reset --hard &lt;hash-מה-reflog&gt;</code>. <strong>ב-Git כמעט בלתי אפשרי לאבד commit שכבר נעשה</strong> — הוא נשמר גם אם "נמחק", לזמן מה. זה מה שהופך את Git לבטוח להתנסות: כמעט הכל הפיך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s10">10. Commits טובים והודעות</h2>
+
+<p>Commits הם לא רק "שמירה" — הם <strong>תיעוד</strong> של למה הקוד השתנה. commit history טוב הוא נכס; רע הוא חסר ערך. שני עקרונות:</p>
+
+<h3>Atomic commits — commit אחד = שינוי לוגי אחד</h3>
+<p>כל commit צריך לעשות דבר אחד שלם. לא "תיקנתי באג + הוספתי feature + שיניתי עיצוב" בcommit אחד. commits אטומיים מאפשרים: להבין את ההיסטוריה, לבטל שינוי ספציפי (revert), ולעשות review קל. זה בדיוק למה ה-staging area קיים (פרק 2) — לבחור מה נכנס לכל commit.</p>
+
+<h3>הודעות טובות</h3>
+<pre><code># ❌ הודעות חסרות ערך:
+git commit -m "fix"
+git commit -m "changes"
+git commit -m "asdf"
+
+# ✅ הודעה טובה — מה ולמה, בציווי:
+git commit -m "Add rate limiting to login endpoint"
+git commit -m "Fix null pointer when user has no orders"</code></pre>
+
+<h3>Conventional Commits — קונבנציה נפוצה</h3>
+<p>פורמט מקובל שמוסיף מבנה: <code>type: description</code>. עוזר לקריאוּת ולאוטומציה (changelogs):</p>
+<pre><code>feat: add JWT refresh token support
+fix: prevent duplicate orders on double-click
+docs: update API authentication guide
+refactor: extract validation logic to service
+test: add integration tests for user creation
+chore: bump dependencies</code></pre>
+
+<blockquote>
+<p><strong>מבחן פשוט להודעה טובה:</strong> ההודעה צריכה להשלים את המשפט "This commit will..." — "This commit will <em>add rate limiting</em>". אם ההודעה שלך לא משתלבת (כמו "changes" או "fix stuff") — היא לא טובה מספיק. ה-history שלך הוא מכתב לעצמך-של-העתיד ולצוות; כתוב אותו כך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. .gitignore ומה לא לcommit</h2>
+
+<p>לא כל קובץ צריך להיכנס ל-Git. <code>.gitignore</code> הוא קובץ שמפרט מה להתעלם ממנו — Git פשוט לא יראה אותם.</p>
+
+<pre><code># .gitignore טיפוסי לפרויקט Node/NestJS:
+node_modules/        # תלויות — משוחזרות מ-package.json, ענקיות
+dist/                # תוצרי build
+.env                 # ⚠️ סודות! (זוכר ממדריך DevOps?)
+*.log                # לוגים
+.DS_Store            # קבצי מערכת
+coverage/            # תוצרי טסטים</code></pre>
+
+<h3>הכלל הקריטי ביותר — סודות</h3>
+<blockquote>
+<p><strong>לעולם אל תעשה commit ל-secrets</strong> (<code>.env</code>, API keys, passwords). וזו לא רק "לא יפה" — זו סכנה אמיתית: <strong>ברגע ש-secret נכנס ל-git history, הוא שם לנצח</strong> — גם אם תמחק את הקובץ ב-commit הבא, הוא נשאר בהיסטוריה ונגיש לכל מי שיש לו את ה-repo. בוטים סורקים את GitHub ומנצלים secrets דלופים תוך <em>דקות</em>. אם קרה — לא מספיק למחוק; חייבים <strong>לבטל (rotate) את הסוד מיד</strong> (זוכר ממדריך DevOps ו-Auth?). הוסף <code>.env</code> ל-<code>.gitignore</code> <em>לפני</em> ה-commit הראשון, לא אחרי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. כלים מתקדמים — cherry-pick, rebase -i, bisect, tags</h2>
+
+<p>כלים שלא תצטרך כל יום, אבל כשתצטרך — הם מצילים. שווה לדעת שהם קיימים.</p>
+
+<h3>cherry-pick — commit בודד ל-branch אחר</h3>
+<pre><code>git cherry-pick &lt;hash&gt;    # מעתיק commit ספציפי ל-branch הנוכחי</code></pre>
+<p>שימושי כשצריך רק commit אחד מ-branch אחר (למשל hotfix דחוף), בלי למזג את הכל.</p>
+
+<h3>Interactive Rebase — לנקות היסטוריה</h3>
+<pre><code>git rebase -i HEAD~3      # עורך את 3 ה-commits האחרונים</code></pre>
+<p>מאפשר לך <strong>לאחד commits</strong> (squash), לשנות הודעות (reword), למחוק, או לשנות סדר — <em>לפני</em> שאתה דוחף. נפוץ מאוד: לנקות סדרה של "wip", "fix typo", "oops" ל-commit אחד נקי לפני PR. (זהירות: משכתב היסטוריה — רק על מקומי!)</p>
+
+<h3>bisect — לצוד באג בהיסטוריה</h3>
+<pre><code>git bisect start
+git bisect bad           # ה-commit הנוכחי שבור
+git bisect good &lt;hash&gt;   # commit ישן שעבד
+# Git עושה binary search בין השניים, קופץ ל-commit באמצע כל פעם
+# אתה בודק ואומר good/bad, עד שהוא מוצא את ה-commit ששבר</code></pre>
+<p>גאוני לבאגים "מתי זה נשבר?". במקום לחפש ידנית, binary search מוצא את ה-commit האשם ב-log(n) בדיקות. (זוכר binary search ממדריך SQL/indexes? אותו רעיון).</p>
+
+<h3>Tags — סימון גרסאות</h3>
+<pre><code>git tag v1.0.0                    # מסמן commit כגרסה
+git tag -a v1.0.0 -m "Release"    # tag עם הודעה
+git push origin v1.0.0            # דוחף את ה-tag</code></pre>
+<p>Tags מסמנים נקודות חשובות (releases). זה מה שמאפשר לחזור בדיוק ל"גרסה שרצה בפרודקשן" (זוכר image tags ממדריך DevOps? רעיון קרוב).</p>
+
+<hr>
+
+<h2 id="s13">13. אסטרטגיות Branching</h2>
+
+<p>איך צוות מארגן את ה-branches שלו. שתי גישות עיקריות:</p>
+
+<h3>Trunk-Based Development</h3>
+<p>הגישה המודרנית והפשוטה. כולם עובדים על branches קצרי-חיים (יום-יומיים) שנמזגים מהר ל-<code>main</code>. main תמיד ניתן לפריסה. מסתמך על CI חזק ו-feature flags. <strong>מומלץ לרוב הצוותים</strong> — פשוט, מהיר, פחות merge hell.</p>
+
+<h3>Git Flow</h3>
+<p>גישה ותיקה ומורכבת יותר: branches נפרדים ל-<code>main</code>, <code>develop</code>, <code>feature/*</code>, <code>release/*</code>, <code>hotfix/*</code>. מתאים למוצרים עם releases מתוזמנים וגרסאות נתמכות מרובות, אבל <strong>overhead כבד</strong> לרוב הפרויקטים המודרניים (שמפרסים כל יום).</p>
+
+<blockquote>
+<p><strong>ההמלצה (ושוב, אותו עיקרון מכל הסדרה):</strong> התחל עם <strong>trunk-based</strong> — branches קצרים, merge מהיר ל-main, CI שמגן. Git Flow הוא over-engineering לרוב הצוותים היום, בדיוק כמו microservices ו-Kubernetes מוקדם מדי. אמץ מורכבות רק כשמודל השחרור שלך באמת מצריך אותה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>Commit לעתים קרובות, קטן ואטומי</strong> — שינוי לוגי אחד per commit.</li>
+<li><strong>הודעות commit משמעותיות</strong> — מה ולמה, בציווי. "This commit will...".</li>
+<li><strong>branch לכל feature/fix</strong> — main תמיד יציב וניתן לפריסה.</li>
+<li><strong>Pull לפני שמתחילים ולפני push</strong> — הישאר מסונכרן, מנע conflicts.</li>
+<li><strong>PRs קטנים וממוקדים</strong> — מקבלים review אמיתי.</li>
+<li><strong>revert למשהו שדחפת, reset רק למקומי</strong> — אל תשכתב היסטוריה משותפת.</li>
+<li><strong>אף פעם לא secrets ב-git</strong> — <code>.gitignore</code> לפני ה-commit הראשון.</li>
+<li><strong>branches קצרי-חיים</strong> — ככל שחי יותר, יותר conflicts.</li>
+<li><strong>נקה היסטוריה עם <code>rebase -i</code></strong> לפני PR (רק על מקומי).</li>
+<li><strong>זכור את <code>git reflog</code></strong> — רשת הביטחון כשנדמה שהרסת.</li>
+</ol>
+
+<h3>טעויות נפוצות</h3>
+<ul>
+<li><strong>commit ל-<code>.env</code>/secrets</strong> — הטעות המסוכנת ביותר.</li>
+<li><strong>rebase על branch משותף</strong> — שובר לאחרים. הכלל הזהב.</li>
+<li><strong><code>reset --hard</code> בלי מחשבה</strong> — הפקודה היחידה שמוחקת עבודה.</li>
+<li><strong>commits ענקיים</strong> ("כל השבוע") — אי אפשר לעשות review או revert.</li>
+<li><strong>הודעות "fix"/"changes"</strong> — history חסר ערך.</li>
+<li><strong>branch שחי שבועיים</strong> — merge hell מובטח.</li>
+<li><strong>לפחד מ-conflicts</strong> — הם שאלה, לא נזק. <code>--abort</code> תמיד מציל.</li>
+</ul>
+
+<hr>
+
+<h2 id="s15">15. Cheat Sheet</h2>
+
+<pre><code># --- הלולאה היומיומית ---
+git status                      # מה קורה עכשיו (הרץ הרבה!)
+git add .                       # הכל ל-staging
+git commit -m "message"         # שמור snapshot
+git push                        # דחוף ל-remote
+git pull                        # משוך ושלב מ-remote
+
+# --- Branches ---
+git switch -c feature-x         # צור ועבור ל-branch חדש
+git switch main                 # חזור ל-main
+git merge feature-x             # שלב branch ל-נוכחי
+git branch -d feature-x         # מחק branch
+
+# --- מידע ---
+git log --oneline --graph       # היסטוריה ויזואלית
+git diff                        # מה השתנה
+git show &lt;hash&gt;                  # פרטי commit
+
+# --- ביטול ---
+git restore file                # בטל שינוי לא-staged
+git restore --staged file       # הוצא מ-staging
+git commit --amend              # תקן commit אחרון
+git reset --soft HEAD~1         # בטל commit, שמור שינויים
+git revert &lt;hash&gt;               # בטל commit שדחפת (בטוח)
+git stash / git stash pop       # שמור בצד / החזר
+git reflog                      # רשת ביטחון — מצא commits "אבודים"
+
+# --- Remote ---
+git clone &lt;url&gt;                  # העתק repo
+git fetch                       # הורד בלי לשלב
+git push -u origin feature-x    # דחוף branch חדש
+
+# --- מתקדם ---
+git rebase main                 # יישר branch על main (מקומי!)
+git rebase -i HEAD~3            # נקה 3 commits אחרונים
+git cherry-pick &lt;hash&gt;          # העתק commit בודד
+git bisect start                # צוד באג ב-binary search
+git tag v1.0.0                  # סמן גרסה</code></pre>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים לקחת: המודל המנטלי — <strong>Git שומר snapshots, branch הוא מצביע, ושלושת האזורים (working/staging/repo) הם המפתח</strong> — ברגע שזה מתיישב, הכל הגיוני. והשני: <strong>Git כמעט תמיד הפיך</strong> (reflog), אז אל תפחד להתנסות. הפחד מ-Git נובע מחוסר הבנה של המודל, לא ממורכבות אמיתית.</p>
+
+<p>שים לב איך זה מתחבר לסדרה: PRs ו-code review נפגשים עם CI/CD (DevOps), secrets ב-gitignore חוזרים מ-Auth ו-DevOps, ו-branches קצרי-חיים הם אותו עיקרון "פשוט לפני מורכב" שחזר בכל מדריך.</p>
+
+<p><strong>הצעד הבא הוא מושלם עבורך עכשיו:</strong> אתה הולך לבנות את פרויקט ה-RAG — עשה אותו <strong>עם Git מהרגע הראשון</strong>. <code>git init</code>, commits קטנים ואטומיים לאורך הדרך, branch לכל feature, ודחוף ל-GitHub. ככה תתרגל את כל מה שכאן על קוד אמיתי — וגם יהיה לך את הפרויקט ב-portfolio.</p>
+
+<p>וכשתחזור עם הקוד ביד — <strong>Clean Code + Design Patterns</strong> מחכה, ואז תוכל לראות את העקרונות על משהו שאתה כתבת. בהצלחה בבנייה! 🚀</p>
+
+</body>
+</html>

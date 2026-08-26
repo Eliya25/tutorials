@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux למפתחי Backend — המדריך המלא</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #78350f; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2.2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #78350f; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #92400e; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #713f12; }
+  .part { background: #78350f; color: #fff; padding: 8px 18px; border-radius: 8px; margin-top: 2.5em; font-size: 1.15em; font-weight: bold; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #f8f1e9; }
+  a { color: #78350f; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #fbf6f0; border: 1px solid #ecdcc9; border-radius: 8px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>Linux למפתחי Backend — המדריך המלא</h1>
+
+<blockquote>
+<p>הכלי היומיומי שכל שרת רץ עליו. המדריך הזה על <strong>Linux לשרת ולדיבוג</strong> — לא Linux desktop. הדגש: shell fluency, ניהול שרת, ודיבוג ב-production. כשמשהו נשבר ב-3 לפנות בוקר, זה מה שתשלוף.</p>
+<p>מחבר למה שכבר למדת — systems (processes, kernel, virtual memory), DevOps (Docker, deploy), ו-Networking (ports, sockets). עברית להסבר, אנגלית לפקודות. בסוף — playbook לדיבוג ו-cheat sheet.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<p><strong>חלק א' — יסודות</strong></p>
+<ol>
+<li><a href="#s1">מבוא: מה זה Linux והפילוסופיה</a></li>
+<li><a href="#s2">ה-Shell — bash והטרמינל</a></li>
+<li><a href="#s3">Filesystem Hierarchy — מפת התיקיות</a></li>
+<li><a href="#s4">ניווט ופעולות על קבצים</a></li>
+</ol>
+<p><strong>חלק ב' — הרשאות וטקסט</strong></p>
+<ol start="5">
+<li><a href="#s5">Permissions ו-Ownership</a></li>
+<li><a href="#s6">Users, Groups ו-sudo</a></li>
+<li><a href="#s7">כלי עיבוד טקסט — grep, sed, awk</a></li>
+<li><a href="#s8">Redirection ו-Pipes</a></li>
+</ol>
+<p><strong>חלק ג' — תהליכים ומערכת</strong></p>
+<ol start="9">
+<li><a href="#s9">Processes — ניהול תהליכים</a></li>
+<li><a href="#s10">systemd ו-Services</a></li>
+<li><a href="#s11">Package Management</a></li>
+<li><a href="#s12">ניטור משאבים</a></li>
+</ol>
+<p><strong>חלק ד' — רשת, SSH, סקריפטים</strong></p>
+<ol start="13">
+<li><a href="#s13">Networking על השרת</a></li>
+<li><a href="#s14">SSH לעומק</a></li>
+<li><a href="#s15">Environment ו-Config</a></li>
+<li><a href="#s16">Bash Scripting</a></li>
+</ol>
+<p><strong>חלק ה' — מעשי</strong></p>
+<ol start="17">
+<li><a href="#s17">Cron — משימות מתוזמנות</a></li>
+<li><a href="#s18">Production Debugging Playbook</a></li>
+<li><a href="#s19">Best Practices, Cheat Sheet ומשאבים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<div class="part">חלק א' — יסודות</div>
+
+<h2 id="s1">1. מבוא: מה זה Linux והפילוסופיה</h2>
+
+<p>Linux היא מערכת הפעלה חופשית ובקוד פתוח, ששולטת ב<strong>שרתים</strong> — כמעט כל שרת web, cloud instance, ו-container רץ עליה. אם אתה מפתח Backend, אתה עובד עם Linux בין אם אתה יודע ובין אם לא (זוכר את הסביבה של Docker ממדריך DevOps? זה Linux).</p>
+
+<h3>Kernel מול Distribution</h3>
+<blockquote>
+<p>נקודה שמבלבלת: <strong>Linux</strong> הוא בעצם רק ה-<strong>kernel</strong> (זוכר ממדריך systems? הליבה שמנהלת חומרה, processes, זיכרון). <strong>Distribution (distro)</strong> = ה-kernel + כלים + package manager + הגדרות, ארוזים יחד. הנפוצים: <strong>Ubuntu/Debian</strong> (apt, הכי נפוץ לשרתים), <strong>RHEL/CentOS/Fedora</strong> (dnf/yum, בארגונים), <strong>Alpine</strong> (זעיר, נפוץ ב-containers — זוכר <code>node:20-alpine</code>?). ברמת ה-shell הם כמעט זהים; ההבדל העיקרי הוא ב-package manager.</p>
+</blockquote>
+
+<h3>שתי הפילוסופיות שמסבירות הכל</h3>
+<ul>
+<li><strong>"Everything is a file"</strong> — ב-Linux, כמעט הכל מיוצג כקובץ: קבצים רגילים, תיקיות, התקנים (<code>/dev/sda</code> = הדיסק), ואפילו מידע על תהליכים (<code>/proc</code>). זה מאחד את הממשק — אותן פקודות (read/write) עובדות על הכל.</li>
+<li><strong>"Small tools that do one thing well"</strong> — במקום כלי ענק אחד, Linux נותן הרבה כלים קטנים (<code>grep</code>, <code>sort</code>, <code>wc</code>), ומחברים אותם עם <strong>pipes</strong> (פרק 8). זה הכוח האמיתי של ה-shell — הרכבת כלים פשוטים לפתרונות חזקים.</li>
+</ul>
+
+<p>שתי הפילוסופיות האלה הן למה ה-shell של Linux כל כך חזק, ולמה שווה להשקיע בו.</p>
+
+<hr>
+
+<h2 id="s2">2. ה-Shell — bash והטרמינל</h2>
+
+<p>ה-<strong>shell</strong> הוא התוכנית שמפרשת את הפקודות שאתה מקליד. הנפוץ ביותר הוא <strong>bash</strong> (ויש גם zsh, fish). ה-<strong>terminal</strong> הוא החלון שבו ה-shell רץ. זה הממשק העיקרי שלך לשרת.</p>
+
+<h3>מבנה של פקודה</h3>
+<pre><code>command  -flags  arguments
+ls       -la     /home/user
+│         │        │
+פקודה    דגלים   ארגומנט (על מה לפעול)</code></pre>
+
+<h3>ה-Prompt וקיצורים שחוסכים זמן</h3>
+<p>ה-prompt (<code>user@host:~$</code>) מראה מי אתה, איזה שרת, ואיפה אתה. הקיצורים שכל משתמש shell חייב:</p>
+<ul>
+<li><strong>Tab</strong> — השלמה אוטומטית של שמות קבצים/פקודות. <strong>תשתמש בזה כל הזמן</strong> — חוסך הקלדות ומונע שגיאות.</li>
+<li><strong>↑ / ↓</strong> — מעבר בהיסטוריית הפקודות.</li>
+<li><strong><code>Ctrl+R</code></strong> — חיפוש בהיסטוריה (הקלד חלק מפקודה קודמת). קיצור מציל-חיים.</li>
+<li><strong><code>Ctrl+C</code></strong> — עצירת הפקודה הרצה. <strong><code>Ctrl+D</code></strong> — סוף קלט/יציאה.</li>
+<li><strong><code>Ctrl+A</code>/<code>Ctrl+E</code></strong> — תחילת/סוף השורה. <strong><code>Ctrl+L</code></strong> — ניקוי מסך.</li>
+<li><strong><code>!!</code></strong> — הפקודה הקודמת (למשל <code>sudo !!</code> = הרץ שוב עם sudo).</li>
+</ul>
+
+<h3>עזרה — כשלא זוכרים</h3>
+<pre><code>man ls          # המדריך המלא של פקודה (q ליציאה)
+ls --help       # עזרה מהירה
+which node      # איפה הפקודה ממוקמת
+type cd         # מה זה (built-in / alias / קובץ)</code></pre>
+
+<blockquote>
+<p><strong>עצה למתחיל:</strong> אל תנסה לזכור את כל הפקודות בעל-פה. תזכור את השמות ואת <code>--help</code>/<code>man</code>. השאיפה היא <strong>שטף</strong> — לנוע בנוחות, לא לדעת הכל. Tab-completion ו-<code>Ctrl+R</code> יעשו אותך מהיר יותר מלשנן פקודות.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s3">3. Filesystem Hierarchy — מפת התיקיות</h2>
+
+<p>ב-Linux הכל תחת שורש אחד — <code>/</code> (root). אין "C:" ו-"D:" כמו Windows. הבנת מה כל תיקייה עושה חוסכת בלבול ומכוונת אותך כשמחפשים קבצים בשרת.</p>
+
+<table>
+<tr><th>תיקייה</th><th>מה יש שם</th></tr>
+<tr><td><code>/</code></td><td>השורש — הכל מתחתיו</td></tr>
+<tr><td><code>/home/user</code></td><td>קבצי המשתמש (<code>~</code> = הבית שלך)</td></tr>
+<tr><td><code>/etc</code></td><td><strong>קבצי הגדרות</strong> של המערכת והשירותים — פה תערוך config</td></tr>
+<tr><td><code>/var</code></td><td>נתונים משתנים — <strong><code>/var/log</code> = לוגים!</strong> (חשוב לדיבוג)</td></tr>
+<tr><td><code>/usr</code></td><td>תוכניות וספריות מותקנות (<code>/usr/bin</code>)</td></tr>
+<tr><td><code>/bin</code>, <code>/sbin</code></td><td>פקודות בסיס (ls, cp) / פקודות מערכת (root)</td></tr>
+<tr><td><code>/tmp</code></td><td>קבצים זמניים (נמחקים ב-reboot)</td></tr>
+<tr><td><code>/proc</code></td><td>מידע על תהליכים ומערכת (וירטואלי — זוכר "everything is a file"?)</td></tr>
+<tr><td><code>/dev</code></td><td>התקנים (דיסקים, etc)</td></tr>
+<tr><td><code>/opt</code></td><td>תוכנות צד-שלישי</td></tr>
+</table>
+
+<blockquote>
+<p><strong>השתיים שתשתמש בהן הכי הרבה בדיבוג:</strong> <code>/etc</code> (הגדרות — "איפה ה-config של nginx?" → <code>/etc/nginx/</code>) ו-<strong><code>/var/log</code></strong> (לוגים — "למה השירות נפל?" → <code>/var/log/</code>). כשמשהו לא עובד בשרת, הלוגים ב-<code>/var/log</code> הם המקום הראשון להסתכל.</p>
+</blockquote>
+
+<h3>נתיבים מוחלטים מול יחסיים</h3>
+<pre><code>/home/user/app/config.js   # מוחלט — מהשורש, תמיד אותו מקום
+./config.js                # יחסי — מהתיקייה הנוכחית
+../                        # תיקייה אחת למעלה
+~                         # הבית שלך (/home/user)
+~/app                     # app בתוך הבית</code></pre>
+
+<hr>
+
+<h2 id="s4">4. ניווט ופעולות על קבצים</h2>
+
+<h3>ניווט וצפייה</h3>
+<pre><code>pwd                 # איפה אני עכשיו (print working directory)
+ls                  # רשימת קבצים
+ls -la              # מפורט (permissions, גודל) + מוסתרים (מתחילים ב-.)
+ls -lh              # גדלים קריאים (KB/MB)
+cd /path            # מעבר תיקייה
+cd ..               # תיקייה למעלה
+cd ~  /  cd         # הביתה
+cd -                # חזרה לתיקייה הקודמת</code></pre>
+
+<h3>צפייה בקבצים</h3>
+<pre><code>cat file.txt        # הצג הכל (לקבצים קטנים)
+less file.txt       # דפדוף (חצים, /חיפוש, q ליציאה) — לקבצים גדולים
+head -20 file       # 20 שורות ראשונות
+tail -20 file       # 20 שורות אחרונות
+tail -f app.log     # ⭐ "עוקב" — מציג שורות חדשות בזמן אמת (לדיבוג לוגים!)</code></pre>
+
+<h3>פעולות על קבצים ותיקיות</h3>
+<pre><code>touch file.txt          # יוצר קובץ ריק
+mkdir mydir             # יוצר תיקייה
+mkdir -p a/b/c          # יוצר שרשרת תיקיות
+cp file.txt backup.txt  # העתקה
+cp -r dir1 dir2         # העתקת תיקייה (recursive)
+mv old.txt new.txt      # העברה / שינוי שם
+rm file.txt             # מחיקה
+rm -r mydir             # מחיקת תיקייה
+rm -rf mydir            # ⚠️ מחיקה בכוח, בלי שאלות — זהירות!</code></pre>
+
+<h3>חיפוש קבצים</h3>
+<pre><code>find /path -name "*.log"        # לפי שם
+find . -type f -mtime -7        # קבצים ששונו בשבוע האחרון
+find . -size +100M              # גדולים מ-100MB (למצוא מה תופס מקום)
+locate filename                 # מהיר (מ-index, אם מותקן)</code></pre>
+
+<blockquote>
+<p><strong>⚠️ הפקודה המסוכנת ביותר ב-Linux:</strong> <code>rm -rf</code> מוחקת הכל, מיד, בלי סל מיחזור ובלי אישור. <code>rm -rf /</code> (עם רווח או משתנה ריק בטעות) יכולה למחוק את כל השרת. <strong>תמיד תבדוק פעמיים את הנתיב לפני <code>rm -rf</code></strong>, ואף פעם אל תריץ אותה על משתנה בלי לוודא שהוא לא ריק (<code>rm -rf "$DIR/"</code> כש-<code>$DIR</code> ריק = אסון). זה שקול ל-<code>DROP TABLE</code> בלי WHERE ממדריך SQL.</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ב' — הרשאות וטקסט</div>
+
+<h2 id="s5">5. Permissions ו-Ownership</h2>
+
+<p>אחד הנושאים הכי חשובים ב-Linux, ומקור נפוץ ל-"permission denied". כל קובץ שייך ל<strong>משתמש</strong> ו<strong>קבוצה</strong>, ויש לו <strong>הרשאות</strong> לשלושה סוגי גישה.</p>
+
+<h3>קריאת הפלט של ls -l</h3>
+<pre><code>$ ls -l
+-rwxr-xr--  1  eliya  developers  4096  Jan 1  app.sh
+│└┬┘└┬┘└┬┘      │       │
+│ │  │  │       │       └─ group (הקבוצה שהקובץ שייך לה)
+│ │  │  │       └─ owner (המשתמש שהקובץ שייך לו)
+│ │  │  └─ other (כל השאר):  r--  (קריאה בלבד)
+│ │  └─ group:               r-x  (קריאה + הרצה)
+│ └─ owner:                  rwx  (קריאה + כתיבה + הרצה)
+└─ סוג:  -=קובץ  d=תיקייה  l=link</code></pre>
+
+<h3>שלוש ההרשאות</h3>
+<ul>
+<li><strong>r (read)</strong> = 4 — קריאת קובץ / רשימת תיקייה.</li>
+<li><strong>w (write)</strong> = 2 — עריכת קובץ / הוספה-מחיקה בתיקייה.</li>
+<li><strong>x (execute)</strong> = 1 — הרצת קובץ / כניסה לתיקייה.</li>
+</ul>
+
+<h3>chmod — שינוי הרשאות (ה-octal)</h3>
+<blockquote>
+<p>מחברים את הערכים לכל קבוצה: <code>rwx</code> = 4+2+1 = <strong>7</strong>, <code>r-x</code> = 4+1 = <strong>5</strong>, <code>r--</code> = <strong>4</strong>. אז <code>chmod 755</code> = owner מלא (7), group ו-other קריאה+הרצה (5):</p>
+<pre><code>chmod 755 script.sh    # rwxr-xr-x — נפוץ לסקריפטים/תוכניות
+chmod 644 file.txt     # rw-r--r-- — נפוץ לקבצים רגילים
+chmod 600 secret.key   # rw------- — רק owner (secrets! זוכר מ-SSH keys)
+chmod +x script.sh     # מוסיף הרצה (דרך קלה — בלי octal)</code></pre>
+<p>המספרים לזכור: <strong>755</strong> (הרצה — סקריפטים, תיקיות), <strong>644</strong> (קבצים רגילים), <strong>600</strong> (פרטי — מפתחות וסודות).</p>
+</blockquote>
+
+<h3>chown — שינוי בעלות</h3>
+<pre><code>chown eliya file.txt          # שנה owner
+chown eliya:developers file   # owner:group
+chown -R eliya /app           # recursive על תיקייה שלמה</code></pre>
+
+<blockquote>
+<p><strong>מעשי:</strong> "Permission denied" בשרת = כמעט תמיד בעיית permissions/ownership. הרץ <code>ls -l</code> על הקובץ, בדוק מי ה-owner ומה ההרשאות, ותקן עם <code>chmod</code>/<code>chown</code>. וזוכר <code>chmod 600</code> לסודות? זו בדיוק הסיבה ש-SSH דורש הרשאות מחמירות על מפתחות (פרק 14) — קובץ מפתח קריא-לכולם נדחה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s6">6. Users, Groups ו-sudo</h2>
+
+<p>Linux היא multi-user מהיסוד — כמה משתמשים חולקים מכונה, כל אחד עם הרשאות משלו (זוכר user/kernel mode ובידוד ממדריך systems?).</p>
+
+<h3>root — המשתמש העל</h3>
+<p><strong>root</strong> (UID 0) הוא המנהל — הרשאות מלאות לכל דבר. עוצמתי ומסוכן: טעות כ-root יכולה להרוס את המערכת. לכן <strong>לא עובדים כ-root ביומיום</strong> — משתמשים ב-<code>sudo</code> לפעולות ספציפיות.</p>
+
+<h3>sudo — "הרץ את זה כ-root, פעם אחת"</h3>
+<pre><code>sudo apt update          # מריץ פקודה אחת עם הרשאות root
+sudo systemctl restart nginx
+sudo !!                  # הרץ שוב את הפקודה הקודמת עם sudo
+sudo su                  # הפוך ל-root (זהירות!)</code></pre>
+<p>העיקרון (חוזר ממדריכי Auth ו-systems): <strong>least privilege</strong> — הרשאות מינימליות. השתמש ב-<code>sudo</code> רק כשצריך, לא תעבוד כ-root כברירת מחדל. כל <code>sudo</code> נרשם ב-log — יש accountability.</p>
+
+<h3>Users ו-groups</h3>
+<pre><code>whoami                   # מי אני
+id                       # ה-UID, GID והקבוצות שלי
+groups                   # לאילו קבוצות אני שייך
+sudo useradd -m newuser  # יצירת משתמש
+sudo usermod -aG docker eliya   # הוסף את eliya לקבוצת docker
+cat /etc/passwd          # רשימת המשתמשים (everything is a file!)</code></pre>
+<p>Groups מאפשרים לתת הרשאות לכמה משתמשים יחד (למשל, כל מי שבקבוצת <code>docker</code> יכול להריץ containers). זה מקביל ל-roles/permissions ממדריך Auth, ברמת ה-OS.</p>
+
+<hr>
+
+<h2 id="s7">7. כלי עיבוד טקסט — grep, sed, awk</h2>
+
+<p>כאן הכוח האמיתי של ה-shell. Linux מלא בכלים קטנים לעיבוד טקסט, ובשילוב עם pipes (פרק 8) הם הופכים לכלי דיבוג וניתוח עוצמתיים — במיוחד על לוגים.</p>
+
+<h3>grep — חיפוש בטקסט</h3>
+<blockquote>
+<p>הכלי שתשתמש בו הכי הרבה. מחפש שורות שמכילות תבנית:</p>
+<pre><code>grep "error" app.log              # שורות עם "error"
+grep -i "error" app.log           # case-insensitive
+grep -r "TODO" ./src              # חיפוש רקורסיבי בתיקייה
+grep -n "error" app.log           # עם מספרי שורות
+grep -v "debug" app.log           # שורות שה-NOT מכילות (invert)
+grep -c "error" app.log           # ספירת התאמות
+grep -A 3 -B 3 "error" app.log    # 3 שורות אחרי (After) ולפני (Before)</code></pre>
+<p>שימוש קלאסי לדיבוג: <code>grep -i error /var/log/app.log</code> — מצא את כל השגיאות בלוג.</p>
+</blockquote>
+
+<h3>sed — עריכה והחלפה בזרם</h3>
+<pre><code>sed 's/old/new/g' file.txt        # החלף old ב-new (בכל מופע)
+sed -i 's/old/new/g' file.txt     # -i = ערוך את הקובץ במקום
+sed -n '10,20p' file.txt          # הדפס שורות 10-20
+sed '/pattern/d' file.txt         # מחק שורות שמתאימות</code></pre>
+
+<h3>awk — עיבוד לפי עמודות</h3>
+<pre><code>awk '{print $1}' file             # העמודה הראשונה של כל שורה
+awk '{print $1, $3}' file         # עמודות 1 ו-3
+awk -F',' '{print $2}' file.csv   # מפריד לפי פסיק (CSV!)
+awk '{sum += $1} END {print sum}' # סכום העמודה הראשונה
+ps aux | awk '{print $2, $11}'    # PID ושם התהליך</code></pre>
+
+<h3>כלי עזר נוספים</h3>
+<pre><code>sort file.txt          # מיון שורות
+sort -u file.txt       # מיון + הסרת כפילויות
+uniq -c file.txt       # ספירת שורות ייחודיות
+wc -l file.txt         # ספירת שורות (l=lines)
+cut -d',' -f2 file.csv # חיתוך עמודה
+tr 'a-z' 'A-Z'         # החלפת תווים</code></pre>
+
+<blockquote>
+<p><strong>למה זה כלי-על:</strong> כל אלה נראים פשוטים, אבל <strong>בשילוב</strong> (פרק 8) הם עוצמתיים. "כמה שגיאות מכל סוג היו בלוג?" זו שורה אחת: <code>grep error app.log | awk '{print $5}' | sort | uniq -c | sort -rn</code>. זה הכוח של "small tools + pipes" — במקום לכתוב סקריפט, מרכיבים כלים. שווה להשקיע ב-grep וב-pipes; הם משנים איך אתה עובד עם שרתים ולוגים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. Redirection ו-Pipes</h2>
+
+<p>המנגנון שמחבר את הכלים יחד, והלב של פילוסופיית Unix. הכל מבוסס על שלושה "זרמים" סטנדרטיים (זוכר <code>process.stdout</code> ממדריך Node?).</p>
+
+<h3>שלושת הזרמים</h3>
+<ul>
+<li><strong>stdin (0)</strong> — קלט (בד"כ מהמקלדת).</li>
+<li><strong>stdout (1)</strong> — פלט רגיל.</li>
+<li><strong>stderr (2)</strong> — פלט שגיאות (נפרד מ-stdout!).</li>
+</ul>
+
+<h3>Redirection — הפניית זרמים</h3>
+<pre><code>command &gt; file.txt      # שלח stdout לקובץ (דורס)
+command &gt;&gt; file.txt     # הוסף לסוף הקובץ (append)
+command &lt; input.txt     # קרא stdin מקובץ
+command 2&gt; errors.txt   # שלח stderr לקובץ
+command &gt; out.txt 2&gt;&amp;1  # שלח גם stdout וגם stderr לאותו קובץ
+command &gt; /dev/null 2&gt;&amp;1 # "זרוק" את כל הפלט (שקט מוחלט)</code></pre>
+
+<h3>Pipes — חיבור פקודות</h3>
+<blockquote>
+<p>ה-<strong>pipe</strong> (<code>|</code>) לוקח את ה-stdout של פקודה אחת ומכניס אותו כ-stdin של הבאה. זה מה שמחבר את הכלים הקטנים לשרשראות עוצמתיות (זוכר pipes ממדריך systems? זה IPC):</p>
+<pre><code># מצא את 10 ה-IP שהכי פנו לשרת (ניתוח access log):
+cat access.log | awk '{print $1}' | sort | uniq -c | sort -rn | head -10
+
+# כמה processes של node רצים:
+ps aux | grep node | grep -v grep | wc -l
+
+# התהליכים שהכי אוכלים זיכרון:
+ps aux | sort -k4 -rn | head -5</code></pre>
+<p>כל pipe מעביר את הפלט הלאה. אתה בונה פתרון על ידי הרכבת כלים — לא כותב תוכנית. זה הכוח שהופך את ה-shell למכונת ניתוח.</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ג' — תהליכים ומערכת</div>
+
+<h2 id="s9">9. Processes — ניהול תהליכים</h2>
+
+<p>כל תוכנית רצה היא process (זוכר ממדריך systems? עם PID, זיכרון, ו-address space משלו). ניהול processes הוא ליבת העבודה בשרת — לראות מה רץ, מה תקוע, ומה אוכל משאבים.</p>
+
+<h3>לראות מה רץ</h3>
+<pre><code>ps aux                  # כל התהליכים (user, PID, CPU%, MEM%, command)
+ps aux | grep node      # רק תהליכי node
+top                     # ניטור חי — מתעדכן, ממוין לפי CPU (q ליציאה)
+htop                    # גרסה יפה ואינטראקטיבית (אם מותקן) — מומלץ</code></pre>
+
+<h3>הריגת תהליכים ו-Signals</h3>
+<blockquote>
+<p>זוכר signals ממדריך systems/Node (SIGTERM, graceful shutdown)? כאן משתמשים בהם:</p>
+<pre><code>kill 1234            # שולח SIGTERM (בקשה מנומסת לסיים — graceful)
+kill -9 1234         # SIGKILL (הריגה בכוח — מוצא אחרון, לא graceful!)
+kill -15 1234        # SIGTERM מפורש
+pkill node           # הרוג לפי שם
+killall node         # הרוג את כל תהליכי node</code></pre>
+<p><strong>נקודה חשובה:</strong> העדף <code>kill</code> (SIGTERM) על <code>kill -9</code> (SIGKILL). SIGTERM נותן לתהליך לסגור בחן — לסיים בקשות, לסגור חיבורי DB (זוכר graceful shutdown ממדריך Node?). SIGKILL קוטע מיד ויכול להשאיר נתונים במצב לא-עקבי. השתמש ב-<code>-9</code> רק כשהתהליך לא מגיב ל-SIGTERM.</p>
+</blockquote>
+
+<h3>Jobs — רקע וקדמה</h3>
+<pre><code>command &amp;             # הרץ ברקע
+Ctrl+Z                # השהה את התהליך הנוכחי
+bg                    # המשך אותו ברקע
+fg                    # החזר לקדמה
+jobs                  # רשימת jobs ברקע
+nohup command &amp;       # הרץ ברקע שישרוד גם אחרי סגירת ה-terminal</code></pre>
+<p><code>nohup</code> חשוב: בלעדיו, סגירת חיבור ה-SSH הורגת את התהליכים שהרצת. בפועל ל-production משתמשים ב-systemd (הפרק הבא) או pm2, לא <code>nohup</code>.</p>
+
+<hr>
+
+<h2 id="s10">10. systemd ו-Services</h2>
+
+<p>איך שירות (השרת שלך, nginx, postgres) רץ ברקע, עולה אוטומטית ב-boot, ומופעל מחדש אם קרס? התשובה ברוב ה-distros המודרניים היא <strong>systemd</strong> — מנהל השירותים של המערכת.</p>
+
+<h3>systemctl — שליטה בשירותים</h3>
+<pre><code>sudo systemctl start nginx      # הפעל שירות
+sudo systemctl stop nginx       # עצור
+sudo systemctl restart nginx    # הפעל מחדש
+sudo systemctl reload nginx     # טען config מחדש בלי restart מלא
+systemctl status nginx          # ⭐ מצב השירות — רץ? נפל? למה?
+sudo systemctl enable nginx     # יעלה אוטומטית ב-boot
+sudo systemctl disable nginx    # לא יעלה ב-boot
+systemctl list-units --type=service   # כל השירותים</code></pre>
+
+<h3>journalctl — הלוגים של systemd</h3>
+<blockquote>
+<p>כששירות נופל, כאן מסתכלים. <code>journalctl</code> נותן את הלוגים של systemd:</p>
+<pre><code>journalctl -u nginx             # לוגים של שירות ספציפי
+journalctl -u nginx -f          # עוקב בזמן אמת (כמו tail -f)
+journalctl -u nginx --since "10 min ago"
+journalctl -u nginx -n 50       # 50 השורות האחרונות
+journalctl -p err               # רק שגיאות</code></pre>
+<p>הצירוף <code>systemctl status &lt;service&gt;</code> + <code>journalctl -u &lt;service&gt; -f</code> הוא ה-workflow לדיבוג שירות שלא עובד.</p>
+</blockquote>
+
+<h3>יצירת service משלך</h3>
+<p>כדי שהאפליקציה שלך (Node/Python) תרוץ כשירות מנוהל — יוצרים unit file ב-<code>/etc/systemd/system/myapp.service</code>:</p>
+<pre><code>[Unit]
+Description=My Node App
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /app/main.js
+Restart=always              # הפעל מחדש אוטומטית אם קרס!
+User=eliya
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+<p><code>Restart=always</code> הוא הקסם — self-healing ברמת ה-OS (זוכר reliability ממדריך System Design?). זו דרך אחת להריץ אפליקציה ב-production; החלופות: Docker (מדריך DevOps), pm2, או PaaS.</p>
+
+<hr>
+
+<h2 id="s11">11. Package Management</h2>
+
+<p>איך מתקינים תוכנות ב-Linux. לכל distro יש package manager, אבל הרעיון זהה: מאגר מרכזי של חבילות עם ניהול תלויות אוטומטי.</p>
+
+<h3>Debian/Ubuntu — apt</h3>
+<pre><code>sudo apt update              # רענן את רשימת החבילות (תמיד קודם!)
+sudo apt upgrade             # שדרג חבילות מותקנות
+sudo apt install nginx       # התקן
+sudo apt remove nginx        # הסר
+sudo apt search postgres     # חפש חבילה
+apt list --installed         # מה מותקן</code></pre>
+
+<h3>RHEL/Fedora/CentOS — dnf/yum</h3>
+<pre><code>sudo dnf install nginx       # (או yum בגרסאות ישנות)
+sudo dnf update
+sudo dnf remove nginx</code></pre>
+
+<blockquote>
+<p><strong>הבדל דיאלקט (זוכר SQL dialects?):</strong> Ubuntu/Debian = <code>apt</code>, RHEL/Fedora = <code>dnf</code>/<code>yum</code>, Alpine = <code>apk</code> (ה-image הזעיר ב-Docker). הפקודות שונות אבל הרעיון זהה. ב-<code>Dockerfile</code> (מדריך DevOps) תראה <code>apt-get install</code> — זה בדיוק זה, בתוך ה-container. תמיד <code>apt update</code> לפני <code>install</code>, אחרת תתקין גרסאות ישנות.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. ניטור משאבים</h2>
+
+<p>כשהשרת איטי או נתקע — כאן בודקים למה. ארבעה משאבים לבדוק: CPU, זיכרון, דיסק, ורשת.</p>
+
+<h3>זיכרון</h3>
+<pre><code>free -h              # RAM פנוי/בשימוש (h = קריא)
+# שים לב ל-"available" — כמה באמת פנוי לאפליקציות
+# אם swap גבוה בשימוש = חוסר RAM, swapping (זוכר ממדריך systems? איטי!)</code></pre>
+
+<h3>דיסק</h3>
+<pre><code>df -h                # מקום פנוי בכל הדיסקים/partitions
+du -sh /var/log      # כמה תופסת תיקייה מסוימת
+du -sh * | sort -rh  # מה תופס הכי הרבה בתיקייה הנוכחית
+# "disk full" (100% ב-df) = סיבה נפוצה לשירות שנופל!</code></pre>
+
+<h3>CPU ועומס</h3>
+<pre><code>top / htop           # CPU% לכל תהליך, load average
+uptime               # load average (1/5/15 דקות)
+# load average ~= מספר ה-cores = עומס מלא. גבוה בהרבה = עומס יתר.</code></pre>
+
+<h3>מבט כללי מהיר</h3>
+<pre><code>vmstat 1             # סטטיסטיקות מערכת כל שנייה
+iostat               # I/O של דיסק (אם מותקן)
+cat /proc/loadavg    # load (everything is a file!)</code></pre>
+
+<blockquote>
+<p><strong>ה-workflow לדיבוג "השרת איטי":</strong> (1) <code>top</code>/<code>htop</code> — CPU גבוה? מי? (2) <code>free -h</code> — נגמר RAM? swapping? (3) <code>df -h</code> — דיסק מלא? (4) <code>journalctl</code>/<code>/var/log</code> — מה הלוגים אומרים? רוב הבעיות בשרת הן אחד מ: CPU עמוס (זוכר "אל תחסום את ה-event loop" ממדריך Node?), חוסר RAM (memory leak — מדריך Node/systems), או דיסק מלא. הרחבנו על זה ב-playbook בפרק 18.</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ד' — רשת, SSH, סקריפטים</div>
+
+<h2 id="s13">13. Networking על השרת</h2>
+
+<p>מדריך Networking כיסה את התיאוריה (TCP/IP, ports, DNS). כאן — הפקודות המעשיות לבדוק רשת <em>על שרת</em>. חיוני לדיבוג "למה השירות לא נגיש".</p>
+
+<h3>מי מאזין על אילו ports</h3>
+<blockquote>
+<p>הפקודה הכי חשובה לדיבוג רשת בשרת:</p>
+<pre><code>ss -tlnp             # כל ה-ports שמאזינים (TCP), עם התהליך
+# t=TCP, l=listening, n=numeric, p=process
+sudo ss -tlnp | grep 3000    # מי מאזין על port 3000?
+netstat -tlnp        # הגרסה הישנה (ss מהיר יותר)
+lsof -i :3000        # מי תופס את port 3000 (זוכר "port in use" ממדריך Node?)</code></pre>
+<p>שימוש קלאסי: "השרת שלי אמור לרוץ על 3000 אבל לא נגיש" → <code>ss -tlnp | grep 3000</code> → אם ריק, האפליקציה לא עלתה או מאזינה על port אחר.</p>
+</blockquote>
+
+<h3>בדיקת קישוריות</h3>
+<pre><code>curl http://localhost:3000/health   # בדוק endpoint (זוכר מ-Networking?)
+curl -I https://example.com         # רק headers
+ping google.com                     # האם יש קישוריות בכלל
+dig example.com                     # שאילתת DNS (זוכר מ-Networking?)
+traceroute example.com              # המסלול לשרת</code></pre>
+
+<h3>Firewall — מה חסום</h3>
+<pre><code># ufw (Ubuntu — פשוט):
+sudo ufw status              # מה מותר/חסום
+sudo ufw allow 443           # פתח port
+sudo ufw allow 22            # SSH (זהירות לא לחסום את עצמך!)
+
+# iptables (הבסיסי, מורכב יותר):
+sudo iptables -L             # רשימת כללים</code></pre>
+
+<blockquote>
+<p><strong>מלכודת נפוצה:</strong> "האפליקציה רצה אבל לא נגישה מבחוץ" — לרוב זה firewall (ה-port חסום) או שהאפליקציה מאזינה על <code>127.0.0.1</code> (localhost בלבד) במקום <code>0.0.0.0</code> (כל הכתובות). בדוק עם <code>ss -tlnp</code>: אם רשום <code>127.0.0.1:3000</code> — זה נגיש רק מהשרת עצמו. זה מחבר לכל מה שלמדת ב-Networking על IP binding ו-firewall.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. SSH לעומק</h2>
+
+<p>SSH (Secure Shell) הוא איך אתה מתחבר לשרת מרוחק (זוכר מ-Networking? port 22, מוצפן). זה הכלי שדרכו תעבוד עם כל שרת production.</p>
+
+<h3>התחברות בסיסית</h3>
+<pre><code>ssh user@server.com           # התחבר
+ssh user@1.2.3.4 -p 2222      # port לא-סטנדרטי
+exit                          # התנתק</code></pre>
+
+<h3>SSH Keys — אימות בלי סיסמה (ובטוח יותר)</h3>
+<blockquote>
+<p>במקום סיסמה, SSH keys נותנים אימות מבוסס public/private key (זוכר הצפנה א-סימטרית ממדריך Networking/Auth?). בטוח יותר ונוח יותר:</p>
+<pre><code># צור זוג מפתחות (פעם אחת):
+ssh-keygen -t ed25519 -C "eliya@x.com"
+# נוצרים: ~/.ssh/id_ed25519 (private — סודי!) + .pub (public)
+
+# העתק את ה-public key לשרת:
+ssh-copy-id user@server.com
+
+# עכשיו מתחברים בלי סיסמה:
+ssh user@server.com</code></pre>
+<p>ה-<strong>private key</strong> נשאר אצלך (אף פעם לא משתפים!), ה-<strong>public key</strong> יושב בשרת ב-<code>~/.ssh/authorized_keys</code>. השרת "מאתגר" אותך, ורק ה-private key שלך יכול לענות. זה בדיוק המנגנון של TLS certificates ממדריך Networking.</p>
+</blockquote>
+
+<h3>הרשאות — מלכודת נפוצה</h3>
+<p>זוכר <code>chmod 600</code> מפרק 5? SSH <strong>דורש</strong> הרשאות מחמירות על המפתחות, אחרת הוא מסרב לעבוד (מטעמי אבטחה):</p>
+<pre><code>chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_ed25519        # private key — רק אתה
+chmod 644 ~/.ssh/id_ed25519.pub</code></pre>
+
+<h3>SSH config — לחסוך הקלדות</h3>
+<pre><code># ~/.ssh/config
+Host myserver
+    HostName 1.2.3.4
+    User eliya
+    Port 2222
+    IdentityFile ~/.ssh/id_ed25519
+# עכשיו פשוט:  ssh myserver</code></pre>
+
+<h3>העברת קבצים ו-tunneling</h3>
+<pre><code>scp file.txt user@server:/path/     # העתק קובץ לשרת
+scp -r dir user@server:/path/       # תיקייה
+scp user@server:/path/file.txt .    # הורד מהשרת
+
+# Tunneling — גישה ל-port מרוחק דרך SSH (למשל DB פנימי):
+ssh -L 5432:localhost:5432 user@server
+# עכשיו localhost:5432 שלך = ה-Postgres בשרת המרוחק</code></pre>
+
+<hr>
+
+<h2 id="s15">15. Environment ו-Config</h2>
+
+<h3>Environment Variables</h3>
+<p>זוכר env vars ממדריכי Node/DevOps (config, secrets)? הנה איך הם עובדים ב-shell:</p>
+<pre><code>echo $PATH               # הצג משתנה
+export API_KEY="secret"  # הגדר משתנה (לסשן הנוכחי)
+env                      # כל המשתנים
+printenv PATH            # משתנה ספציפי
+NODE_ENV=production node app.js   # משתנה לפקודה בודדת</code></pre>
+
+<h3>PATH — איך ה-shell מוצא פקודות</h3>
+<blockquote>
+<p><code>PATH</code> הוא רשימת התיקיות שבהן ה-shell מחפש פקודות. כשאתה מקליד <code>node</code>, ה-shell עובר על תיקיות ה-PATH עד שמוצא. זו הסיבה ל-"command not found" — התוכנית לא ב-PATH. <code>which node</code> מראה איפה נמצאה. מוסיפים ל-PATH: <code>export PATH="$PATH:/new/dir"</code>.</p>
+</blockquote>
+
+<h3>קבצי config של ה-shell</h3>
+<pre><code># ~/.bashrc — רץ בכל פתיחת terminal. פה שמים:
+export PATH="$PATH:$HOME/bin"     # הוספות ל-PATH
+export NODE_ENV=development        # env vars קבועים
+alias ll="ls -la"                  # קיצורים
+alias gs="git status"
+
+source ~/.bashrc                   # טען מחדש בלי לפתוח terminal חדש</code></pre>
+<p><strong>Aliases</strong> חוסכים הקלדות על פקודות חוזרות. <code>~/.bashrc</code> (או <code>~/.zshrc</code> ל-zsh) הוא איפה שמתאימים אישית את הסביבה שלך.</p>
+
+<hr>
+
+<h2 id="s16">16. Bash Scripting</h2>
+
+<p>bash הוא לא רק פקודות — הוא שפת תכנות. סקריפטים מאפשרים לאוטמט משימות חוזרות (deploy, backup, setup). לא צריך להיות מומחה, אבל לדעת לקרוא ולכתוב סקריפט בסיסי חיוני.</p>
+
+<h3>סקריפט בסיסי</h3>
+<pre><code>#!/bin/bash               # "shebang" — איזה interpreter (חובה בשורה 1)
+
+NAME="Eliya"              # משתנה (בלי רווחים סביב =!)
+echo "Hello $NAME"        # שימוש עם $
+echo "Files: $(ls | wc -l)"   # $(...) = תוצאת פקודה</code></pre>
+<pre><code>chmod +x script.sh        # הפוך לניתן-הרצה (זוכר chmod?)
+./script.sh               # הרץ</code></pre>
+
+<h3>תנאים</h3>
+<pre><code>if [ -f "config.json" ]; then       # -f = הקובץ קיים?
+  echo "Config found"
+elif [ "$NODE_ENV" == "production" ]; then
+  echo "Prod mode"
+else
+  echo "No config"
+fi
+
+# בדיקות נפוצות: -f (קובץ), -d (תיקייה), -z (string ריק), == , -eq (מספרים)</code></pre>
+
+<h3>לולאות</h3>
+<pre><code>for file in *.log; do               # על כל קובץ log
+  echo "Processing $file"
+  gzip "$file"
+done
+
+for i in {1..5}; do echo $i; done   # טווח
+
+while read line; do                 # קריאת קובץ שורה-שורה
+  echo "$line"
+done &lt; input.txt</code></pre>
+
+<h3>ארגומנטים, exit codes, ו-functions</h3>
+<pre><code>#!/bin/bash
+# ארגומנטים: $1, $2 ... $@ (כולם), $# (כמות)
+echo "First arg: $1"
+
+deploy() {                          # function
+  local env=$1
+  echo "Deploying to $env"
+}
+deploy production
+
+# Exit codes (זוכר ממדריך Node? 0=הצלחה):
+if [ $? -ne 0 ]; then               # $? = exit code של הפקודה הקודמת
+  echo "Previous command failed"
+  exit 1
+fi</code></pre>
+
+<h3>סקריפט אמיתי — deploy פשוט</h3>
+<pre><code>#!/bin/bash
+set -e                              # ⭐ עצור בכל שגיאה (חשוב!)
+
+echo "Pulling latest code..."
+git pull origin main
+
+echo "Installing dependencies..."
+npm ci
+
+echo "Building..."
+npm run build
+
+echo "Restarting service..."
+sudo systemctl restart myapp
+
+echo "✅ Deploy complete"</code></pre>
+
+<blockquote>
+<p><strong>שתי הרגלים שמצילים:</strong> (1) <code>set -e</code> בראש כל סקריפט — עוצר בשגיאה ראשונה במקום להמשיך "עיוור" (בלעדיו, סקריפט deploy יכול להמשיך אחרי כישלון ולגרום נזק). (2) <code>set -u</code> — שגיאה על משתנה לא-מוגדר (מונע את אסון ה-<code>rm -rf "$DIR"</code> כש-DIR ריק). ביחד <code>set -eu</code> בראש הסקריפט = הרבה פחות באגים. ל-scripts רציניים באמת — עדיף Python על bash כשזה נהיה מורכב.</p>
+</blockquote>
+
+<hr>
+
+<div class="part">חלק ה' — מעשי</div>
+
+<h2 id="s17">17. Cron — משימות מתוזמנות</h2>
+
+<p>cron מריץ פקודות אוטומטית לפי לוח זמנים — backups, ניקוי לוגים, דוחות תקופתיים. הכלי הסטנדרטי לתזמון ב-Linux.</p>
+
+<pre><code>crontab -e           # ערוך את ה-crontab שלך
+crontab -l           # הצג את המשימות</code></pre>
+
+<h3>פורמט ה-cron</h3>
+<pre><code># ┌─ דקה (0-59)
+# │ ┌─ שעה (0-23)
+# │ │ ┌─ יום בחודש (1-31)
+# │ │ │ ┌─ חודש (1-12)
+# │ │ │ │ ┌─ יום בשבוע (0-6, 0=ראשון)
+# │ │ │ │ │
+# * * * * *  command
+
+0 2 * * *    /app/backup.sh              # כל יום ב-2:00 לפנות בוקר
+*/15 * * * * /app/check.sh               # כל 15 דקות
+0 0 * * 0    /app/weekly-report.sh       # כל יום ראשון בחצות
+0 9 * * 1-5  /app/workday.sh             # 9:00, ימי חול (א-ה)</code></pre>
+
+<blockquote>
+<p><strong>מלכודות cron:</strong> (1) cron רץ עם <strong>סביבה מינימלית</strong> — ה-PATH וה-env vars שלך לא קיימים! השתמש בנתיבים מלאים (<code>/usr/bin/node</code> לא <code>node</code>). (2) הפנה פלט לקובץ כדי לראות מה קרה: <code>0 2 * * * /app/backup.sh &gt;&gt; /var/log/backup.log 2&gt;&amp;1</code> (זוכר redirection?). (3) בדוק את הביטוי ב-crontab.guru לפני שסומכים עליו. הרבה "ה-cron לא רץ" זה בעצם PATH חסר או שגיאה שלא ראית כי לא הפנית את הפלט.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s18">18. Production Debugging Playbook</h2>
+
+<p>זה החלק שמחבר הכל — ה-workflow המנטלי כשמשהו נשבר ב-production ואתה מתחבר ב-SSH. שמור את זה; זה מה שתשלוף באמת.</p>
+
+<h3>תרחיש א': "השרת לא מגיב / איטי"</h3>
+<div style="direction:ltr;text-align:left;background:#fbf6f0;border:1px solid #ecdcc9;border-radius:8px;padding:12px 18px;font-family:monospace;font-size:0.85em;line-height:1.8;">
+1. htop / top&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ CPU גבוה? איזה תהליך? (מדריך Node: event loop חסום?)<br>
+2. free -h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ נגמר RAM? swap בשימוש? (memory leak?)<br>
+3. df -h&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ דיסק מלא? (סיבה נפוצה מאוד לקריסה!)<br>
+4. ss -tlnp&nbsp;&nbsp;&nbsp;&nbsp;→ האפליקציה מאזינה על ה-port הנכון?<br>
+5. journalctl -u myapp -n 100&nbsp;→ מה הלוגים אומרים?
+</div>
+
+<h3>תרחיש ב': "השירות נפל"</h3>
+<div style="direction:ltr;text-align:left;background:#fbf6f0;border:1px solid #ecdcc9;border-radius:8px;padding:12px 18px;font-family:monospace;font-size:0.85em;line-height:1.8;">
+1. systemctl status myapp&nbsp;&nbsp;→ מה המצב? מתי נפל?<br>
+2. journalctl -u myapp -n 50&nbsp;→ מה השגיאה שהפילה?<br>
+3. tail -f /var/log/myapp.log&nbsp;→ עקוב בזמן אמת<br>
+4. systemctl restart myapp&nbsp;&nbsp;→ הפעל מחדש (אחרי שהבנת למה!)
+</div>
+
+<h3>תרחיש ג': "האפליקציה רצה אבל לא נגישה מבחוץ"</h3>
+<div style="direction:ltr;text-align:left;background:#fbf6f0;border:1px solid #ecdcc9;border-radius:8px;padding:12px 18px;font-family:monospace;font-size:0.85em;line-height:1.8;">
+1. curl localhost:3000&nbsp;&nbsp;→ עובד מקומית? (אם כן — בעיית רשת/firewall)<br>
+2. ss -tlnp | grep 3000&nbsp;→ מאזין על 0.0.0.0 או רק 127.0.0.1?<br>
+3. sudo ufw status&nbsp;&nbsp;&nbsp;&nbsp;→ ה-port פתוח ב-firewall?<br>
+4. (מבחוץ) curl http://server-ip:3000&nbsp;→ נגיש?
+</div>
+
+<blockquote>
+<p><strong>העיקרון של דיבוג production:</strong> אל תנחש ואל תריץ <code>restart</code> באופן עיוור — <strong>אסוף מידע קודם</strong>. הסדר: מה המצב (status) → מה הלוגים (journalctl/var/log) → מה המשאבים (top/free/df) → מה הרשת (ss/curl). רק אחרי שהבנת <em>למה</em>, תתקן. restart עיוור "פותר" את הסימפטום ומסתיר את הבעיה שתחזור. זה אותו עיקרון של EXPLAIN ANALYZE (SQL) ו-profiling (Node) — <strong>מדוד, אל תנחש.</strong> ותמיד: הלוגים ב-<code>/var/log</code> ו-<code>journalctl</code> הם המקום הראשון להסתכל.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s19">19. Best Practices, Cheat Sheet ומשאבים</h2>
+
+<h3>Best Practices</h3>
+<ol>
+<li><strong>אף פעם לא לעבוד כ-root</strong> — <code>sudo</code> לפעולות ספציפיות. least privilege.</li>
+<li><strong>זהירות עם <code>rm -rf</code></strong> — בדוק את הנתיב פעמיים. זה ה-<code>DROP TABLE</code> של Linux.</li>
+<li><strong>Tab-completion ו-<code>Ctrl+R</code></strong> — מהירות ופחות טעויות הקלדה.</li>
+<li><strong>הלוגים תמיד ראשונים</strong> — <code>/var/log</code> ו-<code>journalctl</code> כשמשהו נשבר.</li>
+<li><strong>SSH keys, לא סיסמאות</strong> — עם <code>chmod 600</code> על ה-private key.</li>
+<li><strong><code>set -eu</code> בכל סקריפט bash</strong> — עצירה בשגיאות ובמשתנים חסרים.</li>
+<li><strong>נתיבים מלאים ב-cron</strong> — הסביבה מינימלית.</li>
+<li><strong>אסוף מידע לפני restart</strong> — אל תדבג עיוור.</li>
+<li><strong>secrets ב-env / vault, לא בקוד</strong> (חוזר מ-DevOps/Git/Auth).</li>
+<li><strong><code>man</code>/<code>--help</code> חברים שלך</strong> — אל תשנן, תדע איפה לחפש.</li>
+</ol>
+
+<h3>Cheat Sheet — הפקודות היומיומיות</h3>
+<pre><code># --- ניווט וקבצים ---
+ls -la / cd / pwd / cp / mv / rm / mkdir / find
+cat / less / head / tail -f      # צפייה (tail -f ללוגים!)
+
+# --- טקסט וחיפוש ---
+grep -i "text" file              # חיפוש
+grep -rn "text" ./dir            # רקורסיבי + מספרי שורות
+command | grep / sort / uniq -c / wc -l   # pipes
+
+# --- הרשאות ---
+chmod 755 file / chmod 600 key   # הרשאות
+chown user:group file            # בעלות
+sudo command                     # כ-root
+
+# --- תהליכים ---
+ps aux | grep name / htop        # מה רץ
+kill -15 PID / kill -9 PID       # עצירה (העדף -15)
+lsof -i :3000                    # מי על ה-port
+
+# --- שירותים ---
+systemctl status/start/restart svc
+journalctl -u svc -f             # לוגים בזמן אמת
+
+# --- משאבים ---
+free -h / df -h / du -sh *       # RAM / דיסק
+top / uptime                     # CPU / load
+
+# --- רשת ---
+ss -tlnp                         # ports מאזינים
+curl localhost:3000 / ping / dig
+
+# --- SSH ---
+ssh user@host / scp file user@host:/path
+ssh-keygen -t ed25519            # צור מפתחות</code></pre>
+
+<h3>משאבים</h3>
+<ul>
+<li><strong>"The Linux Command Line" (William Shotts)</strong> — חינמי online, המקור הכי טוב למתחילים-בינוניים.</li>
+<li><strong>explainshell.com</strong> — הדבק פקודה מורכבת, והוא מסביר כל חלק. מעולה ללמידה.</li>
+<li><strong>tldr</strong> (כלי CLI) — דוגמאות מעשיות לכל פקודה (במקום man הארוך).</li>
+<li><strong>crontab.guru</strong> — בדיקת ביטויי cron.</li>
+<li><strong>OverTheWire: Bandit</strong> — משחק ללמידת Linux דרך אתגרים. מצוין וכיפי.</li>
+</ul>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים מעל הכל: <strong>ה-shell נלמד בשטף, לא בשינון</strong> — Tab-completion, <code>man</code>, ו-<code>Ctrl+R</code> חשובים יותר מלזכור דגלים; ו<strong>כשמשהו נשבר, אסוף מידע לפני שאתה מתקן</strong> — status → logs → resources → network, ורק אז restart. ה-playbook בפרק 18 הוא הלב המעשי של המדריך.</p>
+
+<p>שים לב כמה Linux מחבר את כל הסדרה: processes ו-permissions הם ה-OS ממדריך systems בפעולה; ports ו-firewall הם Networking; systemd ו-secrets הם DevOps; ה-shell הוא איפה ש-Docker, git, ו-deploy באמת קורים. <strong>Linux הוא הרצפה שכל התשתית שלך עומדת עליה — וה-shell הוא איך אתה נוגע בה.</strong></p>
+
+<p>הדרך היחידה ללמוד: <strong>לחיות ב-shell</strong>. הקם VM זול בענן (DigitalOcean/AWS free tier), התחבר ב-SSH, ותשחק — התקן nginx, כתוב systemd service, פרוס את פרויקט ה-RAG שלך עליו. שרת אמיתי אחד שהקמת ותחזקת ילמד אותך יותר מכל מדריך.</p>
+
+<p>יש לך עכשיו 16 מדריכים ב-<code>C:\claude-folder\turorials</code> — מהשפה, דרך ה-frameworks, התשתית, יסודות ה-CS (systems + DS&amp;A), ועד ל-Linux שהכל רץ עליו. זה הסט השלם של מפתח Backend. 🚀</p>
+
+</body>
+</html>

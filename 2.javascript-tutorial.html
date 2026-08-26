@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaScript — המדריך המלא והמעמיק</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #ca8a04; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #a16207; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #854d0e; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #713f12; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #fdf6e3; }
+  a { color: #a16207; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #fefbf0; border: 1px solid #f0e6c8; border-radius: 8px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>JavaScript — המדריך המלא והמעמיק</h1>
+
+<blockquote>
+<p>הבסיס שמתחת ל-TypeScript ו-Node. המדריך הזה על <strong>השפה עצמה</strong> — המנגנונים, ההתנהגות, וה-quirks — לא הטיפוסים (TypeScript) ולא ה-runtime (Node). דגש עמוק בחלקים שמכשילים: type coercion, closures, <code>this</code>, ו-prototypes.</p>
+<p><strong>הערה על היקף:</strong> JS ענקית ו-reference ממצה הוא MDN בן אלפי עמודים. כאן — כיסוי מקיף של כל מה שחשוב, עם עומק אמיתי במקומות הקשים. עברית להסבר, אנגלית לקוד.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: מה זה JavaScript</a></li>
+<li><a href="#s2">משתנים — var, let, const, Hoisting, TDZ</a></li>
+<li><a href="#s3">טיפוסי נתונים — Primitives מול Objects</a></li>
+<li><a href="#s4">Type Coercion ו-Equality — ה-quirks</a></li>
+<li><a href="#s5">אופרטורים</a></li>
+<li><a href="#s6">Functions</a></li>
+<li><a href="#s7">Scope ו-Closures — עמוק</a></li>
+<li><a href="#s8">this — הנושא הקשה ביותר</a></li>
+<li><a href="#s9">Objects</a></li>
+<li><a href="#s10">Prototypes ו-Inheritance</a></li>
+<li><a href="#s11">Classes</a></li>
+<li><a href="#s12">Arrays ומתודות מערך</a></li>
+<li><a href="#s13">Strings ומתודות מחרוזת</a></li>
+<li><a href="#s14">Destructuring, Spread/Rest, Template Literals</a></li>
+<li><a href="#s15">Async — Promises, async/await, Event Loop</a></li>
+<li><a href="#s16">Modules</a></li>
+<li><a href="#s17">Error Handling</a></li>
+<li><a href="#s18">Iterators, Generators, Symbol, Map/Set</a></li>
+<li><a href="#s19">ה-Gotchas — המלכודות הקלאסיות</a></li>
+<li><a href="#s20">Best Practices ותרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: מה זה JavaScript</h2>
+
+<p>JavaScript היא שפת התכנות של ה-web — היחידה שרצה באופן טבעי בכל דפדפן, ובזכות Node גם בשרת. היא הבסיס ל-TypeScript (superset שלה) ולכל האקוסיסטם שלמדת.</p>
+
+<h3>הטבע של השפה — ארבעה מאפיינים</h3>
+<ul>
+<li><strong>Dynamically typed</strong> — הטיפוס נקבע בזמן ריצה, לא מוצהר מראש. משתנה יכול להחזיק string ואז number. (זה מה ש-TypeScript בא לרסן).</li>
+<li><strong>Weakly typed</strong> — JS ממירה טיפוסים אוטומטית (coercion) — מקור לכוח וגם ל-quirks (פרק 4).</li>
+<li><strong>Multi-paradigm</strong> — תומכת ב-imperative, functional, ו-object-oriented. אתה בוחר סגנון.</li>
+<li><strong>Prototype-based</strong> — ה-OOP שלה מבוסס prototypes, לא classes אמיתיים (פרק 10) — גם אם התחביר של <code>class</code> מסתיר את זה.</li>
+</ul>
+
+<h3>ES — גרסאות השפה</h3>
+<p>JavaScript מתוקננת כ-<strong>ECMAScript (ES)</strong>. הקפיצה הגדולה הייתה <strong>ES6 (ES2015)</strong> — שהוסיפה <code>let</code>/<code>const</code>, arrow functions, classes, promises, destructuring, ועוד. מאז יש עדכון שנתי (ES2016, ES2017...). כשאומרים "JS מודרני" מתכוונים ל-ES6+. המדריך הזה מודרני לחלוטין.</p>
+
+<blockquote>
+<p><strong>הקשר לסדרה:</strong> כיסינו את הטיפוסים במדריך TypeScript ואת ה-runtime (event loop, streams) במדריך Node. כאן המיקוד הוא <strong>מכניקת השפה</strong> — איך JS מתנהגת ולמה. אזכיר את השניים ואפנה, בלי לחזור. אם משהו כאן על async מרגיש חסר — ההשלמה במדריך Node.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s2">2. משתנים — var, let, const, Hoisting, TDZ</h2>
+
+<p>שלוש דרכים להצהיר משתנה, וההבדלים ביניהן הם מקור נפוץ לבאגים. חובה להבין לעומק.</p>
+
+<h3>const, let, var</h3>
+<pre><code>const PI = 3.14;      // לא ניתן להשמה מחדש. ברירת המחדל שלך.
+let count = 0;        // ניתן להשמה מחדש. כשצריך לשנות.
+var old = "avoid";    // הישן — הימנע ממנו (הסבר למטה)</code></pre>
+
+<h3>ההבדל הקריטי: Block Scope מול Function Scope</h3>
+<ul>
+<li><strong><code>let</code>/<code>const</code></strong> — <strong>block-scoped</strong>: קיימים רק בתוך ה-<code>{}</code> שבו הוגדרו (if, for, בלוק).</li>
+<li><strong><code>var</code></strong> — <strong>function-scoped</strong>: מתעלם מבלוקים, קיים בכל הפונקציה. זה מקור באגים.</li>
+</ul>
+<pre><code>if (true) {
+  let x = 1;
+  var y = 2;
+}
+console.log(y);   // 2 — var "דלף" מחוץ לבלוק!
+console.log(x);   // ❌ ReferenceError — let נשאר בבלוק (נכון)</code></pre>
+
+<h3>Hoisting — "הרמה"</h3>
+<p>JavaScript "מרימה" הצהרות לראש ה-scope לפני ההרצה. אבל ההתנהגות שונה בין הסוגים, וזה מבלבל:</p>
+<pre><code>console.log(a);   // undefined — var "מורם" אבל בלי הערך
+var a = 5;
+
+console.log(b);   // ❌ ReferenceError — let מורם אבל ב-"TDZ"
+let b = 5;</code></pre>
+
+<h3>TDZ — Temporal Dead Zone</h3>
+<blockquote>
+<p><code>let</code> ו-<code>const</code> כן "מורמים", אבל נמצאים ב<strong>Temporal Dead Zone</strong> — אזור בין תחילת ה-scope להצהרה, שבו הגישה אליהם זורקת <code>ReferenceError</code>. זה בכוונה — כדי לתפוס באגים של שימוש-לפני-הצהרה (בניגוד ל-<code>var</code> שמחזיר <code>undefined</code> מבלבל). זו עוד סיבה להעדיף <code>let</code>/<code>const</code>: הם מכריחים אותך להצהיר לפני שימוש.</p>
+</blockquote>
+
+<h3>הכלל המעשי</h3>
+<p><strong>השתמש ב-<code>const</code> כברירת מחדל, <code>let</code> כשצריך לשנות, ו-<code>var</code> אף פעם.</strong> <code>const</code> ראשון מבהיר כוונה (הערך לא ישתנה) ומונע באגים. עבור ל-<code>let</code> רק כשאתה באמת מבצע reassignment. <code>var</code> הוא שריד מלפני ES6 — אין סיבה להשתמש בו בקוד מודרני.</p>
+
+<p>הערה על <code>const</code> עם objects: <code>const</code> מונע <em>reassignment</em> של המשתנה, לא <em>mutation</em> של התוכן. <code>const arr = []</code> — אי אפשר <code>arr = [...]</code>, אבל <code>arr.push(1)</code> מותר (התוכן משתנה, המשתנה עדיין מצביע לאותו מערך).</p>
+
+<hr>
+
+<h2 id="s3">3. טיפוסי נתונים — Primitives מול Objects</h2>
+
+<p>ב-JavaScript יש שתי קטגוריות-על: <strong>primitives</strong> (ערכים פשוטים) ו-<strong>objects</strong> (הכל השאר). ההבחנה קובעת התנהגות מהותית — במיוחד השמה והשוואה.</p>
+
+<h3>שבעת ה-Primitives</h3>
+<table>
+<tr><th>טיפוס</th><th>דוגמה</th></tr>
+<tr><td><code>string</code></td><td><code>"hello"</code></td></tr>
+<tr><td><code>number</code></td><td><code>42</code>, <code>3.14</code> (אין int/float נפרד)</td></tr>
+<tr><td><code>bigint</code></td><td><code>100n</code> (מספרים ענקיים)</td></tr>
+<tr><td><code>boolean</code></td><td><code>true</code> / <code>false</code></td></tr>
+<tr><td><code>undefined</code></td><td>משתנה בלי ערך</td></tr>
+<tr><td><code>null</code></td><td>"אין ערך" מכוון</td></tr>
+<tr><td><code>symbol</code></td><td>מזהה ייחודי (פרק 18)</td></tr>
+</table>
+<p>כל השאר — arrays, functions, dates, <code>{}</code> — הם <strong>objects</strong>.</p>
+
+<h3>ההבדל המהותי: Value מול Reference</h3>
+<blockquote>
+<p>זו אחת ההבחנות הכי חשובות ב-JS, ומקור לבאגים אינסופי. <strong>Primitives מועברים by value</strong> (עותק), <strong>objects מועברים by reference</strong> (מצביע לאותו אובייקט):</p>
+<pre><code>// Primitives — עותק:
+let a = 5;
+let b = a;      // b מקבל עותק
+b = 10;
+console.log(a); // 5 — a לא הושפע
+
+// Objects — reference:
+let obj1 = { x: 1 };
+let obj2 = obj1;   // obj2 מצביע לאותו object!
+obj2.x = 99;
+console.log(obj1.x); // 99 — שניהם אותו object!</code></pre>
+<p>זו הסיבה ש"שיניתי עותק ופתאום המקור השתנה" — לא היה עותק, היה reference. כדי להעתיק object צריך <em>במפורש</em>: <code>{...obj}</code> (shallow) או deep clone.</p>
+</blockquote>
+
+<h3>typeof — בדיקת טיפוס</h3>
+<pre><code>typeof "hi"        // "string"
+typeof 42          // "number"
+typeof true        // "boolean"
+typeof undefined   // "undefined"
+typeof {}          // "object"
+typeof []          // "object"  ⚠️ מערך הוא object!
+typeof function(){}// "function"
+typeof null        // "object"  🐛 באג היסטורי מפורסם ב-JS!</code></pre>
+<p>שים לב לשתי מלכודות: <code>typeof null === "object"</code> (באג ידוע שנשאר לתאימות), ו-<code>typeof []</code> גם "object". לזיהוי מערך: <code>Array.isArray(x)</code>.</p>
+
+<hr>
+
+<h2 id="s4">4. Type Coercion ו-Equality — ה-quirks</h2>
+
+<p>זה הפרק ש-JavaScript מפורסמת (לשמצה) בזכותו. ההמרות האוטומטיות של JS יוצרות התנהגות מפתיעה — והבנתן היא ההבדל בין לפחד מ-JS לשלוט בה.</p>
+
+<h3>== מול === — ההבחנה הכי חשובה</h3>
+<blockquote>
+<p><strong><code>===</code> (strict equality)</strong> משווה בלי המרה — טיפוס וערך חייבים להתאים. <strong><code>==</code> (loose equality)</strong> <strong>ממיר טיפוסים</strong> לפני ההשוואה, מה שיוצר תוצאות מטורפות. <strong>הכלל: השתמש תמיד ב-<code>===</code>.</strong></p>
+<pre><code>5 === "5"     // false — טיפוסים שונים
+5 == "5"      // true  — == ממיר את "5" ל-5
+
+0 == false    // true  — coercion
+"" == false   // true
+null == undefined  // true
+[] == false   // true  🤯
+[] == ![]     // true  🤯🤯 (הדוגמה המפורסמת לטירוף של ==)</code></pre>
+<p>שים לב כמה <code>==</code> מסוכן. <code>===</code> תמיד צפוי. היוצא מן הכלל היחיד ש-<code>==</code> שימושי: <code>x == null</code> בודק גם null וגם undefined בבת אחת — אבל גם זה עדיף במפורש.</p>
+</blockquote>
+
+<h3>Truthy ו-Falsy</h3>
+<p>בהקשר בוליאני (if, &&, ||), JS ממיר ערכים ל-true/false. יש בדיוק <strong>שמונה ערכים falsy</strong>, וכל השאר truthy:</p>
+<pre><code>// כל ה-falsy values (שווה לזכור בעל-פה):
+false, 0, -0, 0n, "", null, undefined, NaN
+
+// כל השאר truthy — כולל מלכודות:
+if ("0") { }        // truthy! string לא-ריק
+if ([]) { }         // truthy! מערך ריק
+if ({}) { }         // truthy! object ריק
+if (" ") { }        // truthy! רווח</code></pre>
+<p>המלכודות: <code>"0"</code>, <code>[]</code>, <code>{}</code> כולם truthy. זו הסיבה שבדיקת "מערך ריק" עם <code>if (arr)</code> תמיד true — צריך <code>if (arr.length)</code>.</p>
+
+<h3>coercion בפעולות</h3>
+<pre><code>"5" + 3     // "53"  — + עם string = concatenation
+"5" - 3     // 2     — - ממיר ל-number
+"5" * "2"   // 10    — * ממיר
+5 + null    // 5     — null → 0
+5 + undefined // NaN — undefined → NaN
+"abc" * 2   // NaN</code></pre>
+
+<h3>NaN — הערך המוזר</h3>
+<p><code>NaN</code> ("Not a Number") הוא הערך היחיד ב-JS ש<strong>לא שווה לעצמו</strong>: <code>NaN === NaN</code> הוא <code>false</code>. לבדיקה משתמשים ב-<code>Number.isNaN(x)</code>. הוא נוצר מפעולות מתמטיות לא-חוקיות (<code>"abc" * 2</code>, <code>0/0</code>).</p>
+
+<h3>המספרים הצפים — floating point</h3>
+<pre><code>0.1 + 0.2 === 0.3   // false! 🐛
+0.1 + 0.2           // 0.30000000000000004</code></pre>
+<p>זו לא בעיה של JS אלא של ייצוג floating point (IEEE 754) בכל השפות. הלקח (חוזר ממדריך SQL): <strong>אל תשתמש ב-floats לכסף</strong>. עבוד ב-cents (integers) או ספרייה כמו decimal.js.</p>
+
+<hr>
+
+<h2 id="s5">5. אופרטורים</h2>
+
+<h3>אריתמטיים ולוגיים</h3>
+<pre><code>+ - * / % **        // ** = חזקה (2 ** 3 = 8)
+&& || !             // AND, OR, NOT
+=== !== &lt; &gt; &lt;= &gt;=   // השוואה (תמיד === לא ==)</code></pre>
+
+<h3>Short-circuit — התנהגות חשובה של && ו-||</h3>
+<p><code>&&</code> ו-<code>||</code> לא מחזירים בוליאני אלא <strong>אחד מהאופרנדים</strong>, ועוצרים מוקדם:</p>
+<pre><code>a && b   // אם a falsy → מחזיר a, אחרת b   (מחזיר את הראשון ה-falsy או האחרון)
+a || b   // אם a truthy → מחזיר a, אחרת b   (מחזיר את הראשון ה-truthy)
+
+const name = user.name || "Anonymous";   // ברירת מחדל אם falsy
+user.isAdmin && showAdminPanel();         // הרץ רק אם truthy</code></pre>
+
+<h3>Nullish Coalescing (??) — החלופה המדויקת</h3>
+<blockquote>
+<p><code>||</code> נופל על <em>כל</em> falsy — כולל <code>0</code> ו-<code>""</code>, שלפעמים הם ערכים תקינים! <code>??</code> נופל <strong>רק</strong> על <code>null</code>/<code>undefined</code>:</p>
+<pre><code>const count = 0;
+const a = count || 10;   // 10  — באג! 0 נחשב falsy
+const b = count ?? 10;   // 0   — נכון! 0 הוא ערך תקין</code></pre>
+<p>הכלל: <code>??</code> ל"ברירת מחדל אם חסר ערך", <code>||</code> ל"ברירת מחדל אם falsy". רוב הזמן אתה רוצה <code>??</code>.</p>
+</blockquote>
+
+<h3>Optional Chaining (?.)</h3>
+<pre><code>user?.address?.city   // אם user או address הם null/undefined → undefined (בלי קריסה)
+user?.getName?.()     // קורא למתודה רק אם קיימת
+arr?.[0]              // גישה בטוחה לאינדקס</code></pre>
+<p>מונע את השגיאה הקלאסית "Cannot read property of undefined". במקום <code>user && user.address && user.address.city</code>, פשוט <code>user?.address?.city</code>.</p>
+
+<h3>Ternary ו-spread</h3>
+<pre><code>const label = age &gt;= 18 ? "adult" : "minor";   // ternary
+
+const arr2 = [...arr1, 4, 5];      // spread — מרחיב מערך
+const obj2 = { ...obj1, x: 99 };   // spread — מרחיב object (ומדריס x)</code></pre>
+
+<hr>
+
+<h2 id="s6">6. Functions</h2>
+
+<p>פונקציות ב-JavaScript הן <strong>first-class citizens</strong> — אפשר להעביר אותן כארגומנטים, להחזיר אותן, ולשמור אותן במשתנים. זה הבסיס לתכנות פונקציונלי ולכל ה-callbacks.</p>
+
+<h3>שלוש צורות הגדרה</h3>
+<pre><code>// 1. Function Declaration — מורם (hoisted) לגמרי
+function add(a, b) { return a + b; }
+
+// 2. Function Expression — לא מורם (המשתנה כן, הערך לא)
+const add2 = function(a, b) { return a + b; };
+
+// 3. Arrow Function — קצר, ו-this שונה (פרק 8!)
+const add3 = (a, b) =&gt; a + b;
+const square = x =&gt; x * x;           // סוגר אחד — בלי סוגריים
+const makeObj = () =&gt; ({ x: 1 });    // מחזיר object — צריך סוגריים!</code></pre>
+
+<h3>ההבדל ב-hoisting</h3>
+<p>Function declarations מורמות לגמרי — אפשר לקרוא להן לפני ההגדרה. Function expressions ו-arrows לא — הן כפופות ל-TDZ של המשתנה (פרק 2):</p>
+<pre><code>sayHi();                    // ✅ עובד — declaration מורמת
+function sayHi() {}
+
+sayBye();                   // ❌ ReferenceError — expression לא
+const sayBye = () =&gt; {};</code></pre>
+
+<h3>פרמטרים — default, rest</h3>
+<pre><code>function greet(name, greeting = "Hello") {   // default value
+  return `${greeting}, ${name}`;
+}
+
+function sum(...numbers) {   // rest — אוסף את כל הארגומנטים למערך
+  return numbers.reduce((a, b) =&gt; a + b, 0);
+}
+sum(1, 2, 3, 4);   // 10</code></pre>
+
+<h3>Higher-Order Functions</h3>
+<p>פונקציה שמקבלת פונקציה כארגומנט או מחזירה פונקציה. זה הבסיס ל-<code>map</code>/<code>filter</code>/<code>reduce</code> ולכל הדפוסים הפונקציונליים:</p>
+<pre><code>const numbers = [1, 2, 3];
+numbers.map(n =&gt; n * 2);          // מקבל פונקציה — [2, 4, 6]
+
+function multiplier(factor) {     // מחזיר פונקציה (זה גם closure — פרק 7)
+  return x =&gt; x * factor;
+}
+const double = multiplier(2);
+double(5);   // 10</code></pre>
+
+<h3>IIFE — Immediately Invoked Function Expression</h3>
+<pre><code>(function() {
+  // רץ מיד, יוצר scope מבודד
+})();</code></pre>
+<p>דפוס ישן ליצירת scope פרטי (לפני modules). פחות נחוץ היום עם ES modules, אבל תיתקל בו בקוד ותיק.</p>
+
+<hr>
+
+<h2 id="s7">7. Scope ו-Closures — עמוק</h2>
+
+<p>Closures הם אחד המושגים החשובים והמבלבלים ב-JavaScript, ונשאלים כמעט בכל ראיון. נבנה אותם מהיסוד.</p>
+
+<h3>Lexical Scope — הבסיס</h3>
+<p>Scope הוא "היכן משתנה נגיש". ב-JS ה-scope הוא <strong>lexical</strong> — נקבע לפי <em>מיקום הכתיבה</em> בקוד, לא לפי מאיפה קוראים. פונקציה פנימית רואה את המשתנים של הפונקציות שעוטפות אותה:</p>
+<pre><code>const outer = "I'm outer";
+function parent() {
+  const middle = "I'm middle";
+  function child() {
+    console.log(outer, middle);   // ✅ רואה את שניהם — scope chain
+  }
+  child();
+}</code></pre>
+<p>ה-scope chain: משתנה מחפשים קודם בפונקציה הנוכחית, ואם לא נמצא — בעוטפת, וכן הלאה עד ה-global.</p>
+
+<h3>Closure — ההגדרה</h3>
+<blockquote>
+<p><strong>Closure הוא פונקציה ש"זוכרת" את ה-scope שבו היא נוצרה, גם אחרי שה-scope הזה הסתיים.</strong> כשפונקציה מחזירה פונקציה פנימית, הפנימית "סוחבת איתה" גישה למשתנים של החיצונית — גם אחרי שהחיצונית סיימה לרוץ. זה הקסם.</p>
+</blockquote>
+
+<pre><code>function counter() {
+  let count = 0;                 // משתנה "פרטי"
+  return function() {
+    count++;                     // הפונקציה הפנימית זוכרת את count
+    return count;
+  };
+}
+
+const inc = counter();
+inc();   // 1
+inc();   // 2
+inc();   // 3
+// count "חי" בין הקריאות — הוא סגור (closed over) בתוך ה-closure</code></pre>
+
+<p>שים לב: <code>counter()</code> כבר סיימה לרוץ, אבל <code>count</code> לא נעלם — ה-closure מחזיק אותו בחיים. כל קריאה ל-<code>counter()</code> יוצרת <code>count</code> חדש ונפרד.</p>
+
+<h3>למה closures חשובים — שימושים אמיתיים</h3>
+<ul>
+<li><strong>מצב פרטי (encapsulation)</strong> — <code>count</code> נגיש רק דרך הפונקציה, לא מבחוץ. זה "private" אמיתי לפני <code>#fields</code>.</li>
+<li><strong>Factory functions</strong> — <code>multiplier(2)</code> מפרק 6 הוא closure שזוכר את <code>factor</code>.</li>
+<li><strong>Callbacks ו-event handlers</strong> — כל callback שמשתמש במשתנה חיצוני הוא closure.</li>
+<li><strong>Memoization, debounce, throttle</strong> — כולם בנויים על closures.</li>
+</ul>
+
+<h3>המלכודת הקלאסית: closures בלולאה</h3>
+<blockquote>
+<p>הבאג המפורסם ביותר עם closures (ולמה <code>let</code> חשוב):</p>
+<pre><code>// ❌ עם var — כולם מדפיסים 3!
+for (var i = 0; i &lt; 3; i++) {
+  setTimeout(() =&gt; console.log(i), 100);   // 3, 3, 3
+}
+// כי var function-scoped — יש i אחד משותף, וכשה-timeout רץ i כבר 3.
+
+// ✅ עם let — 0, 1, 2
+for (let i = 0; i &lt; 3; i++) {
+  setTimeout(() =&gt; console.log(i), 100);   // 0, 1, 2
+}
+// כי let block-scoped — כל איטרציה יוצרת i חדש, וכל closure זוכר את שלו.</code></pre>
+<p>זו דוגמה מושלמת לאיך scope ו-closures מתחברים — ולמה <code>let</code> פותר באג אמיתי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. this — הנושא הקשה ביותר</h2>
+
+<p>אם יש מושג אחד ב-JavaScript שמבלבל את כולם — זה <code>this</code>. הבעיה: <strong><code>this</code> לא נקבע לפי איפה הפונקציה מוגדרת, אלא לפי <em>איך היא נקראת</em></strong>. נפרק את כל הכללים.</p>
+
+<h3>ארבעת הכללים של this</h3>
+<p>ערך <code>this</code> נקבע לפי צורת הקריאה, בסדר עדיפות:</p>
+
+<h4>1. Method call — this = האובייקט</h4>
+<pre><code>const user = {
+  name: "Eliya",
+  greet() { return `Hi, ${this.name}`; }
+};
+user.greet();   // this = user → "Hi, Eliya"</code></pre>
+
+<h4>2. Function call רגיל — this = undefined (strict) / global</h4>
+<pre><code>function show() { return this; }
+show();   // undefined (ב-strict mode / modules) או global object</code></pre>
+
+<h4>3. Explicit — call / apply / bind</h4>
+<pre><code>function greet() { return `Hi, ${this.name}`; }
+const user = { name: "Dan" };
+
+greet.call(user);       // this = user (ארגומנטים אחד-אחד)
+greet.apply(user);      // this = user (ארגומנטים כמערך)
+const bound = greet.bind(user);   // מחזיר פונקציה חדשה עם this קבוע
+bound();                // this = user לתמיד</code></pre>
+
+<h4>4. Constructor call — this = ה-instance החדש</h4>
+<pre><code>function User(name) { this.name = name; }
+const u = new User("Eliya");   // this = ה-object החדש</code></pre>
+
+<h3>המלכודת הקלאסית: this "נאבד"</h3>
+<blockquote>
+<p>כשמעבירים method כ-callback, <code>this</code> "מתנתק" מהאובייקט — כי מה שקובע זה <em>איך</em> קוראים, וה-callback נקרא כפונקציה רגילה:</p>
+<pre><code>const user = {
+  name: "Eliya",
+  greet() { return `Hi, ${this.name}`; }
+};
+
+setTimeout(user.greet, 100);   // ❌ this = undefined! "Hi, undefined"
+// כי setTimeout קורא ל-greet כפונקציה רגילה, מנותקת מ-user.
+
+setTimeout(() =&gt; user.greet(), 100);   // ✅ arrow שומר, קורא נכון
+setTimeout(user.greet.bind(user), 100); // ✅ או bind</code></pre>
+</blockquote>
+
+<h3>Arrow Functions ו-this — הפתרון</h3>
+<blockquote>
+<p><strong>ל-arrow functions אין <code>this</code> משלהן</strong> — הן "יורשות" את <code>this</code> מה-scope הלקסיקלי שבו נוצרו (בדיוק כמו closure). זו הסיבה שהן פתרו את רוב כאב ה-<code>this</code>:</p>
+<pre><code>class Timer {
+  constructor() {
+    this.seconds = 0;
+    // ❌ function רגילה — this מתנתק:
+    setInterval(function() { this.seconds++; }, 1000);   // this = undefined
+    // ✅ arrow — this נשאר ה-instance:
+    setInterval(() =&gt; { this.seconds++; }, 1000);        // this = Timer
+  }
+}</code></pre>
+<p>הכלל המעשי: השתמש ב-arrow functions ל-callbacks כדי לשמר <code>this</code>. אבל <strong>אל</strong> תשתמש ב-arrow ל-methods של object (כי אז <code>this</code> לא יהיה האובייקט אלא ה-scope החיצוני). זו הבחנה עדינה ששווה להפנים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Objects</h2>
+
+<p>Objects הם אוספי צמדים של key-value, והם הבסיס כמעט לכל דבר ב-JS (מערכים, פונקציות — הכל objects מתחת).</p>
+
+<h3>יצירה וגישה</h3>
+<pre><code>const user = {
+  name: "Eliya",
+  age: 30,
+  greet() { return `Hi, ${this.name}`; },   // method (shorthand)
+};
+
+user.name;         // dot notation
+user["name"];      // bracket notation (למפתחות דינמיים)
+const key = "age";
+user[key];         // 30 — bracket מאפשר מפתח ממשתנה</code></pre>
+
+<h3>Computed properties ו-shorthand</h3>
+<pre><code>const field = "email";
+const obj = {
+  [field]: "e@x.com",   // computed key — הופך ל-"email"
+  name,                 // shorthand — אם המשתנה name קיים, זהה ל-name: name
+};</code></pre>
+
+<h3>מתודות שימושיות של Object</h3>
+<pre><code>Object.keys(obj)        // מערך המפתחות
+Object.values(obj)      // מערך הערכים
+Object.entries(obj)     // מערך של [key, value] זוגות
+Object.assign({}, a, b) // מיזוג objects (או: {...a, ...b})
+Object.freeze(obj)      // הופך ל-immutable (shallow)
+"name" in obj           // בדיקת קיום מפתח</code></pre>
+
+<h3>Getters ו-Setters</h3>
+<pre><code>const temp = {
+  _celsius: 0,
+  get celsius() { return this._celsius; },
+  set celsius(value) {
+    if (value &lt; -273.15) throw new Error("Below absolute zero");
+    this._celsius = value;
+  }
+};
+temp.celsius = 25;      // קורא ל-setter
+temp.celsius;           // קורא ל-getter</code></pre>
+
+<h3>Shallow מול Deep copy</h3>
+<blockquote>
+<p>זוכר reference מפרק 3? העתקת object דורשת מחשבה. <code>{...obj}</code> ו-<code>Object.assign</code> עושים <strong>shallow copy</strong> — מעתיקים את הרמה הראשונה, אבל objects מקוננים עדיין משותפים (reference):</p>
+<pre><code>const original = { name: "Eliya", address: { city: "TLV" } };
+const copy = { ...original };
+copy.address.city = "Haifa";
+console.log(original.address.city);   // "Haifa"! — הפנימי משותף
+
+// deep copy אמיתי:
+const deep = structuredClone(original);   // מודרני, מובנה</code></pre>
+</blockquote>
+
+<hr>
+
+<h2 id="s10">10. Prototypes ו-Inheritance</h2>
+
+<p>זה הלב של ה-OOP ב-JavaScript, ומה שמבדיל אותה משפות class-based כמו Java. גם אם אתה משתמש ב-<code>class</code> (פרק 11), חשוב להבין ש<strong>מתחת הכל זה prototypes</strong>.</p>
+
+<h3>הרעיון: Prototype Chain</h3>
+<p>לכל object ב-JS יש קישור נסתר לאובייקט אחר — ה-<strong>prototype</strong> שלו. כשמחפשים property על object ולא מוצאים, JS מטפס ל-prototype, ואם לא שם — ל-prototype שלו, וכן הלאה עד <code>null</code>. זו ה-<strong>prototype chain</strong>:</p>
+<pre><code>const arr = [1, 2, 3];
+arr.map(...)     // map לא על arr עצמו — הוא על Array.prototype!
+// arr → Array.prototype → Object.prototype → null
+// JS מטפס בשרשרת עד שמוצא את map</code></pre>
+
+<p>זו הסיבה שכל מערך "יודע" <code>map</code>/<code>filter</code> — הם לא בכל מערך, אלא ב-<code>Array.prototype</code> אחד שכולם מקושרים אליו. חיסכון עצום בזיכרון, ומנגנון הירושה של השפה.</p>
+
+<h3>prototype מול __proto__</h3>
+<ul>
+<li><strong><code>__proto__</code></strong> (או <code>Object.getPrototypeOf(obj)</code>) — הקישור <em>של instance</em> ל-prototype שלו.</li>
+<li><strong><code>prototype</code></strong> — property של <em>constructor functions</em>, שממנו ה-instances יורשים.</li>
+</ul>
+<pre><code>function Animal(name) { this.name = name; }
+Animal.prototype.speak = function() { return `${this.name} speaks`; };
+
+const dog = new Animal("Rex");
+dog.speak();                       // "Rex speaks" — נמצא ב-prototype
+dog.__proto__ === Animal.prototype;  // true</code></pre>
+
+<blockquote>
+<p><strong>למה זה חשוב גם אם אתה משתמש ב-class:</strong> ES6 <code>class</code> הוא <strong>syntactic sugar</strong> מעל prototypes — מתחת, זה בדיוק המנגנון הזה. כשאתה מבין prototype chain, אתה מבין למה <code>instanceof</code> עובד, איך ירושה עובדת, ולמה הוספת method ל-<code>Array.prototype</code> משפיעה על כל המערכים. זה ההבדל בין לדעת את התחביר להבין את השפה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. Classes</h2>
+
+<p>ES6 הוסיף תחביר <code>class</code> — נוח ומוכר משפות אחרות, אבל זכור: <strong>מתחת זה prototypes</strong> (פרק 10). (כיסינו classes לעומק ב-TypeScript — כאן הזווית של JS טהור).</p>
+
+<pre><code>class Animal {
+  #secret = "hidden";        // private field (# — פרטי אמיתי ב-runtime)
+
+  constructor(name) {
+    this.name = name;        // instance field
+  }
+
+  speak() {                  // method — נכנס ל-prototype מאחורי הקלעים
+    return `${this.name} speaks`;
+  }
+
+  static create(name) {      // static — על ה-class, לא על instance
+    return new Animal(name);
+  }
+}
+
+class Dog extends Animal {   // ירושה
+  constructor(name, breed) {
+    super(name);             // קורא ל-constructor של האב
+    this.breed = breed;
+  }
+  speak() {                  // override
+    return `${super.speak()} — woof`;
+  }
+}
+
+const d = new Dog("Rex", "Lab");
+d.speak();                   // "Rex speaks — woof"
+d instanceof Animal;         // true (דרך prototype chain)</code></pre>
+
+<p>הנקודות: <code>#field</code> הוא פרטיות אמיתית ב-runtime (בניגוד ל-<code>private</code> של TypeScript שהוא compile-time בלבד — זוכר?). <code>static</code> שייך ל-class. <code>extends</code>+<code>super</code> לירושה. וכל <code>method</code> נכנס ל-prototype, לא לכל instance.</p>
+
+<hr>
+
+<h2 id="s12">12. Arrays ומתודות מערך</h2>
+
+<p>מערכים ומתודותיהם הם כלי העבודה היומיומי. שליטה במתודות הפונקציונליות (<code>map</code>/<code>filter</code>/<code>reduce</code>) היא חובה — הן מחליפות רוב הלולאות.</p>
+
+<h3>המתודות שמשנות (mutating) מול לא-משנות</h3>
+<pre><code>// ⚠️ משנות את המערך המקורי:
+arr.push(x)      // מוסיף בסוף
+arr.pop()        // מסיר מהסוף
+arr.shift()      // מסיר מההתחלה
+arr.unshift(x)   // מוסיף בהתחלה
+arr.splice(i, n) // מסיר/מוסיף באמצע
+arr.sort()       // ממיין (במקום!)
+arr.reverse()    // הופך
+
+// ✅ מחזירות מערך חדש (לא משנות):
+arr.slice(i, j)  // חותך תת-מערך
+arr.concat(arr2) // מחבר
+[...arr]         // עותק</code></pre>
+
+<h3>המתודות הפונקציונליות — הליבה</h3>
+<pre><code>const nums = [1, 2, 3, 4, 5];
+
+nums.map(n =&gt; n * 2)          // [2,4,6,8,10] — טרנספורמציה
+nums.filter(n =&gt; n % 2 === 0) // [2,4] — סינון
+nums.reduce((acc, n) =&gt; acc + n, 0)  // 15 — צמצום לערך אחד
+nums.forEach(n =&gt; console.log(n))    // side effect, לא מחזיר
+nums.find(n =&gt; n &gt; 3)         // 4 — הראשון שמתאים
+nums.findIndex(n =&gt; n &gt; 3)    // 3 — האינדקס
+nums.some(n =&gt; n &gt; 4)         // true — האם יש לפחות אחד
+nums.every(n =&gt; n &gt; 0)        // true — האם כולם
+nums.includes(3)             // true — האם מכיל</code></pre>
+
+<h3>reduce — החזק והמבלבל ביותר</h3>
+<blockquote>
+<p><code>reduce</code> מצמצם מערך לערך אחד, בכל צעד צובר תוצאה. הוא נראה מסובך אבל הוא הבסיס להרבה:</p>
+<pre><code>// סכום:
+[1,2,3].reduce((acc, n) =&gt; acc + n, 0);   // 6
+
+// קיבוץ (group by) — reduce על steroids:
+const users = [{role:"admin"}, {role:"user"}, {role:"admin"}];
+users.reduce((acc, u) =&gt; {
+  acc[u.role] = (acc[u.role] || 0) + 1;
+  return acc;
+}, {});   // { admin: 2, user: 1 }</code></pre>
+<p><code>acc</code> הוא הצובר (מתחיל מהערך השני של reduce), <code>n</code> האיבר הנוכחי. כמעט כל <code>map</code>/<code>filter</code> אפשר לבטא ב-reduce — אבל השתמש ב-<code>map</code>/<code>filter</code> כשמתאים, הם קריאים יותר.</p>
+</blockquote>
+
+<h3>chaining — שרשור</h3>
+<pre><code>// המתודות שמחזירות מערך ניתנות לשרשור — קריא וחזק:
+const result = users
+  .filter(u =&gt; u.isActive)
+  .map(u =&gt; u.name)
+  .sort();</code></pre>
+
+<hr>
+
+<h2 id="s13">13. Strings ומתודות מחרוזת</h2>
+
+<pre><code>const s = "Hello World";
+s.length              // 11
+s.toUpperCase()       // "HELLO WORLD"
+s.toLowerCase()
+s.trim()              // מסיר רווחים מהקצוות
+s.includes("World")   // true
+s.startsWith("Hello") // true
+s.endsWith("World")   // true
+s.indexOf("o")        // 4 — מיקום ראשון
+s.slice(0, 5)         // "Hello" — תת-מחרוזת
+s.replace("World", "JS")     // "Hello JS" (ראשון)
+s.replaceAll("o", "0")       // "Hell0 W0rld"
+s.split(" ")          // ["Hello", "World"] — למערך
+s.repeat(3)
+s.padStart(15, "*")   // ריפוד</code></pre>
+
+<p>חשוב: strings הם <strong>immutable</strong> — כל המתודות מחזירות string חדש, לא משנות את המקורי. <code>s[0]</code> נותן תו, אבל <code>s[0] = "X"</code> לא עובד.</p>
+
+<hr>
+
+<h2 id="s14">14. Destructuring, Spread/Rest, Template Literals</h2>
+
+<h3>Destructuring — פירוק</h3>
+<pre><code>// Array destructuring:
+const [first, second, ...rest] = [1, 2, 3, 4];
+// first=1, second=2, rest=[3,4]
+
+// Object destructuring:
+const { name, age, role = "user" } = user;   // עם default
+const { name: userName } = user;              // שינוי שם
+
+// בפרמטרים — נפוץ מאוד:
+function greet({ name, greeting = "Hi" }) {
+  return `${greeting}, ${name}`;
+}
+greet({ name: "Eliya" });
+
+// החלפת משתנים בשורה אחת:
+[a, b] = [b, a];</code></pre>
+
+<h3>Template Literals</h3>
+<pre><code>const name = "Eliya";
+const msg = `Hello ${name}, you are ${age &gt;= 18 ? "adult" : "minor"}`;
+// interpolation עם ${}, ותומך בכמה שורות:
+const html = `
+  &lt;div&gt;${name}&lt;/div&gt;
+`;</code></pre>
+
+<h3>Spread/Rest — הסיכום</h3>
+<pre><code>// Spread — "פורש":
+Math.max(...[1, 2, 3]);        // מפזר מערך לארגומנטים
+const merged = [...a, ...b];   // מחבר מערכים
+const clone = { ...obj };      // מעתיק object
+
+// Rest — "אוסף":
+function f(...args) {}         // אוסף ארגומנטים
+const [head, ...tail] = arr;   // אוסף את השאר</code></pre>
+<p>אותו סימן <code>...</code>, משמעות הפוכה לפי הקשר: spread <em>פורש</em>, rest <em>אוסף</em>.</p>
+
+<hr>
+
+<h2 id="s15">15. Async — Promises, async/await, Event Loop</h2>
+
+<p>קוד אסינכרוני הוא לב ה-JavaScript. כיסינו את ה-event loop לעומק במדריך Node — כאן הזווית של השפה: איך כותבים async נכון. (התיאוריה המלאה של ה-event loop — במדריך Node).</p>
+
+<h3>הבעיה: JS הוא single-threaded</h3>
+<p>JS רץ על thread אחד. פעולות איטיות (רשת, timers) לא יכולות "לחסום" — אז הן אסינכרוניות: מתחילות, וה-callback שלהן רץ מאוחר יותר כשה-thread פנוי. זה מנוהל על ידי ה-event loop (מדריך Node).</p>
+
+<h3>Promise — ההפשטה</h3>
+<p>Promise הוא object שמייצג ערך עתידי, בשלושה מצבים: <strong>pending</strong> → <strong>fulfilled</strong> (הצליח) או <strong>rejected</strong> (נכשל):</p>
+<pre><code>const p = new Promise((resolve, reject) =&gt; {
+  setTimeout(() =&gt; resolve("done"), 1000);   // או reject(err)
+});
+
+p.then(result =&gt; console.log(result))    // הצלחה
+ .catch(err =&gt; console.error(err))       // כישלון
+ .finally(() =&gt; console.log("cleanup")); // תמיד</code></pre>
+
+<h3>async/await — המודרני</h3>
+<p>סוכר תחבירי על Promises שנראה סינכרוני. זה מה שתכתוב:</p>
+<pre><code>async function getUser(id) {
+  try {
+    const res = await fetch(`/users/${id}`);   // "ממתין" בלי לחסום
+    const user = await res.json();
+    return user;
+  } catch (err) {
+    console.error("Failed:", err);
+  }
+}
+// async function תמיד מחזירה Promise</code></pre>
+
+<h3>Promise combinators — הכלים החשובים</h3>
+<pre><code>// כולם במקביל, נכשל אם אחד נכשל:
+const [a, b] = await Promise.all([fetchA(), fetchB()]);
+
+// כולם, לא נכשל — מחזיר סטטוס לכל אחד:
+const results = await Promise.allSettled([fetchA(), fetchB()]);
+
+// הראשון שמסתיים (הצלחה או כישלון):
+const fastest = await Promise.race([fetchA(), fetchB()]);
+
+// הראשון שמצליח:
+const first = await Promise.any([fetchA(), fetchB()]);</code></pre>
+
+<h3>המלכודת: סדרתי מול מקבילי (חוזר ממדריך Node)</h3>
+<blockquote>
+<p><code>await</code> ברצף מריץ דברים בזה אחר זה. לדברים עצמאיים — בזבוז זמן. <code>Promise.all</code> מריץ במקביל:</p>
+<pre><code>// ❌ סדרתי — איטי (200ms):
+const a = await fetchA();   // 100ms
+const b = await fetchB();   // עוד 100ms
+
+// ✅ מקבילי — מהיר (100ms):
+const [a, b] = await Promise.all([fetchA(), fetchB()]);</code></pre>
+</blockquote>
+
+<h3>Microtasks — למה Promise קודם ל-setTimeout</h3>
+<p>Promise callbacks הם <strong>microtasks</strong> — עדיפות על <strong>macrotasks</strong> כמו <code>setTimeout</code>. זו הסיבה שסדר הריצה מפתיע (כיסינו את זה לעומק במדריך Node, פרק ה-event loop):</p>
+<pre><code>console.log(1);
+setTimeout(() =&gt; console.log(2), 0);     // macrotask
+Promise.resolve().then(() =&gt; console.log(3));  // microtask
+console.log(4);
+// פלט: 1, 4, 3, 2</code></pre>
+
+<hr>
+
+<h2 id="s16">16. Modules</h2>
+
+<p>מודולים מאפשרים לפצל קוד לקבצים ולשתף ביניהם. (כיסינו CJS מול ESM לעומק במדריך Node — כאן התחביר של ESM, הסטנדרט):</p>
+<pre><code>// math.js — export
+export function add(a, b) { return a + b; }
+export const PI = 3.14;
+export default class Calculator {}   // default — אחד לקובץ
+
+// app.js — import
+import Calculator, { add, PI } from "./math.js";
+import * as math from "./math.js";   // הכל כ-namespace</code></pre>
+<p>ההמלצה (חוזרת מ-TypeScript/Node): העדף <strong>named exports</strong> — עקביים וידידותיים ל-refactoring. כל קובץ הוא module עם scope משלו — אין זיהום global.</p>
+
+<hr>
+
+<h2 id="s17">17. Error Handling</h2>
+
+<pre><code>try {
+  riskyOperation();
+} catch (err) {
+  console.error(err.message);
+} finally {
+  cleanup();   // רץ תמיד — הצלחה או כישלון
+}
+
+// זריקת שגיאה:
+throw new Error("Something broke");
+
+// Error types מובנים:
+// Error, TypeError, RangeError, SyntaxError, ReferenceError
+
+// Custom error:
+class ValidationError extends Error {
+  constructor(message, field) {
+    super(message);
+    this.name = "ValidationError";
+    this.field = field;
+  }
+}
+throw new ValidationError("Invalid email", "email");</code></pre>
+
+<blockquote>
+<p><strong>כללים (חוזרים ממדריך Node):</strong> ב-async, <code>try/catch</code> סביב <code>await</code> תופס שגיאות. שכחת <code>await</code>? השגיאה הופכת ל-unhandled rejection שמפילה את התהליך. ותמיד <code>throw new Error(...)</code> (object), לא <code>throw "string"</code> — כדי שיהיה stack trace. ה-catch ב-JS תופס <em>כל</em> מה שנזרק, אז בדוק <code>err instanceof Error</code> אם צריך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s18">18. Iterators, Generators, Symbol, Map/Set</h2>
+
+<h3>Map ו-Set — מבני נתונים חשובים</h3>
+<pre><code>// Map — key-value, כל טיפוס כמפתח (לא רק string כמו object):
+const map = new Map();
+map.set("key", 1);
+map.set(objKey, 2);      // גם object כמפתח!
+map.get("key");          // 1
+map.has("key");          // true
+map.size;                // 2
+
+// Set — ערכים ייחודיים:
+const set = new Set([1, 2, 2, 3]);   // {1, 2, 3}
+set.has(2);              // true
+[...new Set(arr)]        // טריק להסרת כפילויות ממערך!</code></pre>
+<p><code>Map</code> עדיף על object כשהמפתחות דינמיים או לא-strings, ושומר סדר הכנסה. <code>Set</code> מושלם לייחודיות.</p>
+
+<h3>Symbol — מזהה ייחודי</h3>
+<pre><code>const id = Symbol("id");   // ערך ייחודי לחלוטין
+const obj = { [id]: 123 }; // מפתח שלא יתנגש עם אחרים</code></pre>
+<p>שימושי למפתחות "נסתרים" ולמנוע התנגשויות. פחות נפוץ בקוד יומיומי.</p>
+
+<h3>Iterators ו-Generators</h3>
+<p><strong>Iterable</strong> הוא כל דבר שאפשר לעבור עליו עם <code>for...of</code> (arrays, strings, Map, Set). <strong>Generator</strong> הוא פונקציה שיכולה "לעצור ולהמשיך" — מייצרת ערכים לפי דרישה:</p>
+<pre><code>function* idGenerator() {   // * = generator
+  let id = 1;
+  while (true) {
+    yield id++;             // "מחזיר" ערך ומשהה עד הקריאה הבאה
+  }
+}
+const gen = idGenerator();
+gen.next().value;   // 1
+gen.next().value;   // 2 — ממשיך מאיפה שעצר</code></pre>
+<p>Generators שימושיים ל-lazy sequences, streams אינסופיים, ו-state machines. מתקדם, אבל שווה להכיר.</p>
+
+<h3>for...of מול for...in</h3>
+<pre><code>for (const val of [10, 20, 30]) { }   // ✅ ערכים (iterables)
+for (const key in obj) { }             // מפתחות (objects) — זהירות!</code></pre>
+<p>מלכודת: <code>for...in</code> על מערך נותן <em>אינדקסים כ-strings</em> וגם properties מ-prototype. למערכים השתמש ב-<code>for...of</code> או במתודות (<code>forEach</code>/<code>map</code>).</p>
+
+<hr>
+
+<h2 id="s19">19. ה-Gotchas — המלכודות הקלאסיות</h2>
+
+<p>ריכוז ה-quirks שהופכים את JS למפורסמת — כדי שלא תיפול בהם. רובם כבר הופיעו במדריך, כאן במרוכז:</p>
+
+<table>
+<tr><th>ה-gotcha</th><th>הפתרון</th></tr>
+<tr><td><code>0.1 + 0.2 !== 0.3</code></td><td>floating point — אל תשתמש ב-float לכסף</td></tr>
+<tr><td><code>[] == ![]</code> is <code>true</code></td><td>לעולם <code>===</code>, לא <code>==</code></td></tr>
+<tr><td><code>typeof null === "object"</code></td><td>באג היסטורי — השתמש ב-<code>=== null</code></td></tr>
+<tr><td><code>NaN !== NaN</code></td><td><code>Number.isNaN(x)</code></td></tr>
+<tr><td><code>this</code> "נאבד" ב-callback</td><td>arrow function או <code>bind</code></td></tr>
+<tr><td><code>var</code> בלולאה + closure</td><td>השתמש ב-<code>let</code></td></tr>
+<tr><td><code>{}</code> ו-<code>[]</code> truthy</td><td>בדוק <code>.length</code> / <code>Object.keys</code></td></tr>
+<tr><td>object copy = reference</td><td><code>{...obj}</code> / <code>structuredClone</code></td></tr>
+<tr><td><code>"11" &gt; "9"</code> is <code>false</code></td><td>השוואת strings לקסיקוגרפית — המר ל-Number</td></tr>
+<tr><td><code>sort()</code> ממיין כ-strings</td><td><code>sort((a,b) =&gt; a - b)</code> למספרים</td></tr>
+</table>
+
+<blockquote>
+<p><strong>הנקודה הגדולה:</strong> רוב ה-quirks של JS נובעים מ-<strong>coercion אוטומטי</strong> ומ-<strong>reference מול value</strong>. ברגע שאתה מבין את שני אלה לעומק (פרקים 3–4), רוב ה"טירוף" הופך צפוי. ו-TypeScript (המדריך שלנו) מבטל חלק גדול מהמלכודות האלה בזמן קומפילציה — זו בדיוק הסיבה שהוא קיים.</p>
+</blockquote>
+
+<h3>"use strict"</h3>
+<p><code>"use strict";</code> בראש קובץ מפעיל מצב מחמיר שתופס טעויות (משתנים לא-מוצהרים, <code>this</code> = undefined במקום global). ב-ES modules זה אוטומטי. תמיד רצוי.</p>
+
+<hr>
+
+<h2 id="s20">20. Best Practices ותרגילים</h2>
+
+<h3>Best Practices</h3>
+<ol>
+<li><strong><code>const</code> כברירת מחדל, <code>let</code> כשצריך, <code>var</code> אף פעם.</strong></li>
+<li><strong><code>===</code> תמיד</strong>, לא <code>==</code>.</li>
+<li><strong><code>??</code> ל-defaults</strong> (לא <code>||</code> כש-0/"" תקינים), <code>?.</code> לגישה בטוחה.</li>
+<li><strong>arrow functions ל-callbacks</strong> (שומר <code>this</code>), function רגילה ל-methods.</li>
+<li><strong><code>map</code>/<code>filter</code>/<code>reduce</code></strong> על לולאות, כשמתאים — קריא ופונקציונלי.</li>
+<li><strong>זכור value מול reference</strong> — העתק objects במפורש.</li>
+<li><strong>async/await + try/catch</strong>, ותמיד <code>await</code> כל Promise.</li>
+<li><strong><code>Promise.all</code> לעבודה מקבילה</strong>, לא <code>await</code> סדרתי.</li>
+<li><strong>destructuring ו-spread</strong> לקוד נקי.</li>
+<li><strong>שקול TypeScript</strong> — הוא תופס את רוב ה-gotchas האלה מראש (יש לך מדריך!).</li>
+</ol>
+
+<h3>תרגילים</h3>
+<p><strong>1 — Coercion.</strong> נבא את התוצאה של: <code>[] + []</code>, <code>[] + {}</code>, <code>1 + "2" + 3</code>, <code>"5" - 2</code>, <code>null == undefined</code>, <code>NaN === NaN</code>. הרץ ובדוק.</p>
+
+<p><strong>2 — Closure.</strong> כתוב <code>createCounter()</code> שמחזיר object עם <code>increment</code>, <code>decrement</code>, ו-<code>get</code> — כשה-count פרטי (closure, לא נגיש מבחוץ).</p>
+
+<p><strong>3 — this.</strong> קח object עם method, העבר את ה-method כ-callback ל-<code>setTimeout</code>, וראה את ה-<code>this</code> "נאבד". תקן בשלוש דרכים: arrow, bind, wrapper.</p>
+
+<p><strong>4 — Array methods.</strong> בהינתן מערך של objects (users עם name, age, role), כתוב שרשור אחד שמחזיר את שמות ה-admins הבוגרים, ממוינים. השתמש ב-filter+map+sort.</p>
+
+<p><strong>5 — reduce.</strong> ממש <code>groupBy(arr, key)</code> עם <code>reduce</code> — מקבץ מערך של objects לפי ערך של property.</p>
+
+<p><strong>6 — Prototype.</strong> צור "class" בלי תחביר <code>class</code> — constructor function + methods על ה-prototype. ואז שכתב אותו עם <code>class</code> וראה שזה זהה.</p>
+
+<p><strong>7 — Async.</strong> כתוב פונקציה שמביאה מ-3 endpoints. ממש סדרתית ומקבילית (<code>Promise.all</code>), ומדוד את ההפרש.</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים מעל הכל: <strong>רוב ה"טירוף" של JavaScript נובע משני מנגנונים</strong> — type coercion (פרק 4) ו-reference מול value (פרק 3). כשאתה מבין אותם, הכל צפוי. והשני: <strong>closures, <code>this</code>, ו-prototypes</strong> הם שלושת המושגים שמפרידים בין "כותב JS" ל"מבין JS" — הם נשאלים בכל ראיון ומופיעים בכל קוד.</p>
+
+<p>וזה סוגר את השלישייה של הבסיס: <strong>JavaScript</strong> (השפה, זה), <strong>TypeScript</strong> (הטיפוסים מעליה), ו-<strong>Node</strong> (ה-runtime שמריץ אותה). שלושתם יחד הם הרצפה המלאה. שים לב: הרבה מה-gotchas כאן הם בדיוק מה ש-TypeScript בא לפתור — עכשיו אתה מבין <em>למה</em> הוא קיים, לא רק איך להשתמש בו.</p>
+
+<p>יש לך עכשיו 14 מדריכים ב-<code>C:\claude-folder</code>. הדרך היחידה לגרום לזה להיטמע — לפתוח את ה-<strong>console של הדפדפן</strong> (F12) או Node REPL, ולהריץ כל דוגמה כאן בעצמך. במיוחד את ה-gotchas — לראות אותם קורים מול העיניים זה מה שהופך אותם לזיכרון. 🚀</p>
+
+</body>
+</html>

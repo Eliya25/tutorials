@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Databases לעומק — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #4338ca; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #4338ca; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #3730a3; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #312e81; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #eef0fd; }
+  a { color: #4338ca; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f4f5fe; border: 1px solid #d9ddf9; border-radius: 8px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>Databases לעומק — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>המשך לסדרה. המדריך הזה <strong>ממלא את השכבה שבין SQL ל-System Design</strong> — כבר כיסינו queries ו-indexes (SQL), ו-replication/sharding/CAP (System Design). כאן: <strong>data modeling</strong> (ההחלטה הכי יקרה לתיקון), בחירה נכונה בין סוגי DB, NoSQL data modeling, Redis לעומק, והנדסת DB מעשית (pooling, ORMs, migrations).</p>
+<p>מה שכבר עשינו יוזכר בקצרה עם הפניה — בלי חזרות. עברית להסבר, אנגלית למונחים.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: למה Data Modeling הוא ההחלטה הכי חשובה</a></li>
+<li><a href="#s2">Data Modeling ו-ER — Entities, Attributes, Relationships</a></li>
+<li><a href="#s3">Normalization — 1NF עד 3NF</a></li>
+<li><a href="#s4">Denormalization — מתי לשבור את הכללים בכוונה</a></li>
+<li><a href="#s5">Keys — Surrogate מול Natural, Auto-increment מול UUID</a></li>
+<li><a href="#s6">ACID מול BASE — שתי פילוסופיות</a></li>
+<li><a href="#s7">SQL מול NoSQL — ההחלטה לפי צורת הנתונים</a></li>
+<li><a href="#s8">NoSQL Data Modeling — לחשוב הפוך</a></li>
+<li><a href="#s9">Redis לעומק — מבני נתונים ושימושים</a></li>
+<li><a href="#s10">Connection Pooling</a></li>
+<li><a href="#s11">ORMs מול Raw SQL</a></li>
+<li><a href="#s12">Migrations — שינוי סכמה ב-Production בבטחה</a></li>
+<li><a href="#s13">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s14">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: למה Data Modeling הוא ההחלטה הכי חשובה</h2>
+
+<p>אפשר לתקן קוד גרוע ב-refactor. אפשר להחליף שרת. אבל <strong>schema גרועה עם מיליוני שורות עליה — כמעט בלתי אפשרית לתקן בלי migration מסוכן וכואב.</strong> זו ההחלטה הכי יקרה לשנות בדיעבד, וזו הסיבה ש-data modeling הוא המיומנות הכי חשובה בעבודה עם DBs — יותר מכתיבת queries חכמות.</p>
+
+<h3>מה זה data modeling</h3>
+<p>Data modeling הוא התהליך של להחליט <strong>איך לייצג את הנתונים של הבעיה שלך בטבלאות/מסמכים</strong>: אילו entities יש, אילו תכונות, ואיך הם קשורים. זה הגשר בין "העולם האמיתי" (משתמשים, הזמנות, מוצרים) ל"סכמה ב-DB".</p>
+
+<h3>הכלל המנחה</h3>
+<blockquote>
+<p><strong>נקודה קריטית שמפרידה בין SQL ל-NoSQL:</strong> ב-SQL אתה מודל לפי <strong>מבנה הנתונים</strong> (מה ה-entities והקשרים ביניהם), ומאמין שה-DB יטפל בכל query עתידי דרך JOINs. ב-NoSQL אתה מודל לפי <strong>דפוסי הגישה</strong> (אילו queries תריץ), ומעצב את הנתונים כדי לשרת אותם ישירות. זה הבדל תפיסתי מהותי — נחזור אליו בפרק 8. הבנתו היא מחצית מהקרב.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s2">2. Data Modeling ו-ER — Entities, Attributes, Relationships</h2>
+
+<p>המודל הרלציוני מתחיל בשלושה מושגים. חשוב עליהם לפני שאתה כותב <code>CREATE TABLE</code>.</p>
+
+<ul>
+<li><strong>Entity</strong> — "דבר" בעולם שאתה עוקב אחריו: User, Order, Product. הופך לרוב לטבלה.</li>
+<li><strong>Attribute</strong> — תכונה של entity: ל-User יש name, email, age. הופך לעמודה.</li>
+<li><strong>Relationship</strong> — קשר בין entities: User <em>מבצע</em> Orders. הופך ל-foreign key או לטבלת קישור.</li>
+</ul>
+
+<h3>שלושת סוגי הקשרים — הליבה של המודל</h3>
+
+<h4>One-to-One (1:1)</h4>
+<p>שורה אחת קשורה לכל היותר לשורה אחת. למשל User ↔ UserProfile. לרוב אפשר לאחד לטבלה אחת; מפרידים כשחלק מהשדות נדירים/כבדים או מסיבות אבטחה.</p>
+
+<h4>One-to-Many (1:N) — הנפוץ ביותר</h4>
+<p>שורה אחת קשורה להרבה. User אחד → הרבה Orders. המימוש: FK בצד ה"רבים":</p>
+<pre><code>-- ה-FK תמיד יושב בצד ה"many":
+CREATE TABLE orders (
+  id       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id  INT NOT NULL REFERENCES users(id),   -- FK כאן, בצד ה-many
+  total    NUMERIC(10,2)
+);</code></pre>
+
+<h4>Many-to-Many (M:N)</h4>
+<p>הרבה להרבה. Students ↔ Courses (סטודנט בכמה קורסים, קורס עם כמה סטודנטים). <strong>אי אפשר לייצג עם FK יחיד</strong> — חייבים <strong>junction table</strong> (טבלת קישור) באמצע:</p>
+<pre><code>CREATE TABLE students ( id INT PRIMARY KEY, name TEXT );
+CREATE TABLE courses  ( id INT PRIMARY KEY, title TEXT );
+
+-- טבלת הקישור — כל שורה היא "סטודנט X רשום לקורס Y":
+CREATE TABLE enrollments (
+  student_id INT REFERENCES students(id),
+  course_id  INT REFERENCES courses(id),
+  enrolled_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (student_id, course_id)   -- composite PK מונע כפילויות
+);</code></pre>
+
+<p>שים לב: ל-junction table אפשר להוסיף תכונות משלה (כמו <code>enrolled_at</code>) — כי הקשר עצמו הוא ישות עם מידע.</p>
+
+<h3>ER Diagram</h3>
+<p>לפני כתיבת סכמה, מציירים <strong>Entity-Relationship diagram</strong> — תרשים של הטבלאות והקשרים. גם סקיצה על נייר עוזרת לתפוס בעיות מוקדם. הסימון הנפוץ הוא "crow's foot" (רגל עורב) שמראה 1:1 / 1:N / M:N ויזואלית. השקעה של 20 דקות בתרשים חוסכת migration כואב בעתיד.</p>
+
+<hr>
+
+<h2 id="s3">3. Normalization — 1NF עד 3NF</h2>
+
+<p>Normalization הוא תהליך ארגון הטבלאות כדי <strong>למנוע כפילות ואי-עקביות</strong>. הרעיון המרכזי: כל עובדה נשמרת <strong>במקום אחד בדיוק</strong>. אם אותו מידע חוזר בכמה מקומות — עדכון עלול לפספס חלק, ונוצרת אי-עקביות.</p>
+
+<h3>הבעיה — טבלה לא מנורמלת</h3>
+<pre><code>-- ❌ הכל בטבלה אחת — כפילות ובעיות:
+orders:
+  id | customer_name | customer_email    | product | price
+  1  | Eliya         | eliya@x.com       | Laptop  | 5000
+  2  | Eliya         | eliya@x.com       | Mouse   | 100
+-- שם ומייל של Eliya חוזרים. אם המייל משתנה — צריך לעדכן כל שורה.
+-- ואם מפספסים אחת — יש שני מיילים סותרים לאותו לקוח.</code></pre>
+
+<h3>שלוש הצורות הראשונות</h3>
+<ul>
+<li><strong>1NF (First Normal Form)</strong> — כל תא מכיל ערך אטומי אחד (לא רשימות/מבנים בתוך תא), ולכל שורה מזהה ייחודי. אין עמודה <code>tags = "a,b,c"</code>.</li>
+<li><strong>2NF</strong> — עומד ב-1NF, וכל עמודה לא-מפתח תלויה ב<em>כל</em> ה-PK (רלוונטי כשיש composite PK). אין תלות בחלק מהמפתח.</li>
+<li><strong>3NF</strong> — עומד ב-2NF, ואין תלות בין עמודות לא-מפתח (transitive dependency). אם <code>zip</code> קובע <code>city</code>, ה-city לא צריך לשבת בטבלת ההזמנות.</li>
+</ul>
+
+<h3>הפתרון המנורמל</h3>
+<pre><code>-- ✅ מפרידים ל-entities נפרדים:
+customers: id | name  | email
+           1  | Eliya | eliya@x.com     -- העובדה נשמרת פעם אחת
+
+orders:    id | customer_id | product | price
+           1  | 1           | Laptop  | 5000
+           2  | 1           | Mouse   | 100
+-- עכשיו שינוי מייל = עדכון שורה אחת. אין אפשרות לאי-עקביות.</code></pre>
+
+<p>כלל אצבע מעשי: <strong>3NF הוא היעד לרוב הסכמות ה-transactional (OLTP).</strong> אם אתה מוצא את עצמך משכפל אותו מידע בכמה שורות — כנראה חסרה נורמליזציה, וזה מוביל לבאגי עקביות.</p>
+
+<hr>
+
+<h2 id="s4">4. Denormalization — מתי לשבור את הכללים בכוונה</h2>
+
+<p>נורמליזציה מונעת כפילות — אבל היא <strong>מחייבת JOINs</strong> כדי לאחד את המידע בחזרה, ו-JOINs עולים בביצועים. <strong>Denormalization</strong> הוא ההיפוך המכוון: לשכפל נתונים בכוונה כדי להאיץ קריאות.</p>
+
+<pre><code>-- מנורמל: כדי להציג הזמנה עם שם הלקוח צריך JOIN בכל קריאה.
+-- denormalized: שומרים גם customer_name בטבלת orders (משוכפל).
+orders: id | customer_id | customer_name | product | price
+-- קריאה מהירה (בלי JOIN), אבל שינוי שם לקוח = עדכון בכמה מקומות.</code></pre>
+
+<h3>ה-tradeoff הבסיסי</h3>
+<table>
+<tr><th></th><th>Normalized</th><th>Denormalized</th></tr>
+<tr><td>כפילות</td><td>מינימלית</td><td>מכוונת</td></tr>
+<tr><td>עקביות</td><td>קלה לשמור</td><td>קשה (עדכון בכמה מקומות)</td></tr>
+<tr><td>קריאה</td><td>איטית יותר (JOINs)</td><td>מהירה</td></tr>
+<tr><td>כתיבה</td><td>פשוטה</td><td>מורכבת</td></tr>
+</table>
+
+<blockquote>
+<p><strong>העצה שלי:</strong> <strong>נרמל כברירת מחדל, denormalize רק כשמדדת בעיית ביצועים אמיתית.</strong> denormalization מוקדם הוא מקור לבאגי עקביות ("למה השם שונה בשני מקומות?"). זה כלי אופטימיזציה מודע, לא נקודת פתיחה. וכשאתה כן עושה denormalize — תעד למה, ותבנה מנגנון שמסנכרן את העותקים (trigger, או עדכון באפליקציה). זה מקביל בדיוק ל-caching מ-System Design: אותו tradeoff של מהירות מול טריות/עקביות.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s5">5. Keys — Surrogate מול Natural, Auto-increment מול UUID</h2>
+
+<p>בחירת ה-primary key נראית טריוויאלית אבל יש לה השלכות אמיתיות.</p>
+
+<h3>Natural מול Surrogate key</h3>
+<ul>
+<li><strong>Natural key</strong> — מזהה מהעולם האמיתי (email, ת"ז, ISBN). חיסרון: יכול להשתנות (אנשים מחליפים מייל), ואז כל ה-FKs שבורים. לרוב <strong>נמנעים</strong> מזה כ-PK.</li>
+<li><strong>Surrogate key</strong> — מזהה מלאכותי חסר משמעות (<code>id</code> אוטומטי או UUID). לא משתנה לעולם, יציב. <strong>זו הבחירה המומלצת ברוב המקרים.</strong></li>
+</ul>
+
+<h3>Auto-increment מול UUID — ה-tradeoff המעשי</h3>
+<table>
+<tr><th></th><th>Auto-increment (BIGINT)</th><th>UUID</th></tr>
+<tr><td>גודל</td><td>קטן (8 bytes)</td><td>גדול (16 bytes)</td></tr>
+<tr><td>ביצועי index</td><td>מעולים (רציף)</td><td>פחות טובים (אקראי)*</td></tr>
+<tr><td>ניחוש/אבטחה</td><td>ניתן לניחוש (1,2,3...)</td><td>לא ניתן לניחוש</td></tr>
+<tr><td>יצירה מבוזרת</td><td>קשה (צריך תיאום)</td><td>קל (כל שרת מייצר לבד)</td></tr>
+<tr><td>מיזוג/sharding</td><td>התנגשויות</td><td>ייחודי גלובלית</td></tr>
+</table>
+
+<p>*הערה: UUIDv7 (מבוסס-זמן, חדש יחסית) פותר את בעיית האקראיות ב-index ומשלב את היתרונות של שניהם — שווה להכיר.</p>
+
+<blockquote>
+<p><strong>מתי מה:</strong> <code>BIGINT</code> auto-increment למערכת פנימית פשוטה (מהיר, קטן). <strong>UUID</strong> כשצריך: יצירת IDs מבוזרת (כמה שרתים/מכשירים), הסתרת מספר הרשומות מהחוץ (אבטחה — ID רץ חושף כמה משתמשים יש), או מיזוג נתונים ממקורות שונים. ב-Postgres יש טיפוס <code>UUID</code> ייעודי — אל תשמור UUID כ-<code>VARCHAR</code>, זה מבזבז מקום.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s6">6. ACID מול BASE — שתי פילוסופיות</h2>
+
+<p>כיסינו ACID במדריך SQL. כאן נעמיד אותו מול הפילוסופיה הנגדית — BASE — כי ההבנה הזו היא מה שמסביר את ההבדל בין עולם ה-SQL לעולם ה-NoSQL.</p>
+
+<h3>ACID (עולם ה-SQL)</h3>
+<p>Atomicity, Consistency, Isolation, Durability (ראה מדריך SQL פרק 14). הפילוסופיה: <strong>עקביות מעל הכל</strong>. עדיף לדחות פעולה מאשר להשאיר נתונים במצב לא-עקבי. מתאים לכסף, מלאי, כל דבר שחייב להיות מדויק.</p>
+
+<h3>BASE (עולם ה-NoSQL)</h3>
+<p>ראשי תיבות (קצת מאולצים): <strong>B</strong>asically <strong>A</strong>vailable, <strong>S</strong>oft state, <strong>E</strong>ventual consistency. הפילוסופיה ההפוכה: <strong>זמינות וסקייל מעל עקביות מיידית</strong>. המערכת תמיד עונה, גם אם הנתון מעט ישן, ומתעדכן "בסופו של דבר" (זוכר eventual consistency מ-System Design פרק 7?).</p>
+
+<table>
+<tr><th></th><th>ACID</th><th>BASE</th></tr>
+<tr><td>עדיפות</td><td>עקביות</td><td>זמינות + סקייל</td></tr>
+<tr><td>עולם</td><td>SQL רלציוני</td><td>הרבה NoSQL</td></tr>
+<tr><td>מתאים ל-</td><td>כסף, מלאי, הזמנות</td><td>feeds, לוגים, analytics, סשנים</td></tr>
+</table>
+
+<p>זה לא "טוב מול רע" — זה בחירת כלי לפי הצורך. אותה מערכת יכולה להשתמש בשניהם: Postgres (ACID) לתשלומים, ו-Cassandra (BASE) ללוגים. חלק מהבשלות ההנדסית היא לזהות איזה נתון דורש איזו פילוסופיה.</p>
+
+<hr>
+
+<h2 id="s7">7. SQL מול NoSQL — ההחלטה לפי צורת הנתונים</h2>
+
+<p>סקרנו את משפחות ה-NoSQL ב-System Design (פרק 8). כאן ההחלטה המעשית: <strong>מתי לבחור מה</strong>, לפי צורת הנתונים ודפוסי הגישה — לא לפי אופנה.</p>
+
+<h3>בחר SQL כאשר</h3>
+<ul>
+<li>הנתונים <strong>מובנים ועם קשרים</strong> ברורים (users, orders, products).</li>
+<li>אתה צריך <strong>transactions ו-ACID</strong> (כסף, מלאי).</li>
+<li>אתה צריך <strong>queries גמישים ולא-צפויים</strong> (JOINs, aggregations, דוחות אד-הוק).</li>
+<li>עקביות חשובה יותר מסקייל אינסופי.</li>
+</ul>
+
+<h3>בחר NoSQL כאשר</h3>
+<ul>
+<li>נפח/throughput <strong>עצום</strong> שקשה ל-DB רלציוני יחיד (אבל — זכור, Postgres מגיע רחוק מאוד).</li>
+<li>הנתונים <strong>לא-מובנים או משתנים</strong> (schema גמיש).</li>
+<li>דפוסי הגישה <strong>ידועים ופשוטים</strong> מראש (lookup לפי מפתח, ללא JOINs מורכבים).</li>
+<li>מוכן לוותר על עקביות מיידית תמורת זמינות/סקייל.</li>
+</ul>
+
+<blockquote>
+<p><strong>העמדה שאני ממליץ (וגם רוב המנוסים):</strong> ברירת המחדל היא <strong>SQL (Postgres)</strong>, וזה נכון ל-90% מהפרויקטים. Postgres מטפל ב-JSON, full-text, ואפילו vectors — לפני שאתה "צריך NoSQL", בדוק אם Postgres לא פותר את זה. ה-NoSQL הכי שימושי למפתח Backend הוא דווקא לא כתחליף אלא כ<strong>משלים</strong>: Redis ל-caching/sessions לצד Postgres. אל תבחר MongoDB "כי מודרני" ואז תתגעגע ל-transactions ו-JOINs.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s8">8. NoSQL Data Modeling — לחשוב הפוך</h2>
+
+<p>זה הפרק שהכי שווה את זמנך, כי כאן טועים הכי הרבה: אנשים לוקחים NoSQL וממדלים אותו כמו SQL — וזה נכשל. <strong>NoSQL דורש היפוך תפיסתי.</strong></p>
+
+<h3>ההבדל המהותי</h3>
+<ul>
+<li><strong>SQL:</strong> ממדלים לפי <strong>הנתונים</strong> (נרמול, entities נפרדים), וה-JOINs מרכיבים בזמן ה-query. "אחסן נקי, שאל בגמישות".</li>
+<li><strong>NoSQL:</strong> ממדלים לפי <strong>דפוסי הגישה</strong> (queries). קודם שואלים "אילו queries ארוץ?", ואז מעצבים את הנתונים כדי לשרת אותם ישירות — לרוב עם <strong>denormalization ו-embedding</strong>, כי אין JOINs יעילים.</li>
+</ul>
+
+<h3>דוגמה: בלוג עם posts ו-comments</h3>
+<pre><code>// גישת SQL — נרמול, שתי טבלאות, JOIN:
+posts(id, title, body)
+comments(id, post_id, text)     // JOIN כדי להציג פוסט + תגובות
+
+// גישת NoSQL (document, כמו MongoDB) — embedding:
+{
+  "_id": "post1",
+  "title": "...",
+  "body": "...",
+  "comments": [                  // התגובות מוטמעות בתוך הפוסט
+    { "text": "Great!", "author": "Eliya" },
+    { "text": "Thanks", "author": "Dan" }
+  ]
+}
+// קריאת פוסט אחד = מסמך אחד, בלי JOIN. מהיר מאוד לדפוס "הצג פוסט".</code></pre>
+
+<h3>Embedding מול Referencing</h3>
+<p>ההחלטה המרכזית ב-document DBs:</p>
+<ul>
+<li><strong>Embedding</strong> (הטמעה) — נתונים קשורים בתוך אותו מסמך. מהיר לקריאה, אטומי לכתיבה. טוב כשהנתונים "נקראים ביחד" ולא גדלים בלי גבול.</li>
+<li><strong>Referencing</strong> (הפניה) — מסמך מצביע לאחר (כמו FK). טוב לקשרים M:N, או כשהנתון המוטמע גדול/משותף/גדל ללא הגבלה (למשל, פוסט עם מיליון תגובות — לא מטמיעים).</li>
+</ul>
+
+<blockquote>
+<p><strong>הכלל:</strong> ב-NoSQL, <strong>denormalization היא ברירת המחדל, לא חריגה.</strong> משכפלים נתונים כדי לשרת query במסמך אחד. המחיר: עדכון נתון משוכפל דורש עדכון בכמה מקומות (בדיוק ה-tradeoff מפרק 4, רק שכאן הוא הנורמה). לכן NoSQL מבריק כשדפוסי הגישה יציבים וידועים — ובעייתי כשהם משתנים, כי שינוי דפוס עלול לדרוש מידול מחדש של הנתונים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Redis לעומק — מבני נתונים ושימושים</h2>
+
+<p>Redis הוא ה-NoSQL שכל מפתח Backend חייב להכיר — לא כתחליף ל-DB אלא כ<strong>שכבה מהירה לצד ה-DB</strong>. הוא in-memory (הכל ב-RAM), ולכן מהיר בצורה קיצונית. הטעות הנפוצה: לחשוב עליו רק כ"cache". הוא הרבה יותר — key-value store עם <strong>מבני נתונים</strong> עשירים.</p>
+
+<h3>מבני הנתונים והשימושים שלהם</h3>
+<table>
+<tr><th>מבנה</th><th>מה זה</th><th>שימוש קלאסי</th></tr>
+<tr><td><strong>String</strong></td><td>ערך פשוט (טקסט/מספר)</td><td>cache, מונים (<code>INCR</code>)</td></tr>
+<tr><td><strong>Hash</strong></td><td>שדות→ערכים (כמו object)</td><td>אובייקטים (session, user profile)</td></tr>
+<tr><td><strong>List</strong></td><td>רשימה מסודרת</td><td>תורים, feeds אחרונים</td></tr>
+<tr><td><strong>Set</strong></td><td>אוסף ייחודי לא-מסודר</td><td>tags, "מי אונליין", ייחודיות</td></tr>
+<tr><td><strong>Sorted Set</strong></td><td>set עם score לכל איבר</td><td>leaderboards, priority queues</td></tr>
+</table>
+
+<h3>שימושים נפוצים ב-Backend</h3>
+<ul>
+<li><strong>Cache</strong> — cache-aside (מדריך System Design פרק 5). השימוש הכי נפוץ.</li>
+<li><strong>Sessions</strong> — אחסון session data מהיר ומשותף בין שרתים (מדריך Authentication).</li>
+<li><strong>Rate limiting</strong> — מונה מבוזר עם <code>INCR</code> + TTL (System Design פרק 12).</li>
+<li><strong>Leaderboards</strong> — Sorted Set נותן דירוג בזמן אמת ב-O(log n): <code>ZADD</code>, <code>ZRANGE</code>.</li>
+<li><strong>Distributed locks</strong> — <code>SET key value NX EX 30</code> ליצירת lock מבוזר (למניעת עיבוד כפול).</li>
+<li><strong>Pub/Sub</strong> — הודעות בזמן אמת בין שירותים.</li>
+</ul>
+
+<pre><code># מונה עם תפוגה — rate limiting בשתי פקודות:
+INCR  user:42:requests        # מגדיל ומחזיר
+EXPIRE user:42:requests 60    # פג אחרי דקה
+
+# Leaderboard:
+ZADD leaderboard 500 "player1"
+ZADD leaderboard 800 "player2"
+ZREVRANGE leaderboard 0 9 WITHSCORES   # top 10</code></pre>
+
+<h3>Persistence — Redis לא רק בזיכרון</h3>
+<p>נקודה שמפתיעה: Redis יכול לשמור לדיסק (persistence) כדי לשרוד restart. שתי אפשרויות: <strong>RDB</strong> (snapshots תקופתיים — מהיר, אבל עלול לאבד את הרגעים האחרונים) ו-<strong>AOF</strong> (append-only log של כל פעולה — עמיד יותר, איטי יותר). ל-cache טהור אפשר בלי persistence; ל-data שחשוב לשרוד — הפעל AOF.</p>
+
+<blockquote>
+<p><strong>אזהרה:</strong> Redis הוא in-memory — ה-RAM מוגבל ויקר. אל תשמור בו הכל. הוא לנתונים "חמים" (נגישים הרבה, זמניים, או שאפשר לשחזר). ה-source of truth נשאר ה-DB הקבוע (Postgres). Redis הוא שכבת מהירות, לא מסד הנתונים הראשי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s10">10. Connection Pooling</h2>
+
+<p>נושא מעשי שמפילים עליו הרבה מפתחים, ולא מדברים עליו מספיק. פתיחת חיבור ל-DB היא <strong>יקרה</strong> — היא כוללת TCP handshake, אימות, והקצאת משאבים בשרת ה-DB (זוכר מ-Networking כמה handshake עולה?). לפתוח חיבור חדש לכל query זה בזבזני ואיטי.</p>
+
+<h3>הפתרון: pool של חיבורים</h3>
+<p>Connection pool מחזיק מספר קבוע של חיבורים <strong>פתוחים ומוכנים</strong>. במקום לפתוח חיבור חדש, האפליקציה "שואלת" חיבור מה-pool, משתמשת בו, ומחזירה אותו — בלי handshake בכל פעם:</p>
+<div style="direction:ltr;text-align:left;background:#f4f5fe;border:1px solid #d9ddf9;border-radius:8px;padding:12px 18px;font-family:monospace;font-size:0.85em;line-height:1.7;">
+Without pool:  request → open connection → query → close  (יקר, כל פעם)<br>
+With pool:     request → borrow from pool → query → return to pool  (מהיר)
+</div>
+
+<h3>למה זה קריטי במיוחד</h3>
+<p>ל-DB יש <strong>גבול קשיח</strong> על מספר החיבורים (ב-Postgres, ברירת מחדל ~100). בלי pool, אפליקציה עם תעבורה גבוהה תפתח מאות חיבורים ותמצה את הגבול — ואז <code>"too many connections"</code>, וכל האפליקציה נופלת. עם pool, אתה שולט במספר החיבורים המקסימלי.</p>
+
+<blockquote>
+<p><strong>מעשי ל-NestJS:</strong> TypeORM/Prisma כוללים connection pooling מובנה — הגדר את <code>max</code> connections לפי מה שה-DB תומך ומחולק במספר ה-instances של האפליקציה (אם יש 5 instances וה-DB תומך ב-100, כל אחד לא יותר מ-~20). בסקייל גבוה או serverless, מוסיפים <strong>pooler חיצוני</strong> כמו <strong>PgBouncer</strong> שמנהל את החיבורים מול Postgres. זו אחת הסיבות הנפוצות ל-"ה-DB נופל תחת עומס" — לא ה-queries, אלא מיצוי החיבורים.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. ORMs מול Raw SQL</h2>
+
+<p>ORM (Object-Relational Mapping) ממפה טבלאות למחלקות/אובייקטים בקוד, כך שאתה עובד עם objects במקום לכתוב SQL. ב-NestJS אלה TypeORM ו-Prisma.</p>
+
+<h3>ה-tradeoff</h3>
+<table>
+<tr><th></th><th>ORM</th><th>Raw SQL</th></tr>
+<tr><td>פרודוקטיביות</td><td>גבוהה (פחות boilerplate)</td><td>נמוכה יותר</td></tr>
+<tr><td>Type safety</td><td>✅ (במיוחד Prisma)</td><td>ידני</td></tr>
+<tr><td>Migrations</td><td>מובנה</td><td>ידני</td></tr>
+<tr><td>queries מורכבים</td><td>מסורבל/מוגבל</td><td>✅ שליטה מלאה</td></tr>
+<tr><td>ביצועים</td><td>עלול להסתיר בעיות</td><td>שקוף</td></tr>
+</table>
+
+<h3>מלכודת ה-N+1 (שוב) — עכשיו בהקשר ORM</h3>
+<p>זו הטעות מספר אחת עם ORMs, וכיסינו אותה במדריך SQL. ORM מקל כל כך לגשת לנתונים קשורים שקל לא לשים לב שכל גישה היא query נפרד:</p>
+<pre><code>// ❌ N+1 עם ORM — נראה תמים, הורג ביצועים:
+const users = await userRepo.find();        // query 1
+for (const user of users) {
+  console.log(user.orders);                 // query נוסף לכל user!  (N queries)
+}
+
+// ✅ eager loading / join בבת אחת:
+const users = await userRepo.find({ relations: ["orders"] });  // query אחד</code></pre>
+
+<blockquote>
+<p><strong>העמדה המאוזנת:</strong> השתמש ב-ORM לרוב העבודה (CRUD, queries פשוטים) — הוא חוסך זמן ונותן type safety. אבל <strong>למד SQL היטב</strong> (יש לך כבר מדריך שלם) כי: (1) תצטרך raw SQL ל-queries מורכבים/מאופטמים, (2) תזהה מתי ה-ORM מייצר SQL גרוע (הפעל query logging!), ו-(3) לא תיפול ל-N+1. מפתח שנשען על ORM בלי להבין SQL — כותב קוד איטי בלי לדעת למה. ה-ORM הוא נוחות, לא תחליף להבנה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Migrations — שינוי סכמה ב-Production בבטחה</h2>
+
+<p>הסכמה משתנה כל הזמן — עמודה חדשה, טבלה חדשה, שינוי טיפוס. <strong>Migration</strong> הוא קובץ מגורסן שמתאר שינוי סכמה, כך שאפשר להחיל אותו בעקביות בכל הסביבות (dev, staging, production) ולעקוב אחרי ההיסטוריה ב-git.</p>
+
+<h3>איך זה עובד</h3>
+<pre><code>// migration עם up (החלה) ו-down (ביטול):
+export class AddPhoneToUsers {
+  async up(q) {
+    await q.query(`ALTER TABLE users ADD COLUMN phone VARCHAR(20)`);
+  }
+  async down(q) {
+    await q.query(`ALTER TABLE users DROP COLUMN phone`);
+  }
+}</code></pre>
+
+<p>ה-ORM עוקב אילו migrations כבר רצו (בטבלה מיוחדת), ומריץ רק את החדשים. זה נותן היסטוריה מסודרת ויכולת rollback.</p>
+
+<h3>הכללים לשינויים בטוחים ב-Production</h3>
+<p>זה קריטי — migration רשלני יכול להפיל את ה-production או לנעול טבלה לדקות:</p>
+<ul>
+<li><strong>עמודה חדשה — תמיד nullable או עם DEFAULT.</strong> <code>ADD COLUMN ... NOT NULL</code> בלי default על טבלה קיימת נכשל/נועל.</li>
+<li><strong>שינויים הרסניים בשלבים.</strong> למחוק עמודה? קודם הפסק להשתמש בה בקוד (deploy), ורק ב-deploy הבא מחק אותה. אחרת קוד ישן שעדיין רץ יקרוס.</li>
+<li><strong>היזהר מ-locks.</strong> על טבלאות גדולות, שינויים מסוימים נועלים את הטבלה וחוסמים תעבורה. ב-Postgres יש דרכים לא-חוסמות (למשל <code>CREATE INDEX CONCURRENTLY</code>).</li>
+<li><strong>backward compatibility.</strong> בזמן deploy, הקוד הישן והחדש רצים במקביל לרגע — הסכמה צריכה לעבוד עם שניהם.</li>
+<li><strong>גבה לפני migration הרסני</strong>, ותרגל את ה-<code>down</code>.</li>
+</ul>
+
+<blockquote>
+<p><strong>הכלל שמציל:</strong> חשוב על migrations כ<strong>expand-then-contract</strong>: קודם מרחיבים (מוסיפים את החדש בלי לשבור את הישן), פורסים קוד שמשתמש בחדש, ורק אז מכווצים (מוחקים את הישן). לעולם לא לשנות סכמה וקוד ב"מכה" אחת על טבלה חיה — זה מתכון ל-downtime.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13">13. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>Data modeling לפני קוד.</strong> צייר ER, נרמל ל-3NF, ורק אז <code>CREATE TABLE</code>. זה הכי יקר לתקן.</li>
+<li><strong>נרמל כברירת מחדל, denormalize רק אחרי מדידה.</strong></li>
+<li><strong>אנדקס FKs ועמודות WHERE/JOIN</strong> (מדריך SQL) — FK לא-מאונדקס הוא בעיה נפוצה.</li>
+<li><strong>Surrogate keys כברירת מחדל</strong> (id/UUID), לא natural keys משתנים.</li>
+<li><strong>אכוף constraints ב-DB</strong>, לא רק באפליקציה — קו ההגנה האחרון.</li>
+<li><strong>Connection pool תמיד</strong>, עם max מותאם ל-DB ולמספר ה-instances.</li>
+<li><strong>הפעל query logging בפיתוח</strong> — לתפוס N+1 ו-SQL גרוע של ה-ORM.</li>
+<li><strong>Migrations בשלבים (expand-contract)</strong>, לעולם לא שינוי הרסני חד-פעמי על טבלה חיה.</li>
+<li><strong>גבה, ותרגל שחזור.</strong> (חוזר מ-SQL — כי זה הכי חשוב והכי מוזנח).</li>
+<li><strong>SQL כברירת מחדל, NoSQL כמשלים.</strong> Redis לצד Postgres, לא במקומו.</li>
+</ol>
+
+<h3>טעויות נפוצות</h3>
+<ul>
+<li><strong>לשמור רשימה כ-CSV בעמודה</strong> (<code>tags = "a,b,c"</code>) — שובר 1NF, בלתי-שאיל. השתמש בטבלת קישור או array/JSONB.</li>
+<li><strong>FLOAT לכסף</strong> — שגיאות עיגול (מדריך SQL). תמיד NUMERIC.</li>
+<li><strong>N+1 queries</strong> — הכי נפוצה עם ORMs.</li>
+<li><strong>אין connection pool / pool קטן מדי</strong> — "too many connections" תחת עומס.</li>
+<li><strong>denormalization מוקדם</strong> — באגי עקביות בלי צורך אמיתי.</li>
+<li><strong>NoSQL בגלל אופנה</strong> — ואז מתגעגעים ל-transactions ו-JOINs.</li>
+</ul>
+
+<hr>
+
+<h2 id="s14">14. תרגילים</h2>
+
+<p><strong>1 — Data Modeling.</strong> עצב סכמה למערכת בלוג: users, posts, comments, tags (פוסט יכול לכמה tags, tag על כמה פוסטים). זהה את סוגי הקשרים והוסף junction table איפה שצריך.</p>
+
+<p><strong>2 — Normalization.</strong> נתונה טבלה שטוחה של הזמנות עם שם לקוח, מייל ומוצר משוכפלים בכל שורה. נרמל אותה ל-3NF וצייר את הטבלאות המתקבלות.</p>
+
+<p><strong>3 — SQL מול NoSQL.</strong> לכל אחד מאלה, בחר SQL או NoSQL ונמק: (א) מערכת בנקאית, (ב) לוגים של אפליקציה, (ג) קטלוג מוצרים עם attributes משתנים, (ד) leaderboard בזמן אמת.</p>
+
+<p><strong>4 — NoSQL Modeling.</strong> עצב מודל document (כמו MongoDB) לפוסט בבלוג עם תגובות. החלט embedding מול referencing לתגובות, ונמק — מה קורה אם לפוסט יכולות להיות מיליון תגובות?</p>
+
+<p><strong>5 — Redis.</strong> באיזה מבנה נתונים של Redis תשתמש ל: (א) cache של פרופיל משתמש, (ב) rate limiter, (ג) leaderboard, (ד) "מי מחובר עכשיו"? נמק כל בחירה.</p>
+
+<p><strong>6 — Migration.</strong> אתה צריך להוסיף עמודה <code>NOT NULL</code> לטבלת users עם 10M שורות ב-production, בלי downtime. תאר את השלבים (רמז: expand-contract).</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים לקחת: <strong>data modeling הוא ההחלטה הכי יקרה לתיקון</strong> — השקע בו זמן מראש (ER, נרמול, בחירת keys), כי migration על מיליוני שורות הוא כאב אמיתי. והשני: <strong>SQL הוא הבסיס, NoSQL הוא משלים</strong> — Postgres מגיע רחוק מאוד, ו-Redis לצידו מכסה את רוב מה שצריך; NoSQL "אמיתי" נכנס רק בסקייל/צורת-נתונים ספציפיים, ואז ממדלים לפי דפוסי הגישה, לא לפי הנתונים.</p>
+
+<p>המדריך הזה חיבר בין SQL (השכבה הנמוכה — queries) ל-System Design (הגבוהה — סקייל): data modeling ובחירת DB הם השכבה שמחברת ביניהן.</p>
+
+<p>הצעד הבא: קח את סכמת הבלוג מתרגיל 1, בנה אותה ב-Postgres בתוך פרויקט NestJS, הוסף Redis ל-caching, ותכתוב migration אחד נכון. ואז נמשיך לפי הסדר — הנושא הבא ברשימה הוא <strong>DevOps/תשתית (Docker, CI/CD, Cloud)</strong>. 🚀</p>
+
+</body>
+</html>

@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Networking — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #0e7490; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #0e7490; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #155e75; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #ecfaff; }
+  a { color: #0e7490; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f0fbff; border: 1px solid #cbeef7; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f0fbff; border: 1px solid #cbeef7; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>Networking — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>המשך לסדרה (TypeScript, NestJS, Authentication). המדריך הזה מסביר איך מידע עובר ברשת — מהרגע שהקוד שלך קורא <code>fetch()</code> ועד שהבייטים מגיעים לשרת וחוזרים.</p>
+<p>הדגש מוטה לשכבות שמפתח Backend באמת נוגע בהן (Transport ומעלה: TCP, DNS, HTTP, TLS), עם סקירה מהירה של השכבות הנמוכות כדי שהתמונה תהיה שלמה. עברית להסבר, אנגלית למונחים ולפקודות.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא ושתי המפות: OSI ו-TCP/IP</a></li>
+<li><a href="#s2">השכבות הנמוכות — Physical ו-Data Link</a></li>
+<li><a href="#s3">שכבת ה-Network — IP, Addressing, CIDR, NAT, Routing</a></li>
+<li><a href="#s4">Ports ו-Sockets</a></li>
+<li><a href="#s5">Transport — TCP מול UDP</a></li>
+<li><a href="#s6">DNS — מערכת השמות</a></li>
+<li><a href="#s7">HTTP — פרוטוקול ה-Web</a></li>
+<li><a href="#s8">HTTPS ו-TLS — הצפנה ואמון</a></li>
+<li><a href="#s9">גרסאות HTTP — 1.1, 2, 3</a></li>
+<li><a href="#s10">WebSockets ותקשורת בזמן אמת</a></li>
+<li><a href="#s11">Proxies, Load Balancers ו-CDN</a></li>
+<li><a href="#s12">אבטחת רשת — Firewalls, CORS, מתקפות</a></li>
+<li><a href="#s13">כלי דיבוג רשת</a></li>
+<li><a href="#s14">סיכום: מה קורה כשמקלידים URL</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא ושתי המפות: OSI ו-TCP/IP</h2>
+
+<p>רשת מחשבים היא בסך הכול <strong>העברת בייטים מנקודה אחת לאחרת</strong>. מה שהופך את זה למסובך הוא שצריך לפתור המון בעיות בו-זמנית: איך מוצאים את היעד, איך מוודאים שהמידע הגיע שלם, איך מזהים איזו אפליקציה אמורה לקבל אותו, איך מצפינים. הפתרון ההנדסי לכל הבלגן הזה הוא <strong>שכבות (layers)</strong>.</p>
+
+<h3>למה שכבות?</h3>
+<p>כל שכבה פותרת בעיה אחת, ומסתמכת על השכבה שמתחתיה בלי לדעת איך היא עובדת. HTTP לא צריך לדעת אם המידע עובר בכבל נחושת או ב-WiFi — הוא סומך על שכבות התחתונות שיעבירו בייטים. זו הפשטה (abstraction) — בדיוק כמו בקוד: פונקציה משתמשת בפונקציה אחרת בלי לדעת את המימוש שלה.</p>
+
+<h3>מודל OSI — 7 שכבות (התיאורטי)</h3>
+<p>המודל הקלאסי ללימוד. בפועל לא מיישמים אותו ככתבו, אבל המונחים שלו בכל מקום:</p>
+
+<table>
+<tr><th>#</th><th>שכבה</th><th>אחראית על</th><th>דוגמה</th></tr>
+<tr><td>7</td><td>Application</td><td>מה שהאפליקציה מדברת</td><td>HTTP, DNS, SMTP</td></tr>
+<tr><td>6</td><td>Presentation</td><td>קידוד, הצפנה</td><td>TLS, JSON</td></tr>
+<tr><td>5</td><td>Session</td><td>ניהול שיחות</td><td>sessions</td></tr>
+<tr><td>4</td><td>Transport</td><td>מסירה בין תהליכים</td><td>TCP, UDP</td></tr>
+<tr><td>3</td><td>Network</td><td>ניתוב בין רשתות</td><td>IP</td></tr>
+<tr><td>2</td><td>Data Link</td><td>מסירה ברשת מקומית</td><td>Ethernet, MAC</td></tr>
+<tr><td>1</td><td>Physical</td><td>אותות פיזיים</td><td>כבלים, WiFi</td></tr>
+</table>
+
+<h3>מודל TCP/IP — 4 שכבות (המעשי)</h3>
+<p>זה מה שהאינטרנט <strong>באמת</strong> מריץ. פשוט יותר, וזה המודל שכדאי להחזיק בראש:</p>
+
+<table>
+<tr><th>שכבה</th><th>מקבילה ל-OSI</th><th>פרוטוקולים</th></tr>
+<tr><td>Application</td><td>5–7</td><td>HTTP, DNS, TLS, WebSocket</td></tr>
+<tr><td>Transport</td><td>4</td><td>TCP, UDP</td></tr>
+<tr><td>Internet</td><td>3</td><td>IP, ICMP</td></tr>
+<tr><td>Link</td><td>1–2</td><td>Ethernet, WiFi</td></tr>
+</table>
+
+<h3>איך זה עובד בפועל: Encapsulation</h3>
+<p>כשאתה שולח בקשה, כל שכבה <strong>עוטפת</strong> את המידע של השכבה שמעליה עם ה-header שלה — כמו מעטפות בתוך מעטפות:</p>
+
+<div class="flow">
+[ HTTP request ]                              ← Application<br>
+[ TCP header | HTTP request ]                 ← Transport (מוסיף port)<br>
+[ IP header | TCP | HTTP ]                    ← Internet (מוסיף IP)<br>
+[ Frame | IP | TCP | HTTP ]                   ← Link (מוסיף MAC)<br>
+→ הבייטים עוברים בכבל →<br>
+בצד השני: כל שכבה מקלפת את ה-header שלה בסדר הפוך
+</div>
+
+<p>זה הרעיון המרכזי של הכל: <strong>כל שכבה מוסיפה עטיפה בשליחה ומקלפת אותה בקבלה.</strong> ה-HTTP request שלך "רוכב" בתוך TCP segment, שרוכב בתוך IP packet, שרוכב בתוך Ethernet frame.</p>
+
+<hr>
+
+<h2 id="s2">2. השכבות הנמוכות — Physical ו-Data Link</h2>
+
+<p>כמו שאמרתי בהתחלה — אלה השכבות שכמפתח Backend כמעט לא תיגע בהן ישירות, אז נעבור עליהן בקצרה כדי שהתמונה תהיה שלמה.</p>
+
+<h3>Physical Layer</h3>
+<p>האותות הפיזיים ממש — חשמל בכבל נחושת, אור בסיב אופטי, גלי רדיו ב-WiFi. כאן בייט הופך לאות פיזי וחזרה. לא מעניין אותנו מעבר לזה.</p>
+
+<h3>Data Link Layer ו-MAC addresses</h3>
+<p>השכבה שמעבירה מידע <strong>בתוך רשת מקומית אחת</strong> (LAN). כאן חי ה-<strong>MAC address</strong> — מזהה ייחודי (48 ביט, למשל <code>00:1B:44:11:3A:B7</code>) שצרוב בכל כרטיס רשת. ההבחנה החשובה:</p>
+
+<ul>
+<li><strong>MAC address</strong> — קבוע, מזהה כרטיס רשת פיזי, עובד רק ברשת המקומית.</li>
+<li><strong>IP address</strong> — לוגי, ניתן לשינוי, עובד בין רשתות (זו השכבה הבאה).</li>
+</ul>
+
+<p>אנלוגיה: IP הוא כמו כתובת רחוב (משתנה כשעוברים דירה), MAC הוא כמו מספר תעודת זהות (קבוע). ה-<strong>switch</strong> הוא ההתקן שמעביר frames בתוך LAN לפי MAC. פרוטוקול <strong>ARP</strong> מתרגם IP ל-MAC ברשת המקומית. זה כל מה שצריך לדעת ברמת ה-Backend.</p>
+
+<hr>
+
+<h2 id="s3">3. שכבת ה-Network — IP, Addressing, CIDR, NAT, Routing</h2>
+
+<p>כאן מתחיל החלק הרלוונטי. שכבת ה-IP אחראית על <strong>העברת חבילות (packets) בין רשתות שונות</strong> — מהמחשב שלך, דרך עשרות routers, עד לשרת בצד השני של העולם.</p>
+
+<h3>IPv4</h3>
+<p>הכתובת המוכרת: ארבעה מספרים 0–255, למשל <code>192.168.1.10</code>. זה 32 ביט = כ-4.3 מיליארד כתובות. נשמע הרבה, אבל <strong>נגמר</strong> — יש יותר מכשירים מכתובות. שני פתרונות נולדו מזה: NAT (בהמשך) ו-IPv6.</p>
+
+<h3>IPv6</h3>
+<p>הפתרון ארוך-הטווח: 128 ביט, כתובות כמו <code>2001:0db8:85a3::8a2e:0370:7334</code>. כמות אסטרונומית של כתובות (מספיק לכל גרגר חול על כדור הארץ). האימוץ איטי אבל גדל. כמפתח Backend תיתקל בשתיהן — הקוד שלך צריך לתמוך בשתיהן.</p>
+
+<h3>Private מול Public IP</h3>
+<p>הבחנה שחייבים להבין. חלק מהטווחים שמורים לרשתות פרטיות (בית, משרד) ולא ניתנים לניתוב באינטרנט:</p>
+<ul>
+<li><code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code> — פרטיות. הראוטר בבית שלך נותן לכל מכשיר כתובת כזו.</li>
+<li>כל השאר — ציבוריות, ייחודיות גלובלית, ניתנות לניתוב באינטרנט.</li>
+<li><code>127.0.0.1</code> (localhost) — תמיד המכונה עצמך. זה מה ש-<code>localhost:3000</code> מצביע אליו.</li>
+</ul>
+
+<h3>Subnets ו-CIDR</h3>
+<p>כתובת IP מתחלקת לשני חלקים: <strong>network</strong> (איזו רשת) ו-<strong>host</strong> (איזה מכשיר ברשת). ה-<strong>subnet mask</strong> קובע איפה עובר הגבול. הסימון המודרני הוא CIDR — סלאש ומספר:</p>
+
+<pre><code>192.168.1.0/24
+              └─ 24 הביטים הראשונים = network, 8 האחרונים = hosts
+                 כלומר: 192.168.1.0 עד 192.168.1.255 (256 כתובות)
+
+10.0.0.0/16   → 10.0.x.x  (65,536 כתובות)
+10.0.0.0/8    → 10.x.x.x  (16 מיליון כתובות)</code></pre>
+
+<p>ככל שהמספר אחרי הסלאש קטן יותר — הרשת גדולה יותר. זה קריטי כשמגדירים VPC בענן (AWS/GCP), security groups, או כללי firewall — כולם מדברים CIDR.</p>
+
+<h3>NAT — Network Address Translation</h3>
+<p>הקסם שמאפשר לעשרות מכשירים בבית לחלוק כתובת ציבורית אחת. הראוטר <strong>מתרגם</strong> בין הכתובות הפרטיות הפנימיות לכתובת הציבורית היחידה:</p>
+
+<div class="flow">
+מחשב פרטי (192.168.1.10) → ראוטר → אינטרנט<br>
+הראוטר מחליף את כתובת המקור ל-IP הציבורי שלו,<br>
+זוכר את ההתאמה, וכשהתשובה חוזרת — מתרגם בחזרה למכשיר הנכון
+</div>
+
+<p>זו הסיבה שאתה לא יכול "פשוט לגשת" למחשב בבית מבחוץ — הוא מוסתר מאחורי NAT. וזו גם הסיבה שצריך port forwarding כדי לחשוף שרת ביתי.</p>
+
+<h3>Routing</h3>
+<p>איך packet מוצא את דרכו דרך האינטרנט? כל <strong>router</strong> מחזיק טבלת ניתוב ומחליט לאן להעביר את החבילה בצעד הבא (next hop). החבילה קופצת מ-router ל-router (כל קפיצה = "hop") עד היעד. בקנה מידה גלובלי, פרוטוקול <strong>BGP</strong> הוא זה שמנתב בין ספקיות האינטרנט — אבל ברמת ה-Backend מספיק לדעת שזה קורה ושאפשר לראות את המסלול עם <code>traceroute</code> (פרק הכלים).</p>
+
+<hr>
+
+<h2 id="s4">4. Ports ו-Sockets</h2>
+
+<p>ה-IP מביא את החבילה למכונה הנכונה. אבל על מכונה אחת רצים עשרות תהליכים — שרת web, DB, SSH. <strong>איך יודעים לאיזה תהליך המידע שייך?</strong> התשובה: ports.</p>
+
+<h3>מה זה port</h3>
+<p>Port הוא מספר (0–65535) שמזהה תהליך/שירות ספציפי על המכונה. אם IP הוא כתובת הבניין, port הוא מספר הדירה. השילוב <code>IP:port</code> מזהה נקודת קצה ייחודית — למשל <code>93.184.216.34:443</code>.</p>
+
+<h3>Well-known ports שחייבים לזכור</h3>
+<table>
+<tr><th>Port</th><th>שירות</th></tr>
+<tr><td>80</td><td>HTTP</td></tr>
+<tr><td>443</td><td>HTTPS</td></tr>
+<tr><td>22</td><td>SSH</td></tr>
+<tr><td>53</td><td>DNS</td></tr>
+<tr><td>5432</td><td>PostgreSQL</td></tr>
+<tr><td>3306</td><td>MySQL</td></tr>
+<tr><td>6379</td><td>Redis</td></tr>
+<tr><td>27017</td><td>MongoDB</td></tr>
+</table>
+
+<p>הטווח 0–1023 שמור לשירותים מוכרים (צריך הרשאות root כדי להאזין עליהם). זו הסיבה ש-Node שלך רץ על <code>3000</code> ולא על <code>80</code> — פורטים גבוהים לא דורשים הרשאות מיוחדות.</p>
+
+<h3>Socket</h3>
+<p><strong>Socket</strong> הוא נקודת הקצה של תקשורת = השילוב של IP + port + פרוטוקול. חיבור מלא מזוהה על ידי <strong>ארבעה</strong> ערכים: <code>(source IP, source port, dest IP, dest port)</code>. זה מה שמאפשר לשרת אחד לנהל אלפי חיבורים בו-זמנית — כל חיבור הוא צירוף ייחודי של הארבעה. כשאתה כותב <code>app.listen(3000)</code> ב-Node, אתה פותח socket שמאזין על port 3000.</p>
+
+<hr>
+
+<h2 id="s5">5. Transport — TCP מול UDP</h2>
+
+<p>שכבת ה-Transport אחראית על מסירת המידע בין תהליכים. יש שני פרוטוקולים עיקריים, והבחירה ביניהם היא tradeoff קלאסי: <strong>אמינות מול מהירות</strong>.</p>
+
+<h3>TCP — Transmission Control Protocol</h3>
+<p>הפרוטוקול האמין. מבטיח ש<strong>כל</strong> הבייטים יגיעו, <strong>בסדר הנכון</strong>, <strong>בלי כפילויות</strong>. זה מה ש-HTTP, ומכאן רוב ה-Backend, רץ עליו.</p>
+
+<h4>ה-Three-Way Handshake — פתיחת חיבור</h4>
+<p>לפני שמעבירים נתונים, TCP פותח חיבור בשלושה צעדים. חשוב להבין את זה כי זה מסביר latency:</p>
+
+<div class="flow">
+Client → SYN →         Server   ("אני רוצה להתחבר, מספר התחלה X")<br>
+Client ← SYN-ACK ←     Server   ("אישרתי, וגם אני רוצה, מספר Y")<br>
+Client → ACK →         Server   ("אישרתי את שלך")<br>
+→ עכשיו החיבור פתוח, מתחילים להעביר נתונים
+</div>
+
+<p>המשמעות המעשית: כל חיבור TCP חדש עולה <strong>round-trip שלם</strong> לפני שבכלל שולחים בייט של נתונים. זו הסיבה ש-connection reuse (keep-alive) חשוב כל כך לביצועים — נחזור לזה ב-HTTP.</p>
+
+<h4>איך TCP מבטיח אמינות</h4>
+<ul>
+<li><strong>Sequence numbers</strong> — כל בייט ממוספר, כך שהצד השני יכול להרכיב מחדש בסדר הנכון גם אם החבילות הגיעו מבולגן.</li>
+<li><strong>ACKs</strong> — הצד המקבל מאשר מה שקיבל. מה שלא אושר — נשלח שוב (retransmission).</li>
+<li><strong>Flow control</strong> — המקבל מודיע כמה הוא יכול לקלוט (window size), כדי שהשולח לא יציף אותו.</li>
+<li><strong>Congestion control</strong> — TCP מזהה עומס ברשת ומאט, כדי לא לגרום לקריסה. מתחיל לאט ומגביר בהדרגה (slow start).</li>
+</ul>
+
+<h4>סגירת חיבור</h4>
+<p>גם הסגירה מסודרת — four-way handshake (<code>FIN</code>/<code>ACK</code> משני הצדדים). כל צד יכול לסגור את כיוון השליחה שלו בנפרד.</p>
+
+<h3>UDP — User Datagram Protocol</h3>
+<p>ההפך הגמור. "שגר ושכח" — שולח חבילות (datagrams) בלי handshake, בלי אישורים, בלי הבטחת סדר. חבילה יכולה ללכת לאיבוד ו-UDP לא יידע ולא יתקן.</p>
+
+<p>למה שמישהו ירצה את זה? <strong>מהירות ו-latency נמוך.</strong> אין overhead של handshake ואישורים. מתאים כשעדיף לאבד קצת מידע מאשר לחכות:</p>
+<ul>
+<li>שיחות וידאו/קול (VoIP) — עדיף frame אחד חסר מאשר שהשיחה תיתקע.</li>
+<li>גיימינג בזמן אמת.</li>
+<li>DNS — שאילתה קטנה, מהירה, אם נכשלה פשוט שולחים שוב.</li>
+<li>Streaming.</li>
+</ul>
+
+<h3>ההשוואה</h3>
+<table>
+<tr><th></th><th>TCP</th><th>UDP</th></tr>
+<tr><td>אמינות</td><td>✅ מובטחת</td><td>❌ אין</td></tr>
+<tr><td>סדר</td><td>✅ נשמר</td><td>❌ לא מובטח</td></tr>
+<tr><td>מהירות</td><td>איטי יותר (overhead)</td><td>מהיר, latency נמוך</td></tr>
+<tr><td>Handshake</td><td>✅ יש</td><td>❌ אין</td></tr>
+<tr><td>מתאים ל-</td><td>web, API, DB, כל דבר שחייב להגיע שלם</td><td>וידאו, גיימינג, DNS</td></tr>
+</table>
+
+<blockquote>
+<p><strong>נקודה מעניינת:</strong> HTTP/3 (פרק 9) נטש את TCP לטובת <strong>QUIC</strong> — פרוטוקול שבנוי <em>על גבי UDP</em> אבל מוסיף בעצמו אמינות והצפנה. כלומר לקחו את המהירות של UDP ובנו מחדש את האמינות בשכבה גבוהה יותר, בצורה חכמה יותר מ-TCP. זו דוגמה יפה לאיך הבנת ה-tradeoff מולידה עיצוב חדש.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s6">6. DNS — מערכת השמות</h2>
+
+<p>בני אדם זוכרים <code>google.com</code>, מחשבים צריכים <code>142.250.185.78</code>. DNS (Domain Name System) הוא "ספר הטלפונים של האינטרנט" — הוא מתרגם שמות לכתובות IP. כמעט כל בקשה ברשת מתחילה בשאילתת DNS.</p>
+
+<h3>זרימת ה-resolution</h3>
+<p>כשאתה מקליד <code>example.com</code>, קורה תהליך היררכי. לרוב זה מהיר בזכות caching, אבל בפעם הראשונה:</p>
+
+<div class="flow">
+1. Browser cache?  → אם יש, נגמר.<br>
+2. OS cache?  → אם יש, נגמר.<br>
+3. Resolver (בד"כ של ה-ISP או 8.8.8.8) — הוא עושה את העבודה:<br>
+&nbsp;&nbsp;&nbsp;a. שואל Root server  → "לך ל-.com server"<br>
+&nbsp;&nbsp;&nbsp;b. שואל TLD server (.com)  → "לך ל-name server של example.com"<br>
+&nbsp;&nbsp;&nbsp;c. שואל Authoritative server  → "example.com = 93.184.216.34"<br>
+4. ה-IP חוזר, נשמר ב-cache, והבקשה האמיתית יוצאת
+</div>
+
+<p>ההיררכיה הזו (Root → TLD → Authoritative) היא מה שמאפשר למערכת מבוזרת לתחזק מיליארדי שמות בלי נקודת כשל אחת.</p>
+
+<h3>סוגי רשומות (Records) שחייבים להכיר</h3>
+<table>
+<tr><th>Record</th><th>מה הוא ממפה</th></tr>
+<tr><td><strong>A</strong></td><td>שם → כתובת IPv4</td></tr>
+<tr><td><strong>AAAA</strong></td><td>שם → כתובת IPv6</td></tr>
+<tr><td><strong>CNAME</strong></td><td>שם → שם אחר (alias), למשל www → example.com</td></tr>
+<tr><td><strong>MX</strong></td><td>שרתי דואר של הדומיין</td></tr>
+<tr><td><strong>TXT</strong></td><td>טקסט חופשי — נפוץ לאימות ולהגדרות (SPF, DKIM)</td></tr>
+<tr><td><strong>NS</strong></td><td>ה-name servers של הדומיין</td></tr>
+</table>
+
+<h3>TTL ו-Caching</h3>
+<p>לכל רשומה יש <strong>TTL</strong> (Time To Live) — כמה שניות מותר לשמור אותה ב-cache לפני שבודקים שוב. TTL גבוה = פחות שאילתות אבל שינויים מתעכבים; TTL נמוך = עדכון מהיר אבל יותר תעבורה. זו הסיבה ששינוי DNS (למשל בהעברת דומיין) "לוקח זמן להתפשט" — צריך לחכות שה-caching הישן יפוג ברחבי העולם.</p>
+
+<blockquote>
+<p><strong>טעות דיבוג נפוצה:</strong> "שיניתי את ה-DNS ועדיין רואה את הישן". כמעט תמיד זה caching — במחשב שלך, ב-resolver, או ב-TTL שעוד לא פג. <code>dig</code> (פרק הכלים) מראה לך את ה-TTL הנוכחי ועוזר לאבחן. אפשר גם לנקות DNS cache מקומי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s7">7. HTTP — פרוטוקול ה-Web</h2>
+
+<p>הגענו לשכבה שבה מפתח Backend חי. HTTP (HyperText Transfer Protocol) הוא הפרוטוקול שבו clients ושרתים מדברים ב-web. הכל כאן מוכר לך מ-NestJS — עכשיו נבין מה קורה מתחת.</p>
+
+<h3>מודל Request/Response</h3>
+<p>HTTP הוא פרוטוקול בקשה-תשובה: ה-client שולח request, השרת מחזיר response. תמיד ה-client יוזם (בלי server push קלאסי — נראה חריגים בהמשך).</p>
+
+<h4>מבנה של request</h4>
+<pre><code>GET /users/42 HTTP/1.1          ← method + path + version
+Host: api.example.com          ← headers
+Authorization: Bearer eyJ...
+Accept: application/json
+                               ← שורה ריקה מפרידה
+(body — ריק ב-GET)</code></pre>
+
+<h4>מבנה של response</h4>
+<pre><code>HTTP/1.1 200 OK                ← version + status code
+Content-Type: application/json ← headers
+Content-Length: 51
+
+{ "id": 42, "name": "Eliya" }  ← body</code></pre>
+
+<h3>HTTP Methods</h3>
+<table>
+<tr><th>Method</th><th>מטרה</th><th>Idempotent?</th></tr>
+<tr><td>GET</td><td>קריאת משאב</td><td>✅ כן</td></tr>
+<tr><td>POST</td><td>יצירת משאב</td><td>❌ לא</td></tr>
+<tr><td>PUT</td><td>החלפה מלאה</td><td>✅ כן</td></tr>
+<tr><td>PATCH</td><td>עדכון חלקי</td><td>❌ לא בהכרח</td></tr>
+<tr><td>DELETE</td><td>מחיקה</td><td>✅ כן</td></tr>
+</table>
+
+<p><strong>Idempotent</strong> = לקרוא לזה פעם אחת או חמש פעמים נותן אותה תוצאה. <code>GET</code> ו-<code>DELETE</code> idempotent (למחוק משאב שכבר נמחק = עדיין מחוק); <code>POST</code> לא (שתי קריאות = שני משאבים). זה חשוב ל-retries: בטוח לנסות שוב בקשה idempotent אחרי כשל רשת, מסוכן ל-POST.</p>
+
+<h3>Status Codes — לפי קטגוריות</h3>
+<table>
+<tr><th>טווח</th><th>משמעות</th><th>דוגמאות</th></tr>
+<tr><td>1xx</td><td>מידע</td><td>100 Continue</td></tr>
+<tr><td>2xx</td><td>הצלחה</td><td>200 OK, 201 Created, 204 No Content</td></tr>
+<tr><td>3xx</td><td>הפניה</td><td>301 Moved Permanently, 304 Not Modified</td></tr>
+<tr><td>4xx</td><td>שגיאת client</td><td>400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Too Many Requests</td></tr>
+<tr><td>5xx</td><td>שגיאת server</td><td>500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable</td></tr>
+</table>
+
+<p>הבחנה שמפתחים מפספסים: <strong>401 מול 403</strong>. 401 = "לא יודע מי אתה" (חסר/לא תקין authentication). 403 = "יודע מי אתה, אבל אסור לך" (authorization נכשל). וההבחנה <strong>4xx מול 5xx</strong>: 4xx זה אשמת השולח (תיקן את הבקשה), 5xx זה אשמת השרת (הבקשה תקינה, השרת נפל).</p>
+
+<h3>Headers חשובים</h3>
+<ul>
+<li><code>Content-Type</code> — פורמט ה-body (<code>application/json</code>).</li>
+<li><code>Authorization</code> — הטוקן (זוכר מהמדריך הקודם?).</li>
+<li><code>Cache-Control</code> — כללי caching.</li>
+<li><code>Accept</code> — איזה פורמט ה-client רוצה בחזרה.</li>
+<li><code>Content-Length</code> / <code>Transfer-Encoding: chunked</code> — גודל ה-body או שידור מקוטע.</li>
+</ul>
+
+<h3>HTTP הוא stateless</h3>
+<p>זוכר מהמדריך על Authentication? כל request של HTTP עצמאי — השרת לא זוכר בקשות קודמות. זו בדיוק הסיבה שצריך cookies/tokens כדי לשמר זהות. עכשיו אתה רואה איך הכל מתחבר: statelessness של HTTP הוא הסיבה שקיימים מנגנוני ה-auth.</p>
+
+<hr>
+
+<h2 id="s8">8. HTTPS ו-TLS — הצפנה ואמון</h2>
+
+<p>HTTP רגיל שולח הכל ב<strong>טקסט גלוי</strong> — כל מי שמיירט את התעבורה (WiFi ציבורי, ISP) קורא סיסמאות וטוקנים. HTTPS הוא HTTP <strong>על גבי TLS</strong> — שכבת הצפנה שפותרת את זה. היום זה סטנדרט חובה.</p>
+
+<h3>שלוש הבטחות של TLS</h3>
+<ul>
+<li><strong>Confidentiality (סודיות)</strong> — התעבורה מוצפנת, מיירט רואה זבל.</li>
+<li><strong>Integrity (שלמות)</strong> — אי אפשר לשנות את התעבורה בדרך בלי שיזוהה.</li>
+<li><strong>Authentication (אימות)</strong> — אתה בטוח שאתה מדבר עם השרת האמיתי ולא מתחזה.</li>
+</ul>
+
+<h3>הבסיס: הצפנה סימטרית מול א-סימטרית</h3>
+<p>כדי להבין את ה-handshake, צריך את שני הסוגים:</p>
+<ul>
+<li><strong>סימטרית</strong> — מפתח אחד מצפין ומפענח. מהירה, אבל צריך איכשהו לחלוק את המפתח בבטחה.</li>
+<li><strong>א-סימטרית (public/private key)</strong> — זוג מפתחות: מה שהוצפן עם ה-public מפוענח רק עם ה-private. איטית, אבל פותרת את בעיית חלוקת המפתח.</li>
+</ul>
+
+<p>TLS משלב את שניהם בחוכמה: משתמש בא-סימטרית <strong>רק כדי להחליף בבטחה מפתח סימטרי</strong>, ואז עובר לסימטרית המהירה לשאר השיחה. הטוב משני העולמות.</p>
+
+<h3>ה-TLS Handshake (מפושט)</h3>
+<div class="flow">
+1. Client Hello  → "אני תומך באלגוריתמים X, Y, Z"<br>
+2. Server Hello  → בוחר אלגוריתם + שולח certificate (עם ה-public key)<br>
+3. Client מאמת את ה-certificate מול ה-CA<br>
+4. שני הצדדים מחליפים חומר ומחשבים מפתח סימטרי משותף<br>
+5. מכאן והלאה — כל התעבורה מוצפנת סימטרית
+</div>
+
+<h3>Certificates ו-Certificate Authorities</h3>
+<p>איך אתה יודע שה-public key ששרת שלח באמת שייך ל-<code>google.com</code> ולא למתחזה? כאן נכנס ה-<strong>certificate</strong> — מסמך שחתום דיגיטלית על ידי <strong>Certificate Authority (CA)</strong> מהימן (כמו Let's Encrypt, DigiCert). הדפדפן שלך מגיע עם רשימת CAs מהימנים מובנית. אם ה-certificate חתום על ידי אחד מהם ותקף — אתה סומך עליו. זו שרשרת אמון (chain of trust).</p>
+
+<p>זו הסיבה ש-<code>https://</code> עם מנעול תקין = החיבור מוצפן <em>וגם</em> מאומת. וזו הסיבה ל"warning" מפחיד כשה-certificate פג או self-signed — שרשרת האמון נשברה.</p>
+
+<blockquote>
+<p><strong>מעשי ל-Backend:</strong> ב-production כמעט אף פעם לא תטפל ב-TLS ישירות ב-Node — reverse proxy (Nginx) או load balancer (בפרק הבא) עושים "TLS termination": מפענחים את ה-HTTPS ומעבירים HTTP רגיל פנימה לאפליקציה. זה מוריד מהאפליקציה את עומס ההצפנה ומרכז את ניהול ה-certificates במקום אחד.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. גרסאות HTTP — 1.1, 2, 3</h2>
+
+<p>HTTP התפתח כדי לפתור בעיות ביצועים. הבנת ההבדלים מסבירה למון החלטות אופטימיזציה.</p>
+
+<h3>HTTP/1.1</h3>
+<p>עדיין נפוץ מאוד. הביא <strong>keep-alive</strong> — שימוש חוזר באותו חיבור TCP לכמה בקשות (זוכר כמה יקר ה-handshake? זה מה שחוסך אותו). החיסרון הגדול: <strong>head-of-line blocking</strong> — על חיבור אחד, בקשות מטופלות בטור. בקשה איטית חוסמת את אלה שאחריה. הפתרון ההיסטורי היה לפתוח כמה חיבורים במקביל (בד"כ 6 לדומיין), מה שבזבזני.</p>
+
+<h3>HTTP/2</h3>
+<p>קפיצת מדרגה. השינויים המרכזיים:</p>
+<ul>
+<li><strong>Multiplexing</strong> — כמה בקשות ותשובות בו-זמנית על <em>חיבור אחד</em>, בלי לחסום זו את זו. פותר את בעיית ה-head-of-line ברמת ה-HTTP.</li>
+<li><strong>Binary framing</strong> — הפרוטוקול בינארי (לא טקסט), יעיל יותר לפרסור.</li>
+<li><strong>Header compression (HPACK)</strong> — headers חוזרים לא נשלחים שוב ושוב.</li>
+<li><strong>Server Push</strong> — השרת יכול לשלוח משאבים לפני שנתבקשו (בפועל ננטש כי לא השתלם).</li>
+</ul>
+<p>הבעיה שנותרה: HTTP/2 עדיין רץ על TCP, אז head-of-line blocking קיים ברמת ה-<em>TCP</em> — אם packet אחד אבד, כל ה-streams על החיבור מחכים לו.</p>
+
+<h3>HTTP/3</h3>
+<p>הפתרון האחרון: לזרוק את TCP. HTTP/3 רץ על <strong>QUIC</strong> — פרוטוקול שבנוי על UDP (זוכר את ההערה מפרק 5?), עם אמינות והצפנה מובנים. היתרונות:</p>
+<ul>
+<li><strong>אין TCP head-of-line blocking</strong> — כל stream עצמאי, packet שאבד לא חוסם את השאר.</li>
+<li><strong>Handshake מהיר יותר</strong> — TLS מובנה ב-QUIC, פחות round-trips להתחברות.</li>
+<li><strong>Connection migration</strong> — החיבור שורד מעבר בין רשתות (WiFi לסלולר) בלי לפתוח מחדש.</li>
+</ul>
+
+<table>
+<tr><th></th><th>HTTP/1.1</th><th>HTTP/2</th><th>HTTP/3</th></tr>
+<tr><td>שכבת תעבורה</td><td>TCP</td><td>TCP</td><td>QUIC (UDP)</td></tr>
+<tr><td>Multiplexing</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>פורמט</td><td>טקסט</td><td>בינארי</td><td>בינארי</td></tr>
+<tr><td>Head-of-line</td><td>ברמת HTTP</td><td>ברמת TCP</td><td>✅ נפתר</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s10">10. WebSockets ותקשורת בזמן אמת</h2>
+
+<p>HTTP רגיל הוא חד-כיווני מיוזמת ה-client: אתה שואל, השרת עונה. אבל מה עם צ'אט, התראות, מחירים חיים — מקרים שבהם <strong>השרת צריך לדחוף מידע ל-client</strong> בלי שנתבקש? יש כמה פתרונות, בסדר תחכום עולה.</p>
+
+<h3>Polling — הפתרון הנאיבי</h3>
+<p>ה-client שואל שוב ושוב "יש חדש? יש חדש?" כל כמה שניות. עובד, אבל בזבזני — רוב הבקשות חוזרות ריקות, ויש latency (עד ה-poll הבא). <strong>Long polling</strong> משפר: השרת מחזיק את הבקשה פתוחה עד שיש משהו לומר. עדיין לא אידיאלי.</p>
+
+<h3>Server-Sent Events (SSE)</h3>
+<p>ערוץ <strong>חד-כיווני</strong> מהשרת ל-client על גבי HTTP רגיל. השרת שומר את החיבור פתוח ודוחף עדכונים. מצוין ל-feeds, התראות, progress bars — כל דבר שבו רק השרת מדבר. פשוט יותר מ-WebSockets ורץ על HTTP רגיל.</p>
+
+<h3>WebSockets — דו-כיווני מלא</h3>
+<p>הפתרון האמיתי לתקשורת דו-כיוונית. WebSocket מתחיל כבקשת HTTP רגילה עם <strong>upgrade</strong>, ואז "משדרג" את החיבור לערוץ דו-כיווני קבוע שבו <em>שני</em> הצדדים יכולים לשלוח בכל רגע:</p>
+
+<div class="flow">
+1. Client:  GET /chat  HTTP/1.1<br>
+&nbsp;&nbsp;&nbsp;Upgrade: websocket<br>
+&nbsp;&nbsp;&nbsp;Connection: Upgrade<br>
+2. Server:  101 Switching Protocols<br>
+3. → מכאן: ערוץ דו-כיווני פתוח (ws:// או wss://), שני הצדדים דוחפים חופשי
+</div>
+
+<p>אחרי ה-handshake זה כבר לא HTTP — זה חיבור TCP קבוע עם פרוטוקול WebSocket. מתאים לצ'אט, משחקים, collaboration חי (כמו Google Docs), dashboards בזמן אמת. ב-NestJS יש תמיכה מובנית דרך <code>@nestjs/websockets</code> ו-gateways.</p>
+
+<table>
+<tr><th>פתרון</th><th>כיוון</th><th>מתי</th></tr>
+<tr><td>Polling</td><td>client שואל</td><td>עדכונים נדירים, פשטות</td></tr>
+<tr><td>SSE</td><td>שרת → client</td><td>feeds, התראות חד-כיווניות</td></tr>
+<tr><td>WebSocket</td><td>דו-כיווני</td><td>צ'אט, גיימינג, collaboration</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s11">11. Proxies, Load Balancers ו-CDN</h2>
+
+<p>בין ה-client לשרת שלך יושבים לרוב מתווכים. הבנתם קריטית ל-Backend, כי הרבה מהתשתית שלך היא בעצם המתווכים האלה.</p>
+
+<h3>Forward Proxy</h3>
+<p>יושב מול ה-<strong>client</strong> ומדבר בשמו. הבקשות של הלקוח עוברות דרכו החוצה. שימושים: מטמון ארגוני, סינון תוכן, אנונימיזציה (VPN הוא סוג של forward proxy). ה-client יודע עליו; השרת לא.</p>
+
+<h3>Reverse Proxy</h3>
+<p>ההפך, וזה מה שרלוונטי לך. יושב מול ה-<strong>שרת</strong> ומקבל בקשות בשמו. ה-client חושב שהוא מדבר עם השרת, אבל בעצם מדבר עם ה-proxy שמעביר פנימה. Nginx ו-HAProxy הם הנפוצים. מה הוא נותן:</p>
+<ul>
+<li><strong>TLS termination</strong> — מפענח HTTPS ומעביר HTTP פנימה (זוכר מפרק 8?).</li>
+<li><strong>Load balancing</strong> — מפזר בקשות בין כמה שרתים.</li>
+<li><strong>Caching</strong> — מחזיר תשובות שמורות בלי להטריד את האפליקציה.</li>
+<li><strong>הסתרה ואבטחה</strong> — האפליקציה לא חשופה ישירות לאינטרנט.</li>
+<li><strong>Compression, rate limiting, routing</strong> לפי path.</li>
+</ul>
+
+<h3>Load Balancer</h3>
+<p>מקרה חשוב של reverse proxy שתפקידו לפזר עומס בין כמה שרתים זהים, לצורך scale ו-high availability. אלגוריתמי פיזור נפוצים:</p>
+<ul>
+<li><strong>Round Robin</strong> — בתורים, שרת אחרי שרת.</li>
+<li><strong>Least Connections</strong> — לשרת עם הכי פחות חיבורים פעילים.</li>
+<li><strong>IP Hash</strong> — אותו client תמיד לאותו שרת (חשוב ל-sticky sessions).</li>
+</ul>
+<p>הוא גם עושה <strong>health checks</strong> — אם שרת נופל, ה-LB מפסיק לשלוח אליו תעבורה. זו הדרך להשיג zero-downtime deployments.</p>
+
+<blockquote>
+<p><strong>קשר למדריך auth:</strong> זוכר שאמרתי ש-JWT (stateless) קל יותר לסקיילינג מ-session (stateful)? הנה למה: מאחורי load balancer עם כמה שרתים, JWT עובד על כל שרת בלי תיאום. session מחייב store משותף (Redis) או sticky sessions ב-LB. עכשיו רואים איך הנושאים מתחברים.</p>
+</blockquote>
+
+<h3>CDN — Content Delivery Network</h3>
+<p>רשת שרתים פרוסה גאוגרפית ברחבי העולם, ששומרת עותקים (cache) של תוכן קרוב למשתמשים. במקום שכל בקשה תיסע לשרת המרכזי בארה"ב, משתמש בישראל מקבל את התמונה משרת CDN בפרנקפורט. יתרונות: <strong>latency נמוך</strong> (קרוב פיזית), <strong>הורדת עומס</strong> מהשרת שלך, והגנת <strong>DDoS</strong>. מצוין לתוכן סטטי (תמונות, JS, CSS, וידאו) ולתוכן שניתן לcache. Cloudflare, CloudFront, Fastly הם דוגמאות.</p>
+
+<hr>
+
+<h2 id="s12">12. אבטחת רשת — Firewalls, CORS, מתקפות</h2>
+
+<h3>Firewall</h3>
+<p>שולט אילו חיבורים מותרים לפי כללים (IP, port, protocol). ב-ענן זה ה-<strong>security group</strong> — למשל "אפשר port 443 מכל מקום, port 22 (SSH) רק מה-IP שלי, DB port רק מבפנים". כלל אצבע: חשוף כמה שפחות. ה-DB לעולם לא צריך להיות נגיש מהאינטרנט הפתוח.</p>
+
+<h3>CORS — הבלבול הכי נפוץ אצל Backend devs</h3>
+<p>CORS (Cross-Origin Resource Sharing) הוא מנגנון <strong>של הדפדפן</strong> שחוסם JavaScript מדף אחד (origin) מלגשת ל-API ב-origin אחר, אלא אם ה-API מרשה זאת במפורש. "Origin" = שילוב של protocol + domain + port.</p>
+
+<p>הנקודה שמבלבלת: <strong>CORS לא מגן על השרת שלך</strong> — הוא מגן על המשתמש בדפדפן. הוא נאכף בדפדפן בלבד (curl ו-Postman מתעלמים ממנו). כשה-frontend ב-<code>app.example.com</code> קורא ל-API ב-<code>api.example.com</code>, הדפדפן שולח קודם <strong>preflight</strong> (<code>OPTIONS</code>) לשאול "מותר?", והשרת עונה עם headers:</p>
+
+<pre><code>Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+Access-Control-Allow-Headers: Authorization, Content-Type
+Access-Control-Allow-Credentials: true</code></pre>
+
+<p>ב-NestJS מפע­ילים את זה עם <code>app.enableCors({ origin: "https://app.example.com" })</code>. <strong>אל</strong> תשים <code>origin: "*"</code> ב-production עם credentials — זה מבטל את ההגנה.</p>
+
+<h3>מתקפות רשת נפוצות</h3>
+<ul>
+<li><strong>DDoS</strong> — הצפת השרת בבקשות מאלפי מקורות עד קריסה. הגנה: CDN, rate limiting, שירותי anti-DDoS.</li>
+<li><strong>MITM (Man in the Middle)</strong> — יירוט תעבורה בדרך. הגנה: TLS (בדיוק בשביל זה).</li>
+<li><strong>DNS Spoofing</strong> — הפניית שם לכתובת זדונית. הגנה: DNSSEC, HTTPS.</li>
+<li><strong>Port scanning</strong> — סריקת פורטים פתוחים לחיפוש חולשות. הגנה: firewall הדוק, סגירת פורטים מיותרים.</li>
+</ul>
+
+<blockquote>
+<p><strong>שים לב:</strong> XSS, CSRF, SQL injection הם מתקפות ברמת ה-<em>אפליקציה</em>, לא הרשת (כיסינו את שתי הראשונות במדריך ה-auth). TLS ו-firewall לא מגנים מהן — צריך validation ו-escaping בקוד. אבטחה היא שכבות: רשת <em>ו</em>-אפליקציה.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s13">13. כלי דיבוג רשת</h2>
+
+<p>הכלים שתשלוף כשמשהו לא עובד. שווה להכיר אותם בעל-פה — הם חוסכים שעות.</p>
+
+<table>
+<tr><th>כלי</th><th>למה משמש</th></tr>
+<tr><td><code>ping</code></td><td>האם המארח בכלל מגיב? מודד latency בסיסי</td></tr>
+<tr><td><code>traceroute</code> / <code>tracert</code></td><td>מציג את כל ה-hops בדרך ליעד — איפה תקוע</td></tr>
+<tr><td><code>dig</code> / <code>nslookup</code></td><td>שאילתות DNS — מה ה-IP, מה ה-TTL, אילו records</td></tr>
+<tr><td><code>curl</code></td><td>שליחת בקשות HTTP מה-terminal — הכלי הכי חשוב לבדיקת API</td></tr>
+<tr><td><code>netstat</code> / <code>ss</code></td><td>אילו פורטים פתוחים ואילו חיבורים פעילים</td></tr>
+<tr><td><code>lsof -i :3000</code></td><td>מי תופס את הפורט (כשמקבלים "port already in use")</td></tr>
+<tr><td><code>tcpdump</code> / Wireshark</td><td>לכידה וניתוח של packets ממש — לדיבוג עמוק</td></tr>
+</table>
+
+<h3>curl — כמה דוגמאות שתשתמש בהן</h3>
+<pre><code># בקשת GET עם פירוט מלא (headers, סטטוס)
+curl -v https://api.example.com/users
+
+# POST עם JSON וטוקן
+curl -X POST https://api.example.com/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJ..." \
+  -d '{"name":"Eliya","email":"e@x.com"}'
+
+# רק ה-status code וזמן התגובה
+curl -o /dev/null -s -w "%{http_code} %{time_total}s\n" https://example.com
+
+# בדיקת redirect chain
+curl -IL https://example.com</code></pre>
+
+<h3>dig — לבדיקת DNS</h3>
+<pre><code>dig example.com            # רשומת A + ה-TTL
+dig example.com MX         # שרתי דואר
+dig @8.8.8.8 example.com   # שאילתה מול resolver ספציפי (Google)
+dig +short example.com     # רק ה-IP, בלי הרעש</code></pre>
+
+<hr>
+
+<h2 id="s14">14. סיכום: מה קורה כשמקלידים URL</h2>
+
+<p>הדרך הכי טובה לוודא שהכל התחבר — לעקוב אחרי בקשה אחת דרך כל השכבות. כשאתה מקליד <code>https://api.example.com/users</code> ולוחץ Enter:</p>
+
+<div class="flow">
+1. DNS:  example.com → 93.184.216.34   (פרק 6)<br>
+2. TCP:  three-way handshake ל-93.184.216.34:443   (פרק 5)<br>
+3. TLS:  handshake, אימות certificate, מפתח משותף   (פרק 8)<br>
+4. HTTP: שליחת GET /users עם ה-headers והטוקן   (פרק 7)<br>
+5. הבקשה עוברת דרך CDN / reverse proxy / load balancer   (פרק 11)<br>
+6. השרת (NestJS) מטפל: guards → validation → handler   (מדריך NestJS)<br>
+7. Response חוזר באותה דרך, מוצפן, ומוצג
+</div>
+
+<p>כל שלב כאן הוא פרק במדריך. אם תבין את המסע הזה מקצה לקצה — יש לך את המפה המלאה של networking ל-Backend.</p>
+
+<h3>מה הלאה</h3>
+<p>הדבר שמגבש networking הוא <strong>לשחק עם הכלים</strong>. הרץ <code>curl -v</code> על API ותקרא כל שורה. הרץ <code>dig</code> על דומיין. פתח את ה-Network tab ב-DevTools ותראה את ה-headers, ה-timing, וגרסת ה-HTTP של כל בקשה אמיתית. ברגע שתראה את התיאוריה קורה מול העיניים — היא נדבקת.</p>
+
+<p>עכשיו יש לך את הרביעייה: TypeScript, NestJS, Authentication ו-Networking — כל מה שצריך כדי להבין מערכת Backend מהקוד ועד החוט. 🚀</p>
+
+</body>
+</html>

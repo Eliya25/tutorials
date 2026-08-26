@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>נוהל עבודה עם Claude ו-Claude Code — המדריך המלא</title>
+<style>
+  :root {
+    --bg: #faf9f5;
+    --card: #ffffff;
+    --ink: #1f1e1d;
+    --muted: #6b6a67;
+    --accent: #c15f3c;
+    --accent-soft: #f5e6df;
+    --border: #e5e2dc;
+    --code-bg: #262521;
+    --code-ink: #e8e6e1;
+    --tip-bg: #eef4ee;
+    --tip-border: #7fa87f;
+    --warn-bg: #fdf3e7;
+    --warn-border: #d9a05b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Heebo", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.75;
+    font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
+  header.hero {
+    background: linear-gradient(135deg, #2d2a26 0%, #4a3f35 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 40px 36px;
+    margin-bottom: 32px;
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 30px; }
+  header.hero p { margin: 0; color: #d9d4cc; font-size: 17px; }
+  .badge {
+    display: inline-block; background: var(--accent); color: #fff;
+    border-radius: 20px; padding: 2px 14px; font-size: 13px; margin-bottom: 14px;
+  }
+  nav.toc {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 26px; margin-bottom: 32px;
+  }
+  nav.toc h2 { margin: 0 0 10px; font-size: 18px; }
+  nav.toc ol { margin: 0; padding-inline-start: 22px; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  section.card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 30px; margin-bottom: 28px;
+  }
+  h2.sec {
+    font-size: 24px; margin: 0 0 4px; color: var(--ink);
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2.sec .num {
+    background: var(--accent); color: #fff; border-radius: 8px;
+    min-width: 34px; height: 34px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 17px;
+  }
+  h3 { font-size: 18px; margin: 26px 0 8px; color: #8a4a2f; }
+  h4 { font-size: 16px; margin: 20px 0 6px; }
+  p { margin: 8px 0; }
+  code {
+    background: #f0ede7; border-radius: 4px; padding: 1px 6px;
+    font-family: Consolas, "Courier New", monospace; font-size: 14px;
+    direction: ltr; unicode-bidi: embed;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+    direction: ltr; text-align: left; font-size: 13.5px; line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: var(--accent-soft); }
+  .tip, .warn {
+    border-radius: 10px; padding: 12px 16px; margin: 14px 0; font-size: 15px;
+  }
+  .tip { background: var(--tip-bg); border-inline-start: 4px solid var(--tip-border); }
+  .warn { background: var(--warn-bg); border-inline-start: 4px solid var(--warn-border); }
+  .tip b, .warn b { display: block; margin-bottom: 2px; }
+  ul, ol { padding-inline-start: 24px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  .kbd {
+    border: 1px solid #bbb; border-bottom-width: 2px; border-radius: 5px;
+    padding: 0 7px; background: #fff; font-family: Consolas, monospace; font-size: 13px;
+    direction: ltr; unicode-bidi: embed;
+  }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="badge">נוהל עבודה · אוגוסט 2026</span>
+  <h1>עבודה עם Claude ו-Claude Code</h1>
+  <p>המדריך המלא: התקנה, CLAUDE.md, MCP, Skills, Plugins — עם דוגמאות קוד מוכנות להעתקה</p>
+</header>
+
+<nav class="toc">
+  <h2>תוכן עניינים</h2>
+  <ol>
+    <li><a href="#s1">מפת הדרכים — מה זה מה ומתי משתמשים במה</a></li>
+    <li><a href="#s2">Claude Code — התקנה, עבודה יומיומית ופקודות חובה</a></li>
+    <li><a href="#s9">איך לדבר עם קלוד — הפרק שהכי משפיע על התוצאות</a></li>
+    <li><a href="#s11">פרויקט חדש מאפס — ומה כדאי (ולא כדאי) להכניס לקלוד</a></li>
+    <li><a href="#s3">CLAUDE.md וזיכרון — ההקשר הקבוע של הפרויקט</a></li>
+    <li><a href="#s4">MCP — חיבור Claude לכלים חיצוניים</a></li>
+    <li><a href="#s5">Skills — הוראות עבודה שנטענות לפי הצורך</a></li>
+    <li><a href="#s6">Plugins — אריזה ושיתוף של הכל ביחד</a></li>
+    <li><a href="#s7">איך הכל מתחבר — טבלת החלטה</a></li>
+    <li><a href="#s10">תרגיל: השעה הראשונה שלך — עושים, לא קוראים</a></li>
+    <li><a href="#s8">תקלות נפוצות וטיפים מתקדמים</a></li>
+  </ol>
+</nav>
+
+<!-- ============ 1 ============ -->
+<section class="card" id="s1">
+  <h2 class="sec"><span class="num">1</span> מפת הדרכים — מה זה מה</h2>
+  <p>לפני שצוללים, חשוב להבין שיש כמה "דלתות" שונות לאותו מוח:</p>
+  <table>
+    <tr><th>מוצר</th><th>מה זה</th><th>מתי להשתמש</th></tr>
+    <tr><td><b>Claude.ai</b> (אתר / אפליקציה)</td><td>צ'אט רגיל עם Claude, כולל Projects, Artifacts וחיבור Connectors</td><td>שאלות, כתיבה, ניתוח קבצים, מחקר</td></tr>
+    <tr><td><b>Claude Code</b></td><td>כלי CLI (טרמינל) שנותן ל-Claude גישה לקבצים, לטרמינל ול-Git שלך. הוא קורא, כותב, מריץ טסטים ועושה קומיטים</td><td>פיתוח: פיצ'רים, באגים, רפקטורינג, אוטומציות</td></tr>
+    <tr><td><b>Cowork</b></td><td>מצב באפליקציית הדסקטופ — כמו Claude Code אבל למי שלא רוצה טרמינל. עובד על תיקיות, יוצר קבצים, מריץ Skills</td><td>עבודה עם מסמכים, אקסלים, מצגות, אוטומציות אישיות</td></tr>
+    <tr><td><b>Claude API</b></td><td>גישה תכנותית למודלים (<code>claude-sonnet-5</code>, <code>claude-opus-5</code> וכו')</td><td>כשבונים מוצר משלך על Claude</td></tr>
+  </table>
+
+  <h3>ארבעת מנגנוני ההרחבה — בשורה אחת כל אחד</h3>
+  <ul>
+    <li><b>CLAUDE.md</b> — קובץ הוראות קבוע שנטען בתחילת <u>כל</u> שיחה. "החוקים של הבית".</li>
+    <li><b>MCP</b> — פרוטוקול שמחבר את Claude לכלים חיצוניים (DB, Slack, GitHub, Notion...). "הידיים".</li>
+    <li><b>Skills</b> — תיקיות עם הוראות למשימה ספציפית, שנטענות <u>רק כשצריך</u>. "ספר המתכונים".</li>
+    <li><b>Plugins</b> — חבילה שאורזת Skills + Agents + Hooks + MCP ביחד, להתקנה ולשיתוף. "האריזה".</li>
+  </ul>
+  <div class="tip"><b>העיקרון החשוב ביותר במדריך</b>
+  CLAUDE.md נטען תמיד ושורף קונטקסט בכל שיחה. Skill נטען רק כשרלוונטי. לכן: מה שצריך תמיד → CLAUDE.md (וקצר!). מה שצריך לפעמים → Skill. מה שחייב לקרות בכל מקרה (למשל lint לפני קומיט) → Hook, כי הוראות טקסט הן המלצה ולא אכיפה.</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section class="card" id="s2">
+  <h2 class="sec"><span class="num">2</span> Claude Code — התקנה ועבודה יומיומית</h2>
+
+  <h3>התקנה והרצה ראשונה</h3>
+<pre><code># התקנה (Windows PowerShell / macOS / Linux)
+npm install -g @anthropic-ai/claude-code
+
+# נכנסים לתיקיית הפרויקט ומריצים
+cd my-project
+claude
+
+# בהרצה ראשונה: התחברות עם חשבון Claude (Pro/Max) או API key</code></pre>
+
+  <h3>צורות הרצה שימושיות</h3>
+<pre><code>claude                          # סשן אינטראקטיבי רגיל
+claude "תקן את הבאג בלוגין"      # מתחיל סשן עם משימה
+claude -p "מה עושה הקובץ הזה?"   # מצב headless: תשובה ויציאה (טוב לסקריפטים)
+claude -c                       # ממשיך את השיחה האחרונה
+claude --resume                 # בוחר שיחה קודמת מרשימה
+claude --add-dir ../shared-lib  # נותן גישה לתיקייה נוספת</code></pre>
+
+  <h3>פקודות Slash שחייבים להכיר</h3>
+  <table>
+    <tr><th>פקודה</th><th>מה עושה</th></tr>
+    <tr><td><code>/init</code></td><td>סורק את הפרויקט ומייצר CLAUDE.md התחלתי — <b>הדבר הראשון שעושים בפרויקט חדש</b></td></tr>
+    <tr><td><code>/context</code></td><td>מראה מה בדיוק טעון בקונטקסט: אילו קבצי זיכרון, כמה טוקנים. כלי הדיבוג מספר 1</td></tr>
+    <tr><td><code>/memory</code></td><td>פותח את קבצי ה-CLAUDE.md והזיכרון האוטומטי לעריכה</td></tr>
+    <tr><td><code>/mcp</code></td><td>ניהול שרתי MCP: סטטוס חיבור, אימות OAuth</td></tr>
+    <tr><td><code>/plugin</code></td><td>ניהול פלאגינים: התקנה, הסרה, שגיאות</td></tr>
+    <tr><td><code>/compact</code></td><td>מכווץ את השיחה כשהקונטקסט מתמלא (שומר סיכום)</td></tr>
+    <tr><td><code>/clear</code></td><td>מנקה את השיחה לגמרי — עדיף על compact כשמתחילים משימה חדשה</td></tr>
+    <tr><td><code>/doctor</code></td><td>בדיקת תקינות של ההתקנה והקונפיגורציה, כולל הצעות לקיצור CLAUDE.md</td></tr>
+    <tr><td><code>/help</code></td><td>כל הפקודות הזמינות, כולל Skills מותאמים</td></tr>
+  </table>
+
+  <h3>מצב תכנון (Plan Mode)</h3>
+  <p>לוחצים <span class="kbd">Shift+Tab</span> כדי לעבור בין מצבים. במצב Plan, קלוד רק קורא ומתכנן — לא נוגע בקבצים — עד שמאשרים את התוכנית. <b>כלל אצבע: כל משימה שנוגעת ביותר מ-2–3 קבצים מתחילים ב-Plan Mode.</b></p>
+
+  <div class="tip"><b>שגרת עבודה מומלצת למשימה</b>
+  1. <code>/clear</code> (מתחילים נקי) → 2. Plan Mode + תיאור המשימה → 3. מאשרים תוכנית → 4. קלוד מבצע ומריץ טסטים → 5. סוקרים diff → 6. מבקשים קומיט. אם קלוד טעה פעמיים באותו דבר — זה סימן שחסרה שורה ב-CLAUDE.md.</div>
+</section>
+
+<!-- ============ 3: איך לדבר עם קלוד ============ -->
+<section class="card" id="s9">
+  <h2 class="sec"><span class="num">3</span> איך לדבר עם קלוד — הפרק שהכי משפיע על התוצאות</h2>
+  <p>רוב ההבדל בין מי שמקבל תוצאות מעולות למי שמתוסכל הוא לא הכלים — זה ניסוח המשימה וניהול הסשן. ארבעה עקרונות:</p>
+
+  <h3>עיקרון 1: משימה קטנה, ספציפית, עם קריטריון הצלחה</h3>
+  <table>
+    <tr><th>❌ פרומפט חלש</th><th>✅ פרומפט חזק</th></tr>
+    <tr><td>"תשפר את הקוד"</td><td>"תעשה רפקטור ל-<code>userService.ts</code>: תוציא את הלוגיקה של הוולידציה לפונקציות נפרדות. אל תשנה התנהגות — כל הטסטים הקיימים צריכים לעבור"</td></tr>
+    <tr><td>"יש באג בלוגין, תתקן"</td><td>"כשמזינים אימייל עם אות גדולה, הלוגין נכשל עם 401. השגיאה מגיעה מ-<code>auth/login.ts</code>. תמצא את הסיבה, תציע תיקון, ותוסיף טסט שמכסה את המקרה"</td></tr>
+    <tr><td>"תבנה מערכת הרשאות"</td><td>לפרק ל-3–4 משימות: "שלב 1: תוסיף שדה role למודל User עם מיגרציה. בלי לגעת ב-API עדיין"</td></tr>
+  </table>
+  <p>נוסחה לפרומפט טוב: <b>מה לעשות + איפה (קבצים) + מה אסור לשבור + איך נדע שהצליח</b>.</p>
+
+  <h3>עיקרון 2: תן הקשר, אל תסמוך על ניחוש</h3>
+  <ul>
+    <li>הדבק שגיאות <b>מלאות</b> כלשונן — stack trace שלם, לא "יש שגיאה".</li>
+    <li>הפנה לקבצים ספציפיים: <code>@src/api/handlers/auth.ts</code> (תיוג @ מצרף את הקובץ לשיחה).</li>
+    <li>ציין אילוצים מראש: "בלי ספריות חדשות", "חייב לתמוך ב-Node 18".</li>
+  </ul>
+
+  <h3>עיקרון 3: דע מתי לעצור סשן</h3>
+  <p>זו הטעות הנפוצה ביותר: להתווכח עם קלוד חמישה סיבובים כשהסשן כבר "התלכלך" מניסיונות כושלים. הקונטקסט מלא בקוד שגוי ובכיוונים מתים, וכל תשובה נבנית על הזבל הזה.</p>
+  <div class="tip"><b>כלל שני התיקונים</b>
+  אם אחרי שני ניסיונות תיקון קלוד עדיין לא שם — עצור. <code>/clear</code>, ונסח מחדש את המשימה עם מה שלמדת: "ניסיתי X, זה נכשל בגלל Y. הבעיה האמיתית היא כנראה Z. תתחיל מ...". סשן נקי עם פרומפט חכם יותר מנצח סשן ארוך ומבולגן כמעט תמיד. באמצע ריצה אפשר ללחוץ <span class="kbd">Esc</span> כדי לעצור את קלוד ולתקן כיוון.</div>
+
+  <h3>עיקרון 4: סגור את הלולאה — אמת ולמד</h3>
+  <ul>
+    <li>בסוף כל משימה: "תריץ את הטסטים ותראה לי שהכל עובר". אל תסמוך על "סיימתי".</li>
+    <li>סקור את ה-diff לפני קומיט. אם משהו לא ברור — "למה שינית את X?"</li>
+    <li>כל תיקון שנתת פעמיים → "תוסיף ל-CLAUDE.md: ..." או "תזכור ש..." (נשמר ב-Auto Memory). ככה הסשן הבא מתחיל חכם יותר.</li>
+  </ul>
+
+  <h3>תבנית מוכנה להעתקה</h3>
+<pre><code>המשימה: [מה לעשות, במשפט אחד]
+קבצים רלוונטיים: @path/to/file1 @path/to/file2
+הקשר: [למה, מה כבר ניסיתי, שגיאות מלאות]
+אילוצים: [מה אסור לשבור / לשנות]
+הצלחה = [טסטים עוברים / התנהגות X קורית]
+תתחיל בתוכנית קצרה לפני שאתה נוגע בקוד.</code></pre>
+</section>
+
+<!-- ============ 4: פרויקט מאפס ============ -->
+<section class="card" id="s11">
+  <h2 class="sec"><span class="num">4</span> פרויקט חדש מאפס — ומה להכניס לקלוד</h2>
+  <p>פרויקט קיים מתחילים עם <code>/init</code>. פרויקט מאפס זה סיפור אחר: אין קוד לסרוק, ולכן ההצלחה נקבעת <b>לפני</b> שנכתבת שורת קוד. הטעות הקלאסית: "תבנה לי אפליקציה ל-X" בפרומפט אחד — מקבלים 40 קבצים שאי אפשר לתחזק ולא מבינים.</p>
+
+  <h3>שלב 0: מסמך אפיון (SPEC) — קודם מדברים, אחר כך בונים</h3>
+  <p>את האפיון הכי טוב לעשות <b>בצ'אט רגיל</b> (Claude.ai) לפני שפותחים את הטרמינל: מתארים את הרעיון, מבקשים מקלוד לאתגר אותו ולשאול שאלות, ומגבשים ביחד מסמך. את התוצאה שומרים כ-<code>SPEC.md</code> — הוא יהיה מקור האמת של הפרויקט.</p>
+  <p>מה חייב להיות ב-SPEC:</p>
+  <ul>
+    <li><b>מה המוצר עושה</b> — 3–5 משפטים, ומה הוא <u>לא</u> עושה בגרסה ראשונה.</li>
+    <li><b>Stack</b> — שפה, פריימוורק, DB, ספריות עיקריות. אם אתה לא בטוח — תבקש מקלוד להשוות 2–3 אפשרויות <u>לפני</u> שמתחילים, לא באמצע.</li>
+    <li><b>מודל הנתונים</b> — הישויות המרכזיות והקשרים ביניהן.</li>
+    <li><b>אבני דרך</b> — פירוק ל-4–8 שלבים שכל אחד מסתיים במשהו שרץ ואפשר לבדוק.</li>
+  </ul>
+
+  <h3>שלב 1: שלד + תשתית (סשן ראשון)</h3>
+<pre><code>mkdir my-app && cd my-app && git init
+claude
+
+# הפרומפט הראשון:
+"קרא את @SPEC.md. הקם שלד פרויקט לפי ה-stack שמוגדר שם:
+מבנה תיקיות, קונפיגורציה, linter, framework לטסטים, README קצר,
+ו-CLAUDE.md עם פקודות ה-build/test והקונבנציות שקבענו.
+בלי לוגיקה עסקית עדיין. בסוף — ודא ש'npm test' רץ (גם אם ריק) ועשה קומיט ראשון."</code></pre>
+  <ul>
+    <li><b>CLAUDE.md נוצר מהיום הראשון</b> — לא מחכים ל-/init. כל החלטה מהאפיון (סטאק, קונבנציות) נכנסת אליו מיד, כדי שכל סשן עתידי יתחיל איתה.</li>
+    <li><b>git מהקומיט הראשון</b> — רשת הביטחון שלך. קלוד הרס משהו? <code>git checkout</code> וממשיכים.</li>
+    <li><b>טסטים מהשלד</b> — תשתית טסטים ריקה ביום 1 עולה 5 דקות. להוסיף טסטים לפרויקט קיים בלעדיה — ימים.</li>
+  </ul>
+
+  <h3>שלב 2: לולאת אבני דרך</h3>
+  <p>כל אבן דרך = סשן (או כמה): <code>/clear</code> → "קרא את @SPEC.md ו-@CLAUDE.md. אנחנו באבן דרך 3: [תיאור]. תציג תוכנית" → אישור → ביצוע → טסטים → diff → קומיט → עדכון סטטוס ב-SPEC. חתיכות אנכיות (פיצ'ר שלם מקצה לקצה, גם אם מינימלי) עדיפות על שכבות רוחביות ("כל המודלים, אחר כך כל ה-API").</p>
+
+  <h3>מה כדאי — ומה לא כדאי — להכניס לקלוד</h3>
+  <table>
+    <tr><th>✅ להכניס</th><th>למה</th></tr>
+    <tr><td>SPEC.md / מסמך אפיון</td><td>מקור אמת שמונע סחף בין סשנים</td></tr>
+    <tr><td>שגיאות מלאות, כלשונן (stack trace שלם)</td><td>"יש שגיאה" = ניחושים; השגיאה עצמה = אבחון</td></tr>
+    <tr><td>דוגמת קוד בסגנון שאתה אוהב ("תכתוב כמו @src/api/users.ts")</td><td>דוגמה אחת שווה עשרים הוראות סגנון</td></tr>
+    <tr><td>לינקים לתיעוד של ספריות לא-מוכרות או גרסאות חדשות</td><td>הידע של קלוד מתעדכן עד תאריך מסוים; API-ים משתנים</td></tr>
+    <tr><td>סקיצות / צילומי מסך של UI רצוי</td><td>קלוד רואה תמונות — תיאור ויזואלי מדויק יותר ממילים</td></tr>
+    <tr><td>אילוצים עסקיים ("חייב לרוץ על שרת חלש", "משתמשים לא טכניים")</td><td>משנים החלטות ארכיטקטורה שקשה להפוך אחר כך</td></tr>
+  </table>
+  <table>
+    <tr><th>❌ לא להכניס</th><th>למה</th></tr>
+    <tr><td>סודות: API keys, סיסמאות, connection strings</td><td>שייכים ל-<code>.env</code> (שב-.gitignore). אומרים לקלוד "השתמש ב-<code>process.env.X</code>", לא מדביקים את הערך</td></tr>
+    <tr><td>הדבקת קבצים שלמים לתוך הפרומפט</td><td>מיותר — קלוד קורא קבצים לבד. תפנה עם <code>@path</code> ותחסוך קונטקסט</td></tr>
+    <tr><td>"תבנה הכל" בפרומפט אחד</td><td>ככל שהמשימה גדולה, איכות ההחלטות יורדת ואין לך נקודות ביקורת</td></tr>
+    <tr><td>דאטה אמיתי של משתמשים / מידע רגיש</td><td>לבדיקות משתמשים בדאטה מומצא. תבקש מקלוד לייצר seed data</td></tr>
+    <tr><td>קוד של אחרים עם רישיון בעייתי "בתור השראה"</td><td>בעיה משפטית שלך, לא של קלוד</td></tr>
+  </table>
+
+  <div class="tip"><b>סימן שאתה עושה את זה נכון</b>
+  בכל רגע נתון יש לך: פרויקט שרץ (גם אם חלקי), טסטים ירוקים, קומיט אחרון מלפני פחות משעה, ו-SPEC שמשקף איפה אתה. אם ענית "לא" על אחד מאלה — עצור וסדר לפני שממשיכים לבנות.</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section class="card" id="s3">
+  <h2 class="sec"><span class="num">5</span> CLAUDE.md וזיכרון</h2>
+  <p>כל סשן מתחיל עם קונטקסט ריק. שני מנגנונים מעבירים ידע בין סשנים: <b>CLAUDE.md</b> (אתה כותב) ו-<b>Auto Memory</b> (קלוד כותב לעצמו).</p>
+
+  <h3>איפה שמים את הקובץ — לפי היקף</h3>
+  <table>
+    <tr><th>היקף</th><th>מיקום</th><th>למה משמש</th></tr>
+    <tr><td>אישי — כל הפרויקטים</td><td><code>~/.claude/CLAUDE.md</code></td><td>העדפות סגנון אישיות, כלים שאתה אוהב</td></tr>
+    <tr><td>פרויקט (משותף בגיט)</td><td><code>./CLAUDE.md</code> או <code>./.claude/CLAUDE.md</code></td><td>פקודות build/test, ארכיטקטורה, קונבנציות צוות</td></tr>
+    <tr><td>פרויקט — אישי (לא בגיט)</td><td><code>./CLAUDE.local.md</code> (להוסיף ל-.gitignore)</td><td>URL-ים של סנדבוקס, דאטה לבדיקות</td></tr>
+  </table>
+  <p>קלוד טוען את הקבצים מהתיקייה שממנה הרצת <b>ומכל תיקיות האב</b>. קבצי CLAUDE.md בתת-תיקיות נטענים רק כשקלוד נוגע בקבצים שם.</p>
+
+  <h3>דוגמה ל-CLAUDE.md טוב</h3>
+<pre><code># MyApp
+
+## Commands
+- Build: `npm run build`
+- Test: `npm test` (run before every commit)
+- Single test: `npm test -- --grep "name"`
+
+## Architecture
+- API handlers live in `src/api/handlers/`
+- DB access ONLY through `src/db/repo.ts` — never raw SQL in handlers
+
+## Rules
+- TypeScript strict mode, no `any`
+- 2-space indentation
+- Commit messages in English, conventional commits format</code></pre>
+
+  <h4>כללי כתיבה שמשפיעים באמת</h4>
+  <ul>
+    <li><b>קצר:</b> יעד — מתחת ל-200 שורות. קובץ ארוך = פחות ציות ויותר טוקנים בכל שיחה.</li>
+    <li><b>ספציפי וניתן לבדיקה:</b> "הרץ <code>npm test</code> לפני קומיט" ולא "תבדוק את הקוד".</li>
+    <li><b>בלי סתירות:</b> שתי הוראות סותרות = קלוד יבחר אחת אקראית.</li>
+    <li><b>זה לא אכיפה:</b> CLAUDE.md הוא הקשר, לא חוק. מה שחייב לקרות תמיד — עושים כ-Hook.</li>
+  </ul>
+
+  <h3>ייבוא קבצים עם @</h3>
+<pre><code>See @README for project overview and @package.json for available commands.
+
+# Additional Instructions
+- git workflow: @docs/git-instructions.md
+- personal prefs (works across worktrees): @~/.claude/my-project-instructions.md</code></pre>
+  <p>עד 4 רמות עומק של ייבוא. שים לב: קבצים מיובאים נטענים במלואם בתחילת הסשן — זה מארגן, לא חוסך קונטקסט.</p>
+
+  <h3>חוקים ממוקדים — <code>.claude/rules/</code></h3>
+  <p>בפרויקטים גדולים מפצלים לקבצי נושא. אפשר להגביל חוק לקבצים מסוימים עם frontmatter — והוא ייטען רק כשקלוד עובד על קבצים תואמים:</p>
+<pre><code>&#45;&#45;&#45;
+paths:
+  - "src/api/**/*.ts"
+&#45;&#45;&#45;
+
+# API Development Rules
+- All endpoints must include input validation
+- Use the standard error response format</code></pre>
+
+  <h3>Auto Memory — הזיכרון שקלוד כותב לעצמו</h3>
+  <p>מופעל כברירת מחדל. קלוד שומר לעצמו תובנות (פקודות build שעבדו, דפוסי דיבוג) ב-<code>~/.claude/projects/&lt;project&gt;/memory/</code>. ה-200 שורות הראשונות של <code>MEMORY.md</code> נטענות בכל שיחה. הכל markdown רגיל — <code>/memory</code> מאפשר לעיין, לערוך ולמחוק. כשאומרים לקלוד "תזכור ש..." — זה נשמר לשם.</p>
+
+  <div class="warn"><b>ההוראות לא נשמרות אחרי /compact?</b>
+  רק CLAUDE.md של שורש הפרויקט נטען מחדש אוטומטית אחרי compact. הוראות שנאמרו רק בשיחה — נעלמות. מה שחשוב לך לאורך זמן, תכניס לקובץ.</div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section class="card" id="s4">
+  <h2 class="sec"><span class="num">6</span> MCP — חיבור Claude לכלים חיצוניים</h2>
+  <p><b>Model Context Protocol</b> הוא תקן פתוח שנותן לקלוד כלים (tools) מול מערכות חיצוניות: לשאול DB, לקרוא טיקטים ב-Jira, לשלוח הודעות Slack, לקרוא דפי Notion ועוד. שרת MCP = תוכנה קטנה שחושפת כלים כאלה.</p>
+
+  <h3>שלושה סוגי חיבור (Transports)</h3>
+  <table>
+    <tr><th>סוג</th><th>מה זה</th><th>מתי</th></tr>
+    <tr><td><code>http</code></td><td>שרת מרוחק בענן, לרוב עם OAuth</td><td>שירותי SaaS: Notion, Sentry, GitHub, Stripe</td></tr>
+    <tr><td><code>sse</code></td><td>שרת מרוחק בפרוטוקול ישן יותר</td><td>רק אם השירות תומך רק בזה (Asana)</td></tr>
+    <tr><td><code>stdio</code></td><td>תהליך שרץ מקומית אצלך</td><td>DB מקומי, קבצים, כלים בהתקנת npx</td></tr>
+  </table>
+
+  <h3>הפקודות המרכזיות</h3>
+<pre><code># הוספת שרת HTTP מרוחק (הכי נפוץ)
+claude mcp add --transport http notion https://mcp.notion.com/mcp
+
+# הוספה עם header של אימות
+claude mcp add --transport http github https://api.githubcopilot.com/mcp/ \
+  --header "Authorization: Bearer YOUR_GITHUB_PAT"
+
+# שרת מקומי (stdio) עם משתנה סביבה
+claude mcp add --env AIRTABLE_API_KEY=YOUR_KEY --transport stdio airtable \
+  -- npx -y airtable-mcp-server
+
+# ניהול
+claude mcp list        # רשימה + סטטוס חיבור (Connected / Needs auth / Failed)
+claude mcp get notion  # פרטים על שרת
+claude mcp remove notion</code></pre>
+  <p>אחרי ההוספה, בתוך הסשן מריצים <code>/mcp</code> כדי לבדוק סטטוס ולהשלים אימות OAuth אם צריך.</p>
+
+  <h3>Scopes — איפה הקונפיגורציה נשמרת</h3>
+  <table>
+    <tr><th>Scope</th><th>פקודה</th><th>מי רואה</th></tr>
+    <tr><td><b>local</b> (ברירת מחדל)</td><td><code>--scope local</code></td><td>רק אתה, רק בפרויקט הזה</td></tr>
+    <tr><td><b>project</b></td><td><code>--scope project</code></td><td>כל הצוות — נשמר ב-<code>.mcp.json</code> בשורש הפרויקט (נכנס לגיט)</td></tr>
+    <tr><td><b>user</b></td><td><code>--scope user</code></td><td>אתה, בכל הפרויקטים במחשב</td></tr>
+  </table>
+
+  <h3>דוגמת <code>.mcp.json</code> לצוות</h3>
+<pre><code>{
+  "mcpServers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "db": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@bytebase/dbhub", "--dsn", "${DB_DSN}"]
+    }
+  }
+}</code></pre>
+  <p>אפשר להשתמש ב-<code>${VAR}</code> ובברירת מחדל <code>${VAR:-default}</code> כדי לא לשמור סודות בגיט.</p>
+
+  <div class="warn"><b>אבטחה — שלושה כללים</b>
+  1. מתקינים רק שרתי MCP ממקורות מהימנים (התחילו מה-<a href="https://claude.ai/directory">Anthropic Directory</a>).
+  2. שרת MCP יכול להחזיר טקסט זדוני שמנסה לתמרן את קלוד (prompt injection) — היזהרו במיוחד משרתים שמושכים תוכן חיצוני.
+  3. טוקנים שמים במשתני סביבה, לא בקבצים שנכנסים לגיט.</div>
+
+  <h3>MCP ב-Claude.ai (בלי טרמינל)</h3>
+  <p>באתר ובאפליקציה זה נקרא <b>Connectors</b>: Settings ← Connectors ← Browse. אותם שרתים, ממשק גרפי. ב-Cowork הם זמינים אוטומטית אחרי חיבור.</p>
+</section>
+
+<!-- ============ 7 ============ -->
+<section class="card" id="s5">
+  <h2 class="sec"><span class="num">7</span> Skills — הוראות עבודה שנטענות לפי הצורך</h2>
+  <p>Skill = תיקייה עם קובץ <code>SKILL.md</code> (ואופציונלית סקריפטים וקבצי עזר). בניגוד ל-CLAUDE.md, ה-Skill נטען לקונטקסט <b>רק</b> כשמפעילים אותו — ידנית עם <code>/skill-name</code> או אוטומטית כשקלוד מזהה שהוא רלוונטי (לפי ה-description).</p>
+
+  <h3>איפה Skills חיים</h3>
+  <table>
+    <tr><th>היקף</th><th>מיקום</th><th>זמין ב...</th></tr>
+    <tr><td>אישי</td><td><code>~/.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>כל הפרויקטים שלך</td></tr>
+    <tr><td>פרויקט</td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>הפרויקט (משותף בגיט)</td></tr>
+    <tr><td>פלאגין</td><td><code>plugin/skills/&lt;name&gt;/SKILL.md</code></td><td>איפה שהפלאגין מותקן, בשם <code>/plugin:name</code></td></tr>
+  </table>
+  <p>שם התיקייה = שם הפקודה: <code>.claude/skills/deploy-staging/</code> יוצר <code>/deploy-staging</code>. שינויים נקלטים תוך כדי סשן, בלי restart.</p>
+
+  <h3>דוגמה מלאה — Skill לקומיטים</h3>
+<pre><code>&#45;&#45;&#45;
+description: Create a git commit following team conventions.
+  Use when the user asks to commit changes.
+disable-model-invocation: true
+allowed-tools: Bash(git add *) Bash(git commit *) Bash(git status *) Bash(git diff *)
+&#45;&#45;&#45;
+
+# Commit Skill
+
+1. Run `git status` and `git diff --staged` to review changes
+2. Write a conventional commit message: `type(scope): summary`
+3. Types: feat / fix / refactor / docs / test / chore
+4. Subject under 70 chars, in English
+5. Never use `git add -A` — stage only relevant files</code></pre>
+
+  <h3>שדות ה-Frontmatter החשובים</h3>
+  <table>
+    <tr><th>שדה</th><th>מה עושה</th></tr>
+    <tr><td><code>description</code></td><td>הכי חשוב! לפי זה קלוד מחליט מתי להפעיל אוטומטית. לכתוב מה הכלי עושה + מתי להשתמש בו</td></tr>
+    <tr><td><code>disable-model-invocation: true</code></td><td>רק אתה יכול להפעיל (עם <code>/name</code>). חובה לפעולות עם תופעות לוואי: deploy, commit, שליחת הודעות</td></tr>
+    <tr><td><code>allowed-tools</code></td><td>מאשר מראש כלים ספציפיים — בלי חלונות אישור באמצע</td></tr>
+    <tr><td><code>context: fork</code></td><td>מריץ את ה-Skill ב-subagent נפרד, בלי לזהם את השיחה הראשית</td></tr>
+  </table>
+
+  <h3>ארגומנטים</h3>
+<pre><code>&#45;&#45;&#45;
+description: Fix a GitHub issue by number
+disable-model-invocation: true
+&#45;&#45;&#45;
+Fix GitHub issue #$ARGUMENTS.
+First read the issue with `gh issue view $ARGUMENTS`, then plan the fix.</code></pre>
+  <p>הפעלה: <code>/fix-issue 123</code>. יש גם <code>$1</code>, <code>$2</code> לארגומנטים נפרדים.</p>
+
+  <h3>מתי Skill ומתי CLAUDE.md?</h3>
+  <ul>
+    <li>הוראה שרלוונטית <b>לכל</b> אינטראקציה (סגנון קוד, פקודת build) → CLAUDE.md.</li>
+    <li>תהליך רב-שלבי שרלוונטי <b>לפעמים</b> (דוח שבועי, יצירת migration, code review לפי צ'קליסט) → Skill.</li>
+    <li>ב-Claude.ai ו-Cowork אפשר להעלות Skills דרך Settings ← Capabilities — אותו פורמט SKILL.md בדיוק.</li>
+  </ul>
+</section>
+
+<!-- ============ 8 ============ -->
+<section class="card" id="s6">
+  <h2 class="sec"><span class="num">8</span> Plugins — אריזה ושיתוף</h2>
+  <p>Plugin אורז בחבילה אחת: Skills, Agents (סוכני משנה), Hooks, שרתי MCP ואפילו שרתי LSP. מתקינים פעם אחת — מקבלים הכל. זה הפתרון כשרוצים לשתף סטאפ עם צוות או קהילה.</p>
+
+  <h3>התקנת פלאגינים קיימים</h3>
+<pre><code># בתוך סשן — פותח את מנהל הפלאגינים (מרקטפלייס רשמי מובנה)
+/plugin
+
+# הוספת מרקטפלייס הקהילה והתקנה ממנו
+/plugin marketplace add anthropics/claude-plugins-community
+/plugin install some-plugin@claude-community</code></pre>
+
+  <h3>מבנה פלאגין</h3>
+<pre><code>my-plugin/
+├── .claude-plugin/
+│   └── plugin.json        # המניפסט — רק הוא יושב בתיקייה הזאת!
+├── skills/
+│   └── code-review/
+│       └── SKILL.md       # יהפוך ל-/my-plugin:code-review
+├── agents/                # הגדרות סוכנים
+├── hooks/
+│   └── hooks.json         # אוטומציות על אירועים
+└── .mcp.json              # שרתי MCP שמגיעים עם הפלאגין</code></pre>
+
+  <h4>plugin.json מינימלי</h4>
+<pre><code>{
+  "name": "my-plugin",
+  "description": "Team workflow toolkit",
+  "version": "1.0.0",
+  "author": { "name": "Eliya" }
+}</code></pre>
+
+  <h3>פיתוח ובדיקה מקומית</h3>
+<pre><code>claude plugin init my-tool        # מייצר שלד מוכן ב-~/.claude/skills/my-tool
+claude --plugin-dir ./my-plugin   # טוען פלאגין מקומי לבדיקה
+/reload-plugins                   # קולט שינויים בלי לצאת
+claude plugin validate ./my-plugin # ולידציה לפני שיתוף</code></pre>
+
+  <div class="warn"><b>הטעות הנפוצה ביותר</b>
+  לשים את <code>skills/</code> או <code>hooks/</code> בתוך <code>.claude-plugin/</code>. לא! רק <code>plugin.json</code> יושב שם. כל שאר התיקיות — בשורש הפלאגין.</div>
+
+  <h3>דוגמת Hook בתוך פלאגין</h3>
+  <p>Hook רץ <b>תמיד</b> כשהאירוע קורה — לא תלוי בשיקול דעת של קלוד. למשל, lint אוטומטי אחרי כל עריכה:</p>
+<pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command",
+          "command": "jq -r '.tool_input.file_path' | xargs npm run lint:fix" }]
+      }
+    ]
+  }
+}</code></pre>
+</section>
+
+<!-- ============ 9 ============ -->
+<section class="card" id="s7">
+  <h2 class="sec"><span class="num">9</span> איך הכל מתחבר — טבלת החלטה</h2>
+  <table>
+    <tr><th>אני רוצה ש...</th><th>הכלי הנכון</th><th>למה</th></tr>
+    <tr><td>קלוד תמיד יידע את קונבנציות הפרויקט</td><td><b>CLAUDE.md</b></td><td>נטען בכל שיחה</td></tr>
+    <tr><td>חוקים יחולו רק על קבצי API</td><td><b>.claude/rules/</b> עם <code>paths</code></td><td>נטען רק כשנוגעים בקבצים תואמים</td></tr>
+    <tr><td>יהיה לי תהליך מסודר לדוח/deploy/review</td><td><b>Skill</b></td><td>נטען לפי דרישה, לא שורף קונטקסט</td></tr>
+    <tr><td>lint ירוץ אחרי כל שינוי קובץ, בלי תלות בקלוד</td><td><b>Hook</b></td><td>אכיפה אמיתית, לא המלצה</td></tr>
+    <tr><td>קלוד יוכל לדבר עם Jira / DB / Slack</td><td><b>MCP</b></td><td>כלים חיצוניים</td></tr>
+    <tr><td>לשתף את כל הסטאפ עם הצוות</td><td><b>Plugin</b></td><td>אורז הכל, מותקן בפקודה אחת</td></tr>
+    <tr><td>משימה גדולה תרוץ בלי לזהם את השיחה</td><td><b>Subagent</b> / <code>context: fork</code></td><td>קונטקסט נפרד</td></tr>
+  </table>
+
+  <h3>סדר פעולות מומלץ לפרויקט חדש</h3>
+  <ol>
+    <li><code>claude</code> בתיקיית הפרויקט ← <code>/init</code> ליצירת CLAUDE.md.</li>
+    <li>עוברים על ה-CLAUDE.md שנוצר, מקצרים ומוסיפים את מה שקלוד לא יכול לגלות לבד (החלטות, מלכודות).</li>
+    <li>מחברים MCP רק למה שבאמת צריך (כל שרת = עוד כלים בקונטקסט).</li>
+    <li>אחרי שבוע עבודה: כל תיקון שחזרת עליו פעמיים → שורה ב-CLAUDE.md. כל תהליך שחזרת עליו פעמיים → Skill.</li>
+    <li>כשהסטאפ מתייצב ורוצים לשתף → אורזים כ-Plugin.</li>
+  </ol>
+</section>
+
+<!-- ============ 10: תרגיל שעה ראשונה ============ -->
+<section class="card" id="s10">
+  <h2 class="sec"><span class="num">10</span> תרגיל: השעה הראשונה שלך</h2>
+  <p>קריאת המדריך לא יוצרת מיומנות — ביצוע כן. פתח פרויקט אמיתי (לא דוגמה) והרץ את המסלול הזה פעם אחת מהתחלה לסוף. סמן לעצמך כל שלב.</p>
+
+  <table>
+    <tr><th>זמן</th><th>מה עושים</th><th>מה לומדים</th></tr>
+    <tr><td>0–10 דק'</td><td>התקנה, <code>cd</code> לפרויקט, <code>claude</code>, ואז <code>/init</code>. פתח את ה-CLAUDE.md שנוצר, מחק מה שמיותר, הוסף שורה אחת שקלוד לא יכול לדעת לבד (למשל החלטה ארכיטקטונית)</td><td>Setup + זיכרון פרויקט</td></tr>
+    <tr><td>10–20 דק'</td><td>שאל שאלה על הקוד שלך: "תסביר איך עובד הפלואו של [פיצ'ר], אילו קבצים מעורבים ובאיזה סדר". בדוק אם הוא צדק</td><td>לתת לקלוד לחקור לבד — ולכייל כמה לסמוך עליו</td></tr>
+    <tr><td>20–35 דק'</td><td>בחר באג קטן או שיפור אמיתי. <span class="kbd">Shift+Tab</span> ל-Plan Mode, נסח לפי התבנית מפרק 3 (כולל "הצלחה ="), אשר את התוכנית, תן לו לבצע, בקש שיריץ טסטים, סקור diff, בקש קומיט</td><td>מחזור העבודה המלא — לב העניין</td></tr>
+    <tr><td>35–45 דק'</td><td>צור Skill אישי ראשון: <code>mkdir -p ~/.claude/skills/explain</code>, כתוב SKILL.md שמסביר קוד בעברית פשוטה עם דיאגרמה. הפעל: <code>/explain @somefile</code></td><td>Skills זה 5 דקות עבודה, לא פרויקט</td></tr>
+    <tr><td>45–55 דק'</td><td>חבר שרת MCP אחד שרלוונטי לך (למשל <code>claude mcp add --transport http github ...</code> מפרק 6), הרץ <code>/mcp</code> לאימות, ובקש משהו שדורש אותו: "מה ה-issues הפתוחים שלי?"</td><td>חיבור לעולם החיצוני</td></tr>
+    <tr><td>55–60 דק'</td><td>סיכום: הרץ <code>/context</code> וראה מה טעון. תקן משהו שקלוד עשה לא לטעמך ואמור לו "תזכור ש-...". סגור עם <code>/clear</code></td><td>ניהול קונטקסט + למידה מתמשכת</td></tr>
+  </table>
+
+  <div class="tip"><b>אחרי השעה הזאת</b>
+  יש לך: CLAUDE.md אמיתי, קומיט ראשון שקלוד כתב, Skill אחד, שרת MCP אחד, והרגל לסקור diff. זה 80% ממה שמשתמש מיומן עושה ביום-יום. השאר (Plugins, Hooks, Subagents) מוסיפים כשמרגישים צורך — לא לפני.</div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section class="card" id="s8">
+  <h2 class="sec"><span class="num">11</span> תקלות נפוצות וטיפים מתקדמים</h2>
+
+  <h3>תקלות נפוצות</h3>
+  <table>
+    <tr><th>סימפטום</th><th>אבחון וטיפול</th></tr>
+    <tr><td>קלוד מתעלם מ-CLAUDE.md</td><td><code>/context</code> — לבדוק שהקובץ בכלל נטען. אם כן: ההוראה כנראה מעורפלת או סותרת אחרת. לנסח ספציפי. אם זה קריטי — להפוך ל-Hook</td></tr>
+    <tr><td>שרת MCP לא עובד</td><td><code>claude mcp list</code> — לראות סטטוס. <code>Needs authentication</code> ← להריץ <code>/mcp</code> ולהשלים OAuth. <code>Failed</code> ← לבדוק URL וטוקן</td></tr>
+    <tr><td>Skill לא מופעל אוטומטית</td><td>ה-description חלש. לכתוב בו גם מה הכלי עושה וגם מתי להשתמש ("Use when...")</td></tr>
+    <tr><td>פלאגין לא נטען</td><td><code>/plugin</code> ← טאב Errors. לרוב: תיקיות בתוך <code>.claude-plugin/</code> בטעות</td></tr>
+    <tr><td>הקונטקסט מתמלא מהר</td><td><code>/context</code> לזהות מה שורף. CLAUDE.md ארוך מדי? לפצל ל-rules עם paths או ל-Skills. ו-<code>/clear</code> בין משימות</td></tr>
+  </table>
+
+  <h3>טיפים מתקדמים</h3>
+  <ul>
+    <li><b>Headless לאוטומציה:</b> <code>claude -p "..."</code> בתוך סקריפטים ו-CI. עם <code>--output-format json</code> מקבלים פלט מובנה.</li>
+    <li><b>Subagents:</b> מגדירים סוכנים ייעודיים ב-<code>.claude/agents/</code> (למשל code-reviewer עם כלי קריאה בלבד) — הם רצים בקונטקסט נפרד ומחזירים רק מסקנה.</li>
+    <li><b>שאלות על Claude Code לקלוד עצמו:</b> פשוט לשאול בתוך הסשן — "איך אני מגדיר hook שרץ לפני קומיט?" — הוא מכיר את התיעוד של עצמו.</li>
+    <li><b>עלויות:</b> <code>/cost</code> מראה צריכת טוקנים בסשן (למשתמשי API). למנויי Pro/Max זה כלול במנוי.</li>
+    <li><b>תיעוד רשמי:</b> <a href="https://code.claude.com/docs">code.claude.com/docs</a> — המקור המלא והעדכני.</li>
+  </ul>
+</section>
+
+<footer>
+  נוהל עבודה עם Claude ו-Claude Code · נכתב עבור אליה · אוגוסט 2026 · מבוסס על התיעוד הרשמי של Anthropic
+</footer>
+
+</div>
+</body>
+</html>

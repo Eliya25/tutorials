@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps ותשתית — המדריך המלא למפתח Backend</title>
+<style>
+  body {
+    direction: rtl;
+    font-family: "Segoe UI", "Arial", "Helvetica Neue", sans-serif;
+    line-height: 1.75;
+    color: #1a1a1a;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    background: #ffffff;
+  }
+  h1 { font-size: 2em; border-bottom: 3px solid #0f766e; padding-bottom: 12px; color: #1a1a1a; }
+  h2 { font-size: 1.5em; margin-top: 2em; border-bottom: 1px solid #ddd; padding-bottom: 6px; color: #0f766e; }
+  h3 { font-size: 1.2em; margin-top: 1.5em; color: #115e59; }
+  h4 { font-size: 1.05em; margin-top: 1.2em; color: #134e4a; }
+  p, li { font-size: 1.05em; }
+  code {
+    direction: ltr;
+    unicode-bidi: embed;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    background: #f2f4f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #b5192a;
+  }
+  pre {
+    direction: ltr;
+    text-align: left;
+    background: #1e1e2e;
+    color: #e4e4ef;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote {
+    border-right: 4px solid #f0ad4e;
+    background: #fff8ec;
+    margin: 1em 0;
+    padding: 12px 18px;
+    border-radius: 4px;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; vertical-align: top; }
+  th { background: #e9f7f5; }
+  a { color: #0f766e; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  .toc { background: #f0faf9; border: 1px solid #cceae6; border-radius: 8px; padding: 16px 24px; }
+  .flow { background: #f0faf9; border: 1px solid #cceae6; border-radius: 8px; padding: 12px 18px; direction: ltr; text-align: left; font-family: monospace; font-size: 0.85em; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<h1>DevOps ותשתית — המדריך המלא למפתח Backend</h1>
+
+<blockquote>
+<p>המשך לסדרה. עד עכשיו בנינו וכתבנו קוד; כאן לומדים איך <strong>לארוז אותו, לפרוס אותו, ולהריץ אותו בפרודקשן</strong> בצורה אמינה וחוזרת על עצמה.</p>
+<p><strong>הרעיון המרכזי:</strong> DevOps אינו אוסף פקודות לשנן — הוא שתי מטרות: <strong>reproducibility</strong> (שזה ירוץ אותו דבר בכל מקום) ו-<strong>automation</strong> (שבני אדם לא יעשו ידנית מה שמכונה יכולה). אתה לא צריך להיות DevOps engineer — צריך אוריינות עבודה. עברית להסבר, אנגלית למונחים ולפקודות.</p>
+</blockquote>
+
+<div class="toc">
+<h2 style="margin-top:0;border:none;">תוכן עניינים</h2>
+<ol>
+<li><a href="#s1">מבוא: מה זה DevOps ובעיית "עובד אצלי במחשב"</a></li>
+<li><a href="#s2">Linux ו-Shell — הבסיס</a></li>
+<li><a href="#s3">Docker — Images מול Containers</a></li>
+<li><a href="#s4">Dockerfile ו-Multi-stage Builds</a></li>
+<li><a href="#s5">Docker בפועל — Ports, Volumes, Env</a></li>
+<li><a href="#s6">Docker Compose — סביבה מרובת-שירותים</a></li>
+<li><a href="#s7">Container Registries</a></li>
+<li><a href="#s8">CI/CD — אוטומציה של Build, Test, Deploy</a></li>
+<li><a href="#s9">Cloud — יסודות</a></li>
+<li><a href="#s10">אסטרטגיות Deployment</a></li>
+<li><a href="#s11">Kubernetes — מתי ולמה</a></li>
+<li><a href="#s12">Infrastructure as Code</a></li>
+<li><a href="#s13">Secrets ו-Configuration</a></li>
+<li><a href="#s14">The Twelve-Factor App</a></li>
+<li><a href="#s15">Best Practices וטעויות נפוצות</a></li>
+<li><a href="#s16">תרגילים</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. מבוא: מה זה DevOps ובעיית "עובד אצלי במחשב"</h2>
+
+<p>DevOps הוא תרבות ופרקטיקות שמקרבות בין <strong>Dev</strong> (פיתוח) ל-<strong>Ops</strong> (תפעול) — כדי שקוד יעבור מ"נכתב" ל"רץ בפרודקשן" מהר, בבטחה, ובאופן חוזר. בשביל מפתח Backend זה אומר: לדעת לארוז את הקוד שלך, לאוטמט את הבנייה והבדיקות, ולפרוס בלי דרמה.</p>
+
+<h3>הבעיה שהכל מתחיל ממנה</h3>
+<p>"אבל זה עובד אצלי במחשב!" — המשפט הכי מתסכל בהיסטוריית התוכנה. הקוד רץ אצל המפתח ונכשל בשרת. למה? כי הסביבות שונות: גרסת Node אחרת, ספרייה חסרה, משתנה סביבה אחר, מערכת הפעלה שונה. כל ההבדלים הקטנים האלה מצטברים לכשלים.</p>
+
+<p><strong>כל DevOps בעצם מתקף סביב פתרון הבעיה הזו:</strong> איך גורמים לקוד לרוץ <em>בדיוק אותו דבר</em> בכל מקום — במחשב שלך, ב-CI, ובפרודקשן. התשובה המרכזית היא containers (Docker), שאורזים את הקוד <em>יחד עם כל הסביבה שלו</em>. זה הרעיון שיחזור לאורך כל המדריך.</p>
+
+<h3>שתי המטרות שמנחות הכל</h3>
+<ul>
+<li><strong>Reproducibility</strong> — אותו input מייצר אותו output בכל מקום. אין הפתעות בין סביבות.</li>
+<li><strong>Automation</strong> — כל דבר חוזר (build, test, deploy) נעשה על ידי מכונה, לא ידנית. בני אדם עושים טעויות; אוטומציה עקבית.</li>
+</ul>
+
+<blockquote>
+<p><strong>המסגור הנכון:</strong> אל תלמד DevOps כרשימת כלים ("Docker, Kubernetes, Terraform"). למד אותו כפתרונות לבעיות: containers פותרים את "עובד אצלי", CI/CD פותר "שכחנו להריץ טסטים / פרסנו ידנית וטעינו", IaC פותר "אף אחד לא זוכר איך הוקמה התשתית". כשאתה מבין <em>איזו בעיה</em> כל כלי פותר — הכל מתחבר.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s2">2. Linux ו-Shell — הבסיס</h2>
+
+<p>כמעט כל שרת בעולם רץ Linux. אתה לא צריך להיות sysadmin, אבל בלי היכרות בסיסית עם shell — אתה תקוע. זה הבסיס שהכל יושב עליו.</p>
+
+<h3>הפקודות שחייבים לדעת</h3>
+<pre><code># ניווט וקבצים
+ls -la          # רשימת קבצים (כולל מוסתרים והרשאות)
+cd /path        # מעבר תיקייה
+pwd             # איפה אני
+cat / less      # הצגת תוכן קובץ
+grep "text" f   # חיפוש בתוך קבצים (זוכר מ-ripgrep?)
+find . -name    # חיפוש קבצים
+
+# תהליכים ומשאבים
+ps aux          # תהליכים רצים
+top / htop      # ניטור CPU/RAM חי
+kill -9 PID     # הריגת תהליך
+df -h           # מקום בדיסק
+free -h         # זיכרון פנוי
+
+# רשת (זוכר ממדריך Networking?)
+curl / ping / netstat / lsof -i :3000
+
+# הרשאות
+chmod +x file   # הפיכה לניתן-להרצה
+chown user file # שינוי בעלים
+sudo command    # הרצה כ-root</code></pre>
+
+<h3>מושגים חשובים</h3>
+<ul>
+<li><strong>Pipes ו-redirection</strong> — <code>|</code> מעביר פלט של פקודה אחת לקלט של הבאה; <code>&gt;</code> כותב לקובץ. למשל <code>ps aux | grep node</code>.</li>
+<li><strong>Environment variables</strong> — <code>export KEY=value</code>, נקראים ב-<code>$KEY</code>. קריטי לקונפיגורציה (פרק 13).</li>
+<li><strong>Permissions</strong> — read/write/execute למשתמש/קבוצה/כולם. מקור נפוץ ל-"permission denied".</li>
+<li><strong>SSH</strong> — <code>ssh user@server</code> להתחברות מאובטחת לשרת מרוחק. הדרך הסטנדרטית לגשת לשרתים.</li>
+</ul>
+
+<blockquote>
+<p><strong>מעשי:</strong> אתה לא צריך לשלוט ב-Linux ברמת מומחה — צריך לנוע בנוחות ב-shell, לקרוא logs, לבדוק תהליכים ומשאבים, ולהתחבר ב-SSH. ברגע שתעבוד עם Docker וענן, ה-shell יהיה הכלי היומיומי שלך. השקעה קטנה כאן משתלמת בכל שאר המדריך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s3">3. Docker — Images מול Containers</h2>
+
+<p>Docker הוא הכלי שפותר את "עובד אצלי". הוא אורז את האפליקציה <strong>יחד עם כל הסביבה שלה</strong> (runtime, ספריות, קונפיגורציה) ליחידה אחת שרצה אותו דבר בכל מקום. זה הכלי הכי חשוב במדריך הזה.</p>
+
+<h3>Container מול Virtual Machine</h3>
+<p>נקודה שחשוב להבין. VM מדמה מחשב שלם כולל מערכת הפעלה — כבד (גיגה-בייטים, דקות לעלייה). Container חולק את ה-kernel של המארח ומבודד רק את האפליקציה — <strong>קל</strong> (מגה-בייטים, שניות לעלייה):</p>
+<table>
+<tr><th></th><th>Virtual Machine</th><th>Container</th></tr>
+<tr><td>מכיל</td><td>OS מלא</td><td>רק האפליקציה + תלויות</td></tr>
+<tr><td>גודל</td><td>גיגה-בייטים</td><td>מגה-בייטים</td></tr>
+<tr><td>זמן עלייה</td><td>דקות</td><td>שניות</td></tr>
+<tr><td>בידוד</td><td>מלא (OS נפרד)</td><td>ברמת התהליך (kernel משותף)</td></tr>
+</table>
+<p>הקלילות הזו היא מה שהפך containers לסטנדרט — אפשר להריץ עשרות על מכונה אחת, לעלות ולרדת מיידית.</p>
+
+<h3>שלושת המושגים המרכזיים</h3>
+<ul>
+<li><strong>Dockerfile</strong> — "מתכון": קובץ טקסט עם ההוראות איך לבנות את ה-image.</li>
+<li><strong>Image</strong> — התבנית הבנויה, לקריאה בלבד (immutable). כמו "class" בקוד.</li>
+<li><strong>Container</strong> — instance רץ של image. כמו "object" — instance של class.</li>
+</ul>
+
+<div class="flow">
+Dockerfile  →  (docker build)  →  Image  →  (docker run)  →  Container<br>
+מתכון              בנייה           תבנית          הרצה         instance רץ
+</div>
+
+<p>אנלוגיה שתעזור לך: Dockerfile הוא המתכון, Image הוא העוגה האפויה (אפשר לשכפל), Container הוא הפרוסה שאתה אוכל (instance רץ). מ-image אחד אפשר להריץ הרבה containers זהים — בדיוק מה שצריך ל-horizontal scaling מ-System Design.</p>
+
+<hr>
+
+<h2 id="s4">4. Dockerfile ו-Multi-stage Builds</h2>
+
+<h3>Dockerfile בסיסי ל-NestJS</h3>
+<pre><code>FROM node:20-alpine          # image בסיס (Node 20, גרסת alpine קטנה)
+WORKDIR /app                 # תיקיית העבודה בתוך ה-container
+
+COPY package*.json ./        # מעתיקים קודם רק את package.json
+RUN npm ci                   # מתקינים תלויות
+
+COPY . .                     # מעתיקים את שאר הקוד
+RUN npm run build            # בונים
+
+EXPOSE 3000                  # מתעדים שה-app מאזין על 3000
+CMD ["node", "dist/main.js"] # הפקודה שרצה כשה-container עולה</code></pre>
+
+<h3>Layers ו-Caching — למה סדר השורות חשוב</h3>
+<p>נקודה שמשפרת דרמטית את זמני הבנייה. כל הוראה ב-Dockerfile יוצרת <strong>layer</strong>, ו-Docker <strong>מטמן</strong> layers — אם שורה לא השתנתה, הוא משתמש ב-cache במקום להריץ שוב. לכן מעתיקים קודם <code>package.json</code> ומריצים <code>npm ci</code>, ורק אז מעתיקים את הקוד:</p>
+<p>אם היינו עושים <code>COPY . .</code> לפני <code>npm ci</code>, כל שינוי קוד קטן היה מבטל את ה-cache של התקנת התלויות — ו-<code>npm ci</code> היה רץ מחדש בכל build (איטי). בסדר הנכון, ה-layer של התלויות נשמר ב-cache כל עוד <code>package.json</code> לא השתנה. <strong>סדר השורות = מהירות ה-build.</strong></p>
+
+<h3>Multi-stage Build — image רזה ל-production</h3>
+<p>טכניקה חשובה: שלב אחד בונה (עם כל כלי הבנייה), שלב שני מעתיק רק את התוצר הסופי ל-image נקי וקטן. זה מקטין את ה-image פי כמה ומשפר אבטחה (פחות כלים = פחות משטח תקיפה):</p>
+<pre><code># שלב 1 — build (עם devDependencies וכלי build)
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# שלב 2 — production (רק מה שצריך להרצה)
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev              # רק production dependencies
+COPY --from=builder /app/dist ./dist   # מעתיקים רק את התוצר מהשלב הקודם
+EXPOSE 3000
+CMD ["node", "dist/main.js"]</code></pre>
+
+<blockquote>
+<p><strong>נקודה חשובה:</strong> הוסף <code>.dockerignore</code> (כמו <code>.gitignore</code>) שמחריג <code>node_modules</code>, <code>.git</code>, <code>.env</code> — כדי לא להעתיק אותם ל-image (מאט את ה-build ומסכן דליפת secrets). image רזה = deploy מהיר, פחות מקום, פחות פרצות.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s5">5. Docker בפועל — Ports, Volumes, Env</h2>
+
+<h3>הפקודות היומיומיות</h3>
+<pre><code>docker build -t myapp .            # בונה image בשם myapp מה-Dockerfile
+docker run -p 3000:3000 myapp      # מריץ, ממפה port
+docker ps                          # containers רצים
+docker logs &lt;container&gt;            # צפייה ב-logs
+docker exec -it &lt;container&gt; sh      # כניסה לתוך container רץ (debug)
+docker stop &lt;container&gt;             # עצירה
+docker images                      # רשימת images</code></pre>
+
+<h3>Port mapping</h3>
+<p><code>-p 3000:3000</code> ממפה port של המארח (משמאל) ל-port בתוך ה-container (מימין). בלי זה, ה-app מאזין בתוך ה-container אבל אף אחד מבחוץ לא יכול להגיע אליו. (זוכר ports ממדריך Networking?)</p>
+
+<h3>Volumes — נתונים ששורדים</h3>
+<p>Container הוא <strong>ephemeral</strong> — כשהוא נמחק, כל מה שבתוכו נעלם. זו בעיה ל-DB. <strong>Volume</strong> מחבר תיקייה מהמארח ל-container, כך שהנתונים שורדים:</p>
+<pre><code>docker run -v pgdata:/var/lib/postgresql/data postgres
+#            └─ הנתונים של Postgres נשמרים ב-volume, שורדים מחיקת container</code></pre>
+
+<h3>Environment variables</h3>
+<pre><code>docker run -e DATABASE_URL=postgres://... -e NODE_ENV=production myapp
+#           └─ מזריקים קונפיגורציה בזמן ריצה (פרק 13)</code></pre>
+
+<p>העיקרון: <strong>ה-image זהה בכל הסביבות; ה-env vars משנים את ההתנהגות.</strong> אותו image רץ ב-dev וב-production, רק עם משתני סביבה שונים. זה החלק של reproducibility — לא בונים image שונה לכל סביבה.</p>
+
+<hr>
+
+<h2 id="s6">6. Docker Compose — סביבה מרובת-שירותים</h2>
+
+<p>אפליקציה אמיתית היא לא רק ה-app — היא app + Postgres + Redis. להריץ כל אחד ב-<code>docker run</code> נפרד זה כאב. <strong>Docker Compose</strong> מגדיר את כל השירותים בקובץ YAML אחד ומריץ את כולם בפקודה אחת. זה הכלי שישנה לך את הפיתוח המקומי.</p>
+
+<pre><code># docker-compose.yml
+version: "3.8"
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://user:pass@db:5432/mydb
+      REDIS_URL: redis://cache:6379
+    depends_on:
+      - db
+      - cache
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  cache:
+    image: redis:7
+
+volumes:
+  pgdata:</code></pre>
+
+<pre><code>docker compose up      # מרים את הכל: app + db + cache
+docker compose down    # מוריד הכל</code></pre>
+
+<p>שים לב ל-<code>DATABASE_URL</code>: ה-host הוא <code>db</code> — שם השירות. Compose יוצר רשת פנימית שבה השירותים מוצאים זה את זה לפי שם (service discovery מובנה). זה מחבר ישירות ל-DNS ממדריך Networking.</p>
+
+<blockquote>
+<p><strong>למה זה משנה לך יומיומית:</strong> Docker Compose הופך את הקמת סביבת הפיתוח מ"התקן Postgres, התקן Redis, הגדר, קווה שיעבוד" ל-<code>docker compose up</code> אחד. מפתח חדש בצוות מקים סביבה מלאה בדקה. וזו בדיוק אותה reproducibility — כולם רצים את אותה סביבה בדיוק. זה כנראה הדבר הראשון שכדאי לך ליישם בפרויקט NestJS שלך.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s7">7. Container Registries</h2>
+
+<p>בנית image במחשב שלך. איך הוא מגיע לשרת? דרך <strong>container registry</strong> — "GitHub ל-images". דוחפים (push) לשם, והשרת/CI מושכים (pull).</p>
+
+<pre><code>docker tag myapp registry.example.com/myapp:1.0    # מתייגים עם כתובת וגרסה
+docker push registry.example.com/myapp:1.0          # דוחפים לregistry
+docker pull registry.example.com/myapp:1.0          # מושכים (בשרת)</code></pre>
+
+<p>Registries נפוצים: <strong>Docker Hub</strong> (הציבורי), <strong>GitHub Container Registry</strong>, ו-registries של הענן (AWS ECR, Google Artifact Registry).</p>
+
+<h3>Tags — נקודה חשובה</h3>
+<p>ה-tag (למשל <code>:1.0</code>) מזהה גרסה. <strong>אל תסתמך על <code>:latest</code> ב-production</strong> — הוא "זז" (מצביע כל פעם למשהו אחר), ואז אתה לא יודע איזו גרסה באמת רצה, ו-rollback הופך לניחוש. השתמש בגרסאות מפורשות (semantic version או git commit hash). זה חלק מ-reproducibility — לדעת בדיוק מה רץ.</p>
+
+<hr>
+
+<h2 id="s8">8. CI/CD — אוטומציה של Build, Test, Deploy</h2>
+
+<p>זה הלב של ה-automation. CI/CD הוא pipeline אוטומטי שרץ בכל שינוי קוד: בונה, בודק, ומפרס — בלי מגע יד אדם.</p>
+
+<h3>הפירוק</h3>
+<ul>
+<li><strong>CI (Continuous Integration)</strong> — בכל push, אוטומטית: build + הרצת טסטים + linting. תופס בעיות מוקדם, לפני merge. "אל תיתן לקוד שבור להיכנס".</li>
+<li><strong>CD (Continuous Delivery/Deployment)</strong> — אחרי ש-CI עבר, אוטומטית פורס ל-staging/production. "מה שעבר את הבדיקות — יוצא לאוויר".</li>
+</ul>
+
+<h3>שלבי pipeline טיפוסי</h3>
+<div class="flow">
+Push → [ Lint ] → [ Build ] → [ Test ] → [ Build Docker image ] → [ Push to registry ] → [ Deploy ]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;כל שלב חייב לעבור כדי להמשיך לבא. נכשל? עוצר ומודיע.
+</div>
+
+<h3>דוגמה — GitHub Actions</h3>
+<pre><code># .github/workflows/ci.yml
+name: CI
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build</code></pre>
+
+<p>בכל push ל-repo, GitHub מריץ את השלבים האלה אוטומטית. אם טסט נכשל — אתה (וכל הצוות) מקבלים התראה, וה-PR מסומן אדום. זה תופס באגים לפני שהם מגיעים ל-main.</p>
+
+<blockquote>
+<p><strong>למה זה קריטי בעידן ה-AI:</strong> כשחלק מהקוד נכתב בעזרת AI, CI/CD הופך לחשוב עוד יותר — הוא רשת הביטחון שמוודאת שקוד שנוצר (ואולי לא נבדק מספיק) עובר טסטים ו-linting לפני שהוא מגיע לפרודקשן. pipeline טוב הוא ה-code reviewer האוטומטי שלך. גם פרויקט אישי קטן ראוי ל-CI בסיסי — זה הרגל שמבדיל מפתח מקצועי.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s9">9. Cloud — יסודות</h2>
+
+<p>כמעט אף אחד לא מריץ שרתים פיזיים בעצמו יותר. הענן (AWS, GCP, Azure) נותן תשתית on-demand. אתה לא צריך מומחיות בענן, אבל צריך להבין את המושגים ואת המפה.</p>
+
+<h3>ארבע קטגוריות המשאבים</h3>
+<table>
+<tr><th>קטגוריה</th><th>מה זה</th><th>דוגמאות (AWS)</th></tr>
+<tr><td>Compute</td><td>כוח עיבוד — שרתים, containers, functions</td><td>EC2, ECS, Lambda</td></tr>
+<tr><td>Storage</td><td>אחסון — קבצים, blocks</td><td>S3, EBS</td></tr>
+<tr><td>Database</td><td>DBs מנוהלים</td><td>RDS (Postgres), DynamoDB, ElastiCache (Redis)</td></tr>
+<tr><td>Network</td><td>רשת, LB, DNS</td><td>VPC, ELB, Route 53</td></tr>
+</table>
+
+<h3>מודלי שירות — IaaS / PaaS / SaaS</h3>
+<p>כמה מהתשתית אתה מנהל מול כמה הספק:</p>
+<ul>
+<li><strong>IaaS</strong> (Infrastructure) — הספק נותן שרת גולמי (VM), אתה מנהל הכל מעליו. גמישות מלאה, אחריות מלאה. (EC2).</li>
+<li><strong>PaaS</strong> (Platform) — הספק מנהל את התשתית, אתה רק דוחף קוד. פחות שליטה, פחות כאב. (Heroku, Render, Railway, App Engine).</li>
+<li><strong>SaaS</strong> (Software) — מוצר מוכן (Gmail). לא רלוונטי לפריסה שלך.</li>
+</ul>
+<p><strong>Serverless</strong> (Lambda/Cloud Functions) — קצה ה-PaaS: אתה כותב פונקציה, הספק מריץ אותה on-demand ומחייב רק על זמן ריצה. אין שרת לנהל, scaling אוטומטי — אבל cold starts ומגבלות.</p>
+
+<h3>Regions ו-Availability Zones</h3>
+<p>ספקי הענן פרוסים ב-<strong>regions</strong> (אזורים גאוגרפיים — us-east, eu-central) שכל אחד מחולק ל-<strong>availability zones</strong> (datacenters נפרדים באותו אזור). פורסים על כמה AZs ל-high availability (זוכר redundancy מ-System Design?) — אם datacenter אחד נופל, האחרים ממשיכים. ובוחרים region קרוב למשתמשים ל-latency נמוך (זוכר ממדריך Networking?).</p>
+
+<blockquote>
+<p><strong>עצה למתחיל:</strong> אל תתחיל מ-Kubernetes על AWS גולמי — זה over-engineering. לפרויקט/סטארטאפ, PaaS כמו Render/Railway/Fly.io נותן לך deploy בדקות בלי לנהל תשתית. עבור ל-IaaS/K8s רק כשאתה באמת צריך את השליטה. אותו עיקרון מ-System Design: תתחיל פשוט, הוסף מורכבות כשהצורך מוכח.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s10">10. אסטרטגיות Deployment</h2>
+
+<p>איך מוציאים גרסה חדשה בלי להפיל את השירות? (זוכר את ה-load balancer ו-health checks מ-System Design?) יש כמה אסטרטגיות, בסדר בטיחות עולה.</p>
+
+<table>
+<tr><th>אסטרטגיה</th><th>איך</th><th>tradeoff</th></tr>
+<tr><td><strong>Recreate</strong></td><td>מכבים ישן, מעלים חדש</td><td>פשוט, אבל downtime</td></tr>
+<tr><td><strong>Rolling</strong></td><td>מחליפים instances בהדרגה, אחד-אחד</td><td>ללא downtime, אבל שתי גרסאות רצות במקביל זמנית</td></tr>
+<tr><td><strong>Blue-Green</strong></td><td>סביבה חדשה מלאה (green) לצד הישנה (blue), מחליפים תעבורה במכה</td><td>rollback מיידי, אבל דורש כפל משאבים</td></tr>
+<tr><td><strong>Canary</strong></td><td>מפנים אחוז קטן מהתעבורה לגרסה החדשה, מגדילים בהדרגה</td><td>הכי בטוח, אבל מורכב</td></tr>
+</table>
+
+<h3>Rolling — ברירת המחדל</h3>
+<p>הנפוץ ביותר (וברירת המחדל של Kubernetes). מחליפים instance אחד בכל פעם: מורידים ישן, מעלים חדש, מוודאים שהוא בריא (health check), ורק אז ממשיכים לבא. בכל רגע יש instances בריאים שמשרתים — אין downtime.</p>
+
+<h3>Canary — הכי בטוח</h3>
+<p>מוציאים את הגרסה החדשה ל-5% מהמשתמשים, מנטרים (זוכר observability מ-System Design?). נראה טוב? מגדילים ל-25%, 50%, 100%. בעיה? מחזירים את ה-5% לגרסה הישנה — רק חלק קטן מהמשתמשים נפגע. זו הדרך להוציא שינויים מסוכנים בביטחון.</p>
+
+<blockquote>
+<p><strong>הקשר:</strong> כל האסטרטגיות האלה מסתמכות על <strong>health checks</strong> ו-<strong>stateless app servers</strong> (מ-System Design). זו הסיבה שדיברנו על stateless — בלי זה, אי אפשר להחליף שרתים חלק. וזו עוד סיבה ש-JWT מנצח session בהקשר הזה. הכל מתחבר.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s11">11. Kubernetes — מתי ולמה</h2>
+
+<p>Kubernetes (מקוצר <strong>K8s</strong>) הוא ה-buzzword הכי גדול ב-DevOps — ומקור לכי הרבה over-engineering. נבין מה זה, ובעיקר <strong>מתי אתה באמת צריך אותו</strong> (רמז: פחות ממה שאתה חושב).</p>
+
+<h3>איזו בעיה K8s פותר</h3>
+<p>יש לך 50 containers רצים על 10 שרתים. מה קורה כשאחד קורס? מי מפזר עומס? איך עושים rolling deploy? איך מגדילים אוטומטית תחת עומס? לעשות את זה ידנית — בלתי אפשרי. Kubernetes הוא <strong>orchestrator</strong> — הוא מנהל containers בקנה מידה: פריסה, scaling, self-healing (מרים מחדש container שנפל), load balancing, ו-rolling updates. אתה מצהיר "אני רוצה 5 עותקים של האפליקציה", ו-K8s דואג שזה תמיד יתקיים.</p>
+
+<h3>המושגים המרכזיים (ברמת הבנה)</h3>
+<ul>
+<li><strong>Pod</strong> — היחידה הקטנה ביותר, עוטף container אחד (או כמה קשורים). זה מה ש-K8s מריץ.</li>
+<li><strong>Deployment</strong> — מגדיר כמה pods לרוץ ואיזה image, ומנהל rolling updates ו-self-healing.</li>
+<li><strong>Service</strong> — נקודת גישה יציבה ל-pods (load balancing פנימי, כי pods עולים ויורדים).</li>
+<li><strong>Ingress</strong> — חושף שירותים החוצה (routing, TLS termination).</li>
+<li><strong>ConfigMap / Secret</strong> — קונפיגורציה וסודות (פרק 13).</li>
+</ul>
+
+<p>K8s הוא <strong>declarative</strong> (בדיוק כמו SQL!): אתה כותב YAML שמתאר את המצב הרצוי, ו-K8s דואג להגיע אליו ולשמר אותו. לא "עשה X", אלא "אני רוצה שהמצב יהיה Y".</p>
+
+<blockquote>
+<p><strong>העצה הכי חשובה בפרק, ואולי במדריך:</strong> <strong>רוב הפרויקטים לא צריכים Kubernetes.</strong> הוא מורכב מאוד — עקומת למידה תלולה, overhead תפעולי כבד, וקל לפצוע את עצמך. הוא נועד לבעיה של <em>קנה מידה גדול</em>: הרבה שירותים, הרבה צוותים, הרבה תעבורה. לסטארטאפ או פרויקט בינוני — PaaS (Render/Railway/Fly), או ECS/Cloud Run פשוטים יותר, יתנו לך 90% מהערך ב-10% מהמורכבות. <strong>הכר את K8s ברמת מושגים (כדי לדבר עליו ולהבין ארכיטקטורות), אבל אל תמהר לאמץ אותו.</strong> זה בדיוק ה-over-engineering ש-System Design הזהיר מפניו.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s12">12. Infrastructure as Code</h2>
+
+<p>איך מקימים תשתית בענן? אפשר ללחוץ בממשק הweb של AWS — אבל אז אף אחד לא זוכר מה נעשה, אי אפשר לשחזר, ואי אפשר לגרסן. <strong>Infrastructure as Code (IaC)</strong> פותר את זה: מגדירים את התשתית ב<strong>קוד</strong>, מגורסן ב-git.</p>
+
+<pre><code># Terraform — מתאר תשתית declaratively
+resource "aws_instance" "web" {
+  ami           = "ami-12345"
+  instance_type = "t3.micro"
+  tags = { Name = "web-server" }
+}</code></pre>
+
+<p><code>terraform apply</code> יוצר/מעדכן את התשתית כך שתתאים לקוד. היתרונות: <strong>reproducibility</strong> (מקימים סביבה זהה בפקודה אחת), <strong>version control</strong> (רואים בדיוק מי שינה מה ומתי), ו-<strong>code review</strong> לשינויי תשתית. <strong>Terraform</strong> הוא הכלי המוביל; יש גם Pulumi, CloudFormation.</p>
+
+<p>שים לב שזה בדיוק אותו רעיון declarative של K8s ו-SQL — מתארים מצב רצוי, הכלי מגיע אליו. זה חוט מחשבה שחוזר בכל DevOps מודרני.</p>
+
+<hr>
+
+<h2 id="s13">13. Secrets ו-Configuration</h2>
+
+<p>נושא קטן אבל קריטי לאבטחה. סיסמאות, API keys, DB credentials — איך מנהלים אותם?</p>
+
+<h3>הכללים</h3>
+<ul>
+<li><strong>לעולם לא סודות בקוד / ב-git.</strong> secret שנכנס ל-git נשאר בהיסטוריה לנצח (גם אם מחקת). זו דליפה קלאסית.</li>
+<li><strong>Configuration ב-environment variables</strong> — לא בקוד. אותו image, קונפיג שונה לכל סביבה (זוכר מפרק 5? זה גם עיקרון 12-factor, פרק הבא).</li>
+<li><strong>Secrets ב-secret manager</strong> — כלים ייעודיים מצפינים ומנהלים גישה: AWS Secrets Manager, HashiCorp Vault, Doppler. הם גם מאפשרים rotation (החלפה תקופתית).</li>
+<li><strong><code>.env</code> מקומי בלבד</strong>, ותמיד ב-<code>.gitignore</code>. בפרודקשן — לא <code>.env</code> אלא secret manager.</li>
+</ul>
+
+<blockquote>
+<p><strong>קשר למדריך Authentication:</strong> ה-JWT secret, ה-DB password, מפתחות ה-OAuth — כל אלה חייבים לחיות ב-secret manager או env vars, אף פעם בקוד. secret שדלף ל-repo ציבורי מנוצל תוך דקות על ידי בוטים שסורקים את GitHub. אם קרה — צריך לבטל (rotate) את הסוד מיד, לא רק למחוק את ה-commit.</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s14">14. The Twelve-Factor App</h2>
+
+<p>מתודולוגיה בת 12 עקרונות לבניית אפליקציות שקל לפרוס ולסקיילר בענן. היא מסכמת הרבה ממה שלמדנו כאן לעקרונות מנחים. אלה החשובים ביותר למפתח Backend:</p>
+
+<ul>
+<li><strong>Codebase</strong> — codebase אחד ב-version control, הרבה deploys ממנו.</li>
+<li><strong>Dependencies</strong> — הצהר על כל התלויות מפורשות (<code>package.json</code>), אל תסמוך על מה שמותקן במערכת.</li>
+<li><strong>Config</strong> — קונפיגורציה ב-environment, לא בקוד. (בדיוק פרק 13).</li>
+<li><strong>Backing services</strong> — DB, cache, queue הם משאבים מחוברים דרך URL — ניתנים להחלפה בלי שינוי קוד.</li>
+<li><strong>Build, release, run</strong> — הפרד בין בנייה, שחרור, והרצה (בדיוק ה-CI/CD).</li>
+<li><strong>Processes</strong> — האפליקציה היא תהליכים <strong>stateless</strong>. state חי ב-backing services (DB/Redis), לא בזיכרון התהליך. (זוכר כמה פעמים זה חזר?)</li>
+<li><strong>Port binding</strong> — האפליקציה חושפת את עצמה דרך port.</li>
+<li><strong>Concurrency</strong> — סקיילינג על ידי הרצת עוד תהליכים (horizontal).</li>
+<li><strong>Disposability</strong> — עלייה מהירה, כיבוי חלק (graceful shutdown). containers חייבים את זה.</li>
+<li><strong>Dev/prod parity</strong> — שמור סביבות דומות ככל האפשר. (בדיוק מה ש-Docker נותן).</li>
+<li><strong>Logs</strong> — התייחס ל-logs כזרם אירועים ל-stdout, לא כקבצים. (מרכזים מבחוץ — observability).</li>
+</ul>
+
+<blockquote>
+<p><strong>למה זה שווה לקרוא:</strong> 12-factor הוא הזיקוק של הרבה שנות ניסיון להרצת אפליקציות בענן. שים לב כמה מהעקרונות כבר פגשת בסדרה — stateless (Auth, System Design), config ב-env (כאן), backing services (Databases). זה החוט שקושר את הכל: אפליקציה שבנויה לפי 12-factor היא אפליקציה שקל לארוז ב-Docker, לפרוס ב-CI/CD, ולסקיילר. שווה לקרוא את המקור המלא (12factor.net).</p>
+</blockquote>
+
+<hr>
+
+<h2 id="s15">15. Best Practices וטעויות נפוצות</h2>
+
+<ol>
+<li><strong>הבן את ה"why", לא רק פקודות.</strong> containers = reproducibility, CI/CD = automation, IaC = תשתית מגורסנת.</li>
+<li><strong>Dockerize מוקדם.</strong> Docker Compose לפיתוח מקומי — הדבר הראשון ליישם. מבטל "עובד אצלי".</li>
+<li><strong>Multi-stage builds + <code>.dockerignore</code></strong> — images רזים, מהירים, בטוחים.</li>
+<li><strong>גרסאות מפורשות ל-images</strong>, לא <code>:latest</code> בפרודקשן.</li>
+<li><strong>CI מהיום הראשון</strong> — lint + test + build אוטומטי בכל push.</li>
+<li><strong>סודות ב-secret manager / env</strong>, אף פעם ב-git.</li>
+<li><strong>Config ב-environment</strong>, אותו image לכל הסביבות.</li>
+<li><strong>אל תמהר ל-Kubernetes.</strong> תתחיל PaaS, עבור למורכבות רק כשצריך.</li>
+<li><strong>אוטמט הכל שחוזר</strong> — deploy ידני = טעות אנוש מחכה לקרות.</li>
+<li><strong>Health checks + graceful shutdown</strong> — הבסיס ל-deploys ללא downtime.</li>
+</ol>
+
+<h3>טעויות נפוצות</h3>
+<ul>
+<li><strong><code>:latest</code> בפרודקשן</strong> — אין לך מושג מה רץ, rollback הוא ניחוש.</li>
+<li><strong>secret ב-git</strong> — בהיסטוריה לנצח, דולף לבוטים תוך דקות.</li>
+<li><strong>Kubernetes לפרויקט קטן</strong> — over-engineering שהורג מהירות.</li>
+<li><strong>image ענק</strong> (בלי multi-stage / <code>.dockerignore</code>) — deploy איטי, פרצות.</li>
+<li><strong>deploy ידני</strong> — לא חוזר, מועד לטעויות, לא מגורסן.</li>
+<li><strong>state בזיכרון התהליך</strong> — שובר horizontal scaling ו-deploys.</li>
+</ul>
+
+<hr>
+
+<h2 id="s16">16. תרגילים</h2>
+
+<p><strong>1 — Dockerize.</strong> קח את פרויקט ה-NestJS שלך וכתוב לו <code>Dockerfile</code> עם multi-stage build ו-<code>.dockerignore</code>. בנה והרץ אותו מקומית.</p>
+
+<p><strong>2 — Docker Compose.</strong> כתוב <code>docker-compose.yml</code> שמרים את ה-app + Postgres + Redis יחד, עם volume ל-DB ו-env vars לחיבור. הרם עם <code>docker compose up</code>.</p>
+
+<p><strong>3 — CI Pipeline.</strong> הוסף <code>.github/workflows/ci.yml</code> שרץ בכל push: lint, test, build. גרום לו להיכשל בכוונה (טסט שבור) וראה את ההתראה.</p>
+
+<p><strong>4 — Deploy אמיתי.</strong> פרוס את האפליקציה ל-PaaS (Render/Railway/Fly.io) — חבר את ה-repo, הגדר env vars, וראה אותה חיה באוויר. (בלי Kubernetes!)</p>
+
+<p><strong>5 — אסטרטגיית Deploy.</strong> תאר איך היית מוציא שינוי מסוכן (שינוי סכמת DB) בבטחה — איזו אסטרטגיה, ואיך זה מתחבר ל-expand-contract migrations ממדריך Databases.</p>
+
+<p><strong>6 — Secrets.</strong> קח פרויקט עם secret ב-<code>.env</code>, ודא שהוא ב-<code>.gitignore</code>, ותאר איך היית מנהל אותו בפרודקשן.</p>
+
+<hr>
+
+<h2>סיכום — מה הלאה</h2>
+
+<p>שני דברים לקחת: DevOps הוא <strong>reproducibility + automation</strong>, לא כלים לשנן — כל כלי פותר בעיה ספציפית (Docker = "עובד אצלי", CI/CD = טעות אנוש, IaC = תשתית לא-מגורסנת). והשני, שחוזר מ-System Design: <strong>תתחיל פשוט.</strong> Docker Compose לפיתוח, CI בסיסי, PaaS ל-deploy — לפני Kubernetes ו-Terraform. over-engineering בתשתית הורג מהירות בדיוק כמו בארכיטקטורה.</p>
+
+<p>שים לב איך הכל התחבר: stateless מ-Auth ו-System Design הוא הבסיס ל-deploys; ports ו-DNS מ-Networking הם איך containers מתקשרים; migrations מ-Databases נפגשות עם deployment strategies. DevOps הוא השכבה שמפעילה את כל מה שבנינו.</p>
+
+<p>הצעד הבא: קח את פרויקט ה-NestJS שלך ועבור את תרגילים 1–4 — Dockerize, Compose, CI, deploy אמיתי. פרויקט אחד שעובר את כל המסלול מלמד יותר מכל תיאוריה.</p>
+
+<p>יש לך עכשיו 9 מדריכים ב-<code>C:\claude-folder</code>. לפי הרשימה, הנושא האחרון והכי "עדכני" הוא <strong>השכבה החדשה — AI כחלק מהמוצר (LLM APIs, RAG, agents, vector DBs)</strong>. זה יסגור את הסדרה. 🚀</p>
+
+</body>
+</html>
