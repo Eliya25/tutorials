@@ -61,6 +61,8 @@
 </head>
 <body>
 
+<p><a href="index.html">← מרכז הלמידה</a> · <a href="17.python-tutorial.html">רענון Python לפני Django</a></p>
+
 <h1>Django — המדריך המלא למפתח Backend</h1>
 
 <blockquote>
@@ -88,7 +90,17 @@
 <li><a href="#s15">Testing</a></li>
 <li><a href="#s16">Deployment</a></li>
 <li><a href="#s17">Best Practices וטעויות נפוצות</a></li>
-<li><a href="#s18">תרגילים</a></li>
+<li><a href="#s18">Custom User ו-Authentication נכון</a></li>
+<li><a href="#s19">Models מתקדמים ו-Constraints</a></li>
+<li><a href="#s20">Transactions ו-Concurrency</a></li>
+<li><a href="#s21">DRF לעומק — API Design</a></li>
+<li><a href="#s22">Performance ו-Query Planning</a></li>
+<li><a href="#s23">Async Django — המודל המדויק</a></li>
+<li><a href="#s24">Celery ו-Background Jobs אמינים</a></li>
+<li><a href="#s25">Security ו-Hardening</a></li>
+<li><a href="#s26">Testing Strategy</a></li>
+<li><a href="#s27">Production Architecture</a></li>
+<li><a href="#s28">פרויקט ותרגול מסכם</a></li>
 </ol>
 </div>
 
@@ -517,7 +529,7 @@ DATABASES = {
 <h2 id="s14">14. Async, Celery, Caching ו-Signals</h2>
 
 <h3>Async Django</h3>
-<p>נקודה חשובה להבין, במיוחד אחרי מדריך Node: Django הוא <strong>סינכרוני</strong> במקורו (בניגוד ל-Node שהוא async מהיסוד). כל בקשה מטופלת על thread/process, והמודל הוא "worker per request". גרסאות חדשות של Django הוסיפו תמיכה ב-<code>async def</code> views ו-ORM אסינכרוני, אבל האקוסיסטם עדיין בעיקר סינכרוני. המשמעות: Django סקיילר דרך <strong>הרבה workers</strong> (processes), לא דרך event loop אחד כמו Node.</p>
+<p>Django נבנה במקור סביב WSGI סינכרוני, אך כיום תומך גם ב-ASGI, ב-<code>async def</code> views ובחלק משמעותי מפעולות ה-ORM בצורה אסינכרונית. תחת ASGI אפשר לטפל ב-I/O מקביל בלי להחזיק thread לכל המתנה, בתנאי שכל ה-call chain תומך async. קוד סינכרוני, middleware ישן או library חוסמת עדיין דורשים התאמה ועלולים לבטל את היתרון. פירוט מדויק נמצא בפרק 23.</p>
 
 <h3>Celery — עבודה ברקע</h3>
 <p>ל-Django אין event loop לעבודה אסינכרונית, אז משימות כבדות/איטיות (שליחת מייל, עיבוד, דוחות) מועברות ל-<strong>Celery</strong> — task queue שרץ ב-workers נפרדים, בדרך כלל עם Redis/RabbitMQ כ-broker (זוכר message queues ממדריך System Design?):</p>
@@ -530,7 +542,7 @@ def send_welcome_email(user_id):
 
 # ב-view:
 send_welcome_email.delay(user.id)   # מכניס לתור, מחזיר מיד</code></pre>
-<p>זה הפתרון של Django למה ש-Node עושה עם async — במקום non-blocking על thread אחד, מוציאים את העבודה ל-worker אחר.</p>
+<p>Celery אינה תחליף ל-async I/O. היא פותרת בעיה אחרת: עבודה שצריכה להמשיך מעבר לחיי בקשת HTTP, לשרוד retries, לרוץ בתזמון או להתבצע ב-workers נפרדים. בקשת async קצרה ועבודת background durable הן שני כלים שונים.</p>
 
 <h3>Caching</h3>
 <p>Django מגיע עם framework caching מובנה — cache-per-view, cache-per-query, או low-level. בד"כ עם Redis (זוכר caching ממדריכי System Design/Databases?):</p>
@@ -623,29 +635,180 @@ Client → Nginx (reverse proxy) → Gunicorn (כמה workers) → Django<br>
 
 <hr>
 
-<h2 id="s18">18. תרגילים</h2>
+<h2 id="s18">18. Custom User ו-Authentication נכון</h2>
+<p>אם יש סיכוי שתצטרך login באמצעות email, שדות profile נוספים או שינוי identity, הגדר custom user <strong>בתחילת הפרויקט ולפני migration ראשון</strong>. החלפת user model אחרי שהטבלאות והקשרים קיימים אפשרית, אבל יקרה ומסוכנת.</p>
+<pre><code># users/models.py
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 
-<p><strong>1 — Setup.</strong> צור project + app "blog", חבר ל-Postgres, והרץ את השרת. צור superuser וכנס ל-admin.</p>
+class User(AbstractUser):
+    email = models.EmailField(unique=True)
 
-<p><strong>2 — Models.</strong> הגדר <code>Post</code> (title, body, author=FK ל-User, created_at) ו-<code>Comment</code> (post=FK, text). הרץ makemigrations + migrate. רשום אותם ל-admin.</p>
+# settings.py
+AUTH_USER_MODEL = "users.User"
 
-<p><strong>3 — ORM.</strong> ב-<code>manage.py shell</code>: צור נתונים, וכתוב queries — כל הפוסטים של author מסוים, פוסטים עם יותר מ-5 תגובות (annotate), ופוסט עם התגובות שלו <strong>בלי N+1</strong> (prefetch_related).</p>
+# בכל model אחר — לא לייבא User הקונקרטי
+class Workout(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="workouts",
+    )</code></pre>
+<p><code>AbstractUser</code> שומר את רוב המערכת המובנית; <code>AbstractBaseUser</code> נותן שליטה מלאה אך דורש manager, admin ושדות נוספים. אל תבחר בו רק כי הוא “מתקדם”. סיסמאות נשמרות באמצעות hash איטי ומומלח דרך <code>set_password</code>; לעולם אין לבצע assignment ישיר לשדה password.</p>
+<p>ב־API בחר authentication לפי סוג הלקוח: session + CSRF מתאים לאתר browser באותו domain; access token קצר ו־refresh rotation מתאים ללקוחות נפרדים. Permission היא החלטה עסקית: “האם המשתמש המחובר רשאי לבצע פעולה על האובייקט הזה?”. Authentication לבדו אינו מונע IDOR.</p>
 
-<p><strong>4 — DRF API.</strong> הוסף DRF, כתוב <code>PostSerializer</code> ו-<code>PostViewSet</code>, וחבר router. בדוק שכל ה-CRUD עובד דרך ה-browsable API.</p>
+<h2 id="s19">19. Models מתקדמים ו-Constraints</h2>
+<p>Model הוא לא רק תיאור טבלה. הוא המקום להגדיר invariants שה־database יכול לאכוף גם אם הנתונים נכתבים מ־admin, task או script. Validation ב־serializer משפר הודעה למשתמש; constraint ב־DB שומר correctness מול races וכניסות אחרות.</p>
+<pre><code>class Enrollment(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    course = models.ForeignKey("courses.Course", on_delete=models.CASCADE)
+    progress = models.PositiveSmallIntegerField(default=0)
 
-<p><strong>5 — Auth.</strong> הוסף JWT (simplejwt), הגן על ה-endpoints שיצירה/עריכה דורשות התחברות, וש-author נקבע אוטומטית למשתמש המחובר.</p>
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "course"], name="uniq_user_course"),
+            models.CheckConstraint(
+                condition=models.Q(progress__gte=0, progress__lte=100),
+                name="progress_between_0_and_100",
+            ),
+        ]
+        indexes = [models.Index(fields=["user", "-id"])]</code></pre>
+<p>הוסף index לפי query pattern, לא לכל field. Composite index תלוי בסדר העמודות. ‏<code>db_index=True</code> יכול להאיץ קריאה אבל מוסיף מקום ועלות לכל INSERT/UPDATE.</p>
+<h3>Managers ו-QuerySets</h3>
+<pre><code>class WorkoutQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        return self.filter(owner=user, deleted_at__isnull=True)
 
-<p><strong>6 — N+1 hunt.</strong> התקן django-debug-toolbar, מצא endpoint עם N+1, ותקן אותו עם select_related. השווה את מספר ה-queries לפני ואחרי.</p>
+class Workout(models.Model):
+    objects = WorkoutQuerySet.as_manager()</code></pre>
+<p>QuerySet מותאם מרכז query logic חוזר ושומר composability. אל תכניס ל־manager side effects או HTTP concerns.</p>
 
-<hr>
+<h2 id="s20">20. Transactions ו-Concurrency</h2>
+<p><strong>Transaction</strong> היא יחידת עבודה אטומית: או שכל השינויים מתבצעים, או שאף אחד מהם. היא אינה “נעילה של כל ה־DB”. ברירת המחדל של Django היא autocommit—כל query מתחייבת בנפרד אלא אם עטפת scope ב־<code>transaction.atomic</code>.</p>
+<pre><code>from django.db import transaction
 
-<h2>סיכום — מה הלאה</h2>
+@transaction.atomic
+def transfer(source_id: int, target_id: int, amount: int) -> None:
+    accounts = Account.objects.select_for_update().filter(
+        id__in=[source_id, target_id]
+    ).in_bulk()
+    source, target = accounts[source_id], accounts[target_id]
+    if source.balance < amount:
+        raise InsufficientBalance()
+    source.balance -= amount
+    target.balance += amount
+    Account.objects.bulk_update([source, target], ["balance"])</code></pre>
+<p><code>select_for_update</code> נועל rows עד סוף transaction ומונע lost update, אבל רק בתוך transaction. כדי לצמצם deadlock, נעל resources בסדר עקבי ושמור transactions קצרות—בלי API חיצוני או שליחת email בתוכן.</p>
+<h3>Optimistic update</h3>
+<pre><code>updated = Account.objects.filter(id=account_id, version=expected_version).update(
+    balance=new_balance,
+    version=models.F("version") + 1,
+)
+if updated == 0:
+    raise ConcurrentModification()</code></pre>
+<p>זו Compare-And-Swap ברמת DB. ‏<code>F()</code> מבקש מה־database לחשב על הערך הנוכחי ומונע read-modify-write פשוט. בחר pessimistic locking כשעימות סביר והפעולה קצרה; optimistic כשהעימות נדיר וניתן retry.</p>
+<div class="callout"><strong>Side effects אחרי commit:</strong> אם task נשלח לפני commit ו־worker מהיר קורא את הנתון, הוא עלול לא למצוא אותו. השתמש ב־<code>transaction.on_commit(lambda: task.delay(id))</code>. לדרישה אמינה יותר בין DB ל־broker השתמש ב־Transactional Outbox.</div>
 
-<p>שני דברים לקחת: Django הוא <strong>batteries-included</strong> — ORM, admin, auth, forms, הכל מובנה, מה שהופך אותו למהיר מאוד ל-CRUD ו-data-driven apps; וה-<strong>ORM + DRF</strong> הם הליבה שלך כמפתח API — models נקיים, ו-serializers+viewsets שנותנים CRUD מלא במעט קוד.</p>
+<h2 id="s21">21. DRF לעומק — API Design</h2>
+<p>Serializer אחראי על boundary: parsing, validation וייצוג. הוא אינו חייב להכיל את כל ה־business workflow. ViewSet מתאם HTTP; service/use-case מבצע פעולה עסקית; model/DB אוכפים invariants.</p>
+<pre><code>class WorkoutCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workout
+        fields = ["name", "performed_at", "duration_minutes"]
 
-<p>שים לב כמה מהמדריך היה מוכר: models הם ה-SQL/Databases שלמדת (relationships, migrations, N+1); auth הוא בדיוק מדריך Authentication (sessions/JWT/hashing) רק מובנה; middleware, request cycle, ו-deploy חוזרים מ-NestJS/Networking/DevOps. <strong>זה בדיוק העניין:</strong> ברגע שאתה מבין את הבסיס (SQL, HTTP, auth, DB modeling), מעבר בין frameworks הוא בעיקר לימוד תחביר — לא מושגים חדשים. Django מול NestJS זה אותה מוזיקה, כלי אחר.</p>
+    def validate_duration_minutes(self, value):
+        if not 1 <= value <= 600:
+            raise serializers.ValidationError("Duration must be between 1 and 600")
+        return value
 
-<p>יש לך עכשיו 13 מדריכים ב-<code>C:\claude-folder</code>. ההמלצה, כמו תמיד: הכי טוב ללמוד framework חדש זה <strong>לבנות בו</strong> — קח את פרויקט הבלוג מהתרגילים, או שכתב את ה-RAG ב-Django+DRF במקום NestJS, ותראה את ההבדלים על בשרך. 🚀</p>
+class WorkoutViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated, IsOwner]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ["performed_at"]
+    ordering_fields = ["performed_at", "duration_minutes"]
+
+    def get_queryset(self):
+        return Workout.objects.visible_to(self.request.user).select_related("owner")
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)</code></pre>
+<ul><li><strong>Pagination:</strong> offset פשוט אך נהיה יקר ולא יציב בשינויים; cursor מתאים ל־feeds גדולים ודורש ordering יציב וייחודי.</li><li><strong>Versioning:</strong> שינוי additive לרוב backward compatible; rename/removal דורש deprecation וגרסה.</li><li><strong>Idempotency:</strong> ל־POST של payment/order שמור idempotency key ותוצאה תחת unique constraint.</li><li><strong>Errors:</strong> envelope עקבי עם code יציב, message בטוח ו־request ID; אל תחשוף traceback.</li><li><strong>Schema:</strong> הפק OpenAPI ובדוק אותו ב־CI כדי לזהות breaking changes.</li></ul>
+
+<h2 id="s22">22. Performance ו-Query Planning</h2>
+<p>אופטימיזציה מתחילה במספר queries, זמן query, rows שנסרקו וגודל response—not בתחושת בטן.</p>
+<pre><code>queryset = (
+    Workout.objects
+    .filter(owner=request.user)
+    .select_related("owner")                 # FK / OneToOne באותו JOIN
+    .prefetch_related("sets__exercise")      # many relation בשאילתה נוספת
+    .only("id", "name", "performed_at", "owner__id")
+)
+
+print(queryset.explain(analyze=False))</code></pre>
+<p><code>select_related</code> מתאים ליחס יחיד; <code>prefetch_related</code> מבצע שאילתה נפרדת ומחבר ב־Python. Serializer שמבצע query לכל row יוצר N+1 גם אם ה־view נראה נקי. בדוק query count ב־tests.</p>
+<p>השתמש ב־<code>bulk_create</code>/<code>bulk_update</code> כשמתאים, אך זכור שהם יכולים לעקוף <code>save()</code> ו־signals. ‏<code>iterator()</code> מתאים לעיבוד dataset גדול. Cache הוא optimization עם invalidation policy; הוא אינו תיקון ל־query שגויה.</p>
+
+<h2 id="s23">23. Async Django — המודל המדויק</h2>
+<p>Django תומך ב־ASGI וב־async views, וחלק הולך וגדל מה־ORM מספק פעולות async. אבל async מועיל רק כאשר כל מסלול ה־I/O אינו חוסם. Middleware סינכרוני או library חוסמת יכולים לגרום למעברים בין sync ל־async ולהקטין את התועלת.</p>
+<pre><code>async def status_view(request):
+    async with httpx.AsyncClient(timeout=3) as client:
+        response = await client.get("https://service.internal/health")
+    return JsonResponse({"upstream": response.status_code})</code></pre>
+<p>Async אינו תחליף ל־Celery: view async עדיין שייכת לחיי request ועלולה להיחתך כשהלקוח/שרת מבטל. השתמש בה ל־concurrent I/O קצר. עבודה ארוכה, durable או retryable עוברת ל־queue. עבודה CPU-bound צריכה process/worker, לא coroutine.</p>
+
+<h2 id="s24">24. Celery ו-Background Jobs אמינים</h2>
+<p>ברוב ה־brokers המסירה היא לפחות פעם אחת, ולכן task חייבת להיות <strong>idempotent</strong>. Worker עלול להשלים פעולה ולקרוס לפני acknowledgement—ואז אותה הודעה תגיע שוב.</p>
+<pre><code>@shared_task(
+    autoretry_for=(TemporaryProviderError,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def generate_report(report_id: int):
+    report = Report.objects.get(id=report_id)
+    if report.status == Report.Status.COMPLETED:
+        return
+    # ביצוע עם idempotency key מול ספק חיצוני
+    ...</code></pre>
+<ul><li>העבר IDs, לא model objects serialized.</li><li>קבע time limit ו־retry רק לשגיאות זמניות.</li><li>הגדר Dead Letter/failed-task workflow וניטור queue depth.</li><li>הפרד queues של משימות קצרות וכבדות כדי למנוע starvation.</li><li>אל תניח “exactly once”; אכוף uniqueness/state transition ב־DB.</li></ul>
+
+<h2 id="s25">25. Security ו-Hardening</h2>
+<ul><li><strong>CSRF:</strong> נדרש כשדפדפן שולח credential אוטומטית, במיוחד session cookie.</li><li><strong>CORS:</strong> מדיניות browser, לא מנגנון authentication ולא הגנה על server-to-server.</li><li><strong>IDOR:</strong> סנן queryset לפי המשתמש ובדוק object permission; אל תעשה get גלובלי ואז “תקווה”.</li><li><strong>Mass assignment:</strong> קבע fields מפורשות; owner/role נקבעים מה־server.</li><li><strong>Uploads:</strong> הגבל גודל וסוג, שנה שם, אחסן מחוץ לנתיב executable וסרוק לפי הסיכון.</li><li><strong>SQL injection:</strong> ORM parameterizes values; ‏<code>RawSQL</code>/<code>extra</code> דורשים parameters ולעולם לא string interpolation.</li><li><strong>Rate limit:</strong> throttling של DRF אינו בהכרח הגנת abuse קשיחה; שכבה חיצונית/Redis atomic נדרשת בסקייל.</li><li><strong>Headers/cookies:</strong> HTTPS, Secure, HttpOnly, SameSite, HSTS והגדרות proxy נכונות.</li></ul>
+<pre><code>python manage.py check --deploy
+pip-audit
+# בנוסף: secret scanning, dependency updates ו-SAST ב-CI</code></pre>
+
+<h2 id="s26">26. Testing Strategy</h2>
+<p>אל תסתפק ב־status code. בדוק behavior, הרשאות, DB state, query count ו־side effects.</p>
+<pre><code>@pytest.mark.django_db
+def test_user_cannot_read_another_users_workout(api_client, user_factory, workout_factory):
+    owner = user_factory()
+    attacker = user_factory()
+    workout = workout_factory(owner=owner)
+    api_client.force_authenticate(attacker)
+
+    response = api_client.get(f"/api/workouts/{workout.id}/")
+
+    assert response.status_code == 404
+
+@pytest.mark.django_db
+def test_list_has_bounded_query_count(api_client, django_assert_num_queries, workout_factory):
+    workout_factory.create_batch(20)
+    with django_assert_num_queries(3):
+        api_client.get("/api/workouts/")</code></pre>
+<p>Factories עדיפות ל־fixtures ענקיים כשצריך data ממוקד. Mock בגבול חיצוני—email/provider/time—לא ב־ORM בכל unit. השתמש ב־<code>TransactionTestCase</code> או pytest מתאים כאשר באמת בודקים commit/locking; <code>TestCase</code> עוטף test ב־transaction ועלול להסתיר behavior.</p>
+
+<h2 id="s27">27. Production Architecture</h2>
+<div class="flow">Client → CDN/WAF/Load Balancer → Gunicorn/Uvicorn → Django/DRF<br>↘ PostgreSQL &nbsp; ↘ Redis &nbsp; ↘ Object Storage<br>Broker → Celery Workers → providers</div>
+<ul><li>Readiness בודקת אם instance יכול לקבל traffic; liveness אם התהליך תקוע. אל תהפוך כל provider חיצוני לתנאי liveness.</li><li>Structured logs עם request ID, metrics ל־latency/error rate ו־tracing ל־DB/HTTP/tasks.</li><li>Graceful shutdown ו־worker timeouts תואמים ל־load balancer.</li><li>Migrations בשיטת expand/migrate/contract כדי שקוד ישן וחדש יעבדו יחד בזמן rolling deployment.</li><li>גיבויים אינם מספיקים עד שבודקים restore.</li><li>Static/media הם דברים שונים: static שייך לגרסת הקוד; user media לא נשמר בדיסק ephemeral של container.</li></ul>
+
+<h2 id="s28">28. פרויקט ותרגול מסכם</h2>
+<p><strong>פרויקט:</strong> בנה Workout Tracking API שמתאים לשימוש האישי שלך. הוא יכלול custom user, workouts, exercises, sets, templates ומדדי התקדמות.</p>
+<ol><li>כתוב ERD ו־invariants לפני models.</li><li>הגדר constraints, indexes ו־custom QuerySets.</li><li>בנה DRF API עם permissions ברמת object, filtering ו־cursor pagination.</li><li>כתוב use case של “סיום אימון” בתוך transaction.</li><li>שלח summary task עם <code>on_commit</code> וודא idempotency.</li><li>מנע N+1 והוסף query-count test.</li><li>הוסף OpenAPI, tests, Docker, PostgreSQL, Redis ו־CI.</li><li>תעד threat model, failure modes ו־trade-offs.</li></ol>
+<div class="callout"><strong>Definition of Done:</strong> משתמש אינו יכול לקרוא או לשנות נתונים של אחר; כתיבה מקבילית אינה שוברת invariant; retries אינם יוצרים כפילויות; migrations תואמות deployment הדרגתי; tests מכסים domain, DB ו־API; ואתה מסוגל להסביר את זרימת הבקשה מה־socket ועד commit.</div>
+
+<hr><h2>סיכום</h2>
+<p>Django אינו רק CRUD מהיר. שימוש מקצועי דורש להבין היכן נמצא כל invariant, איך ORM הופך ל־SQL, איך transactions מתנהגות תחת concurrency, כיצד DRF מגן על גבולות המערכת ואיך web workers, task workers, PostgreSQL ו־Redis משתפים פעולה. חזור לפרק הרלוונטי בזמן בניית הפרויקט—המטרה היא לא לשנן אלא לדעת לנתח.</p>
 
 </body>
 </html>
