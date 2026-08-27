@@ -1,0 +1,58 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>תרגול JavaScript — מהיסודות עד Node.js</title><style>
+:root{--bg:#fffdf4;--ink:#202026;--yellow:#b27a00;--line:#e6dbaa;--soft:#fff5bf;--code:#1d1f25}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.75 system-ui,"Segoe UI",Arial,sans-serif}.wrap{max-width:1000px;margin:auto;padding:34px 22px 80px}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15}h2{color:#755000;margin-top:2.5em;border-bottom:2px solid var(--line);padding-bottom:8px}.hero,.rules,.project{padding:22px;border:1px solid var(--line);border-radius:14px;background:white}.exercise{background:white;border:1px solid var(--line);border-right:5px solid var(--yellow);border-radius:10px;padding:18px 20px;margin:15px 0}.exercise h3{margin:0 0 8px}.badge{display:inline-block;background:var(--soft);padding:2px 9px;border-radius:999px}details{margin-top:12px;background:var(--soft);padding:9px 12px;border-radius:8px}summary{cursor:pointer;font-weight:650}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,monospace}code{background:#f0eee5;padding:2px 5px;border-radius:4px}pre{background:var(--code);color:#fff8c9;padding:16px;border-radius:9px;overflow:auto}.nav{display:flex;gap:9px;flex-wrap:wrap}.nav a{color:#755000;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 11px}li{margin-bottom:5px}@media(max-width:600px){.wrap{padding:22px 14px}.exercise{padding:15px}}
+</style></head><body><main class="wrap"><nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="2.javascript-tutorial.html">מדריך JavaScript</a><a href="4.nodejs-tutorial.html">Node.js</a></nav>
+<section class="hero"><h1>תרגול JavaScript — מהיסודות עד Node.js</h1><p>תרגילים לכתיבה עצמאית, reasoning, async ו־debugging. בכל משימה כתוב תחילה דוגמאות קלט/פלט, edge cases ו־complexity צפויה.</p></section>
+<section class="rules"><h2 style="margin-top:0">כללי התרגול</h2><ol><li>Attempt ראשון ללא AI וללא autocomplete שמייצר פונקציות.</li><li>אל תפתח רמז לפני שיש לך פתרון חלקי או הסבר מדויק למה נתקעת.</li><li>כתוב tests, כולל קלט ריק ושגוי.</li><li>אחרי שסיימת, בקש review בלבד והשווה חלופות.</li></ol></section>
+
+<h2>רמה 1 — שפה ועיבוד נתונים</h2>
+<article class="exercise"><h3>1. סטטיסטיקת הזמנות</h3><p>קבל מערך orders והחזר revenue, average, count לפי status והלקוח בעל ההוצאה הגבוהה ביותר. אל תשנה את הקלט.</p><details><summary>רמז</summary><p>התחל בלולאה אחת ואובייקט accumulator; רק אחר כך שקול <code>reduce</code>.</p></details></article>
+<article class="exercise"><h3>2. Group By גנרי</h3><p>ממש <code>groupBy(items, keySelector)</code>. טפל במפתח מסוכן כמו <code>__proto__</code>.</p><details><summary>רמז</summary><p><code>Map</code> מונע כמה בעיות שיש לאובייקט רגיל כמפה.</p></details></article>
+<article class="exercise"><h3>3. Deep Get</h3><p>ממש <code>get(obj, "user.address.city", fallback)</code> בלי להשתמש ב־library. החלט איך arrays ומפתח חסר עובדים.</p><details><summary>רמז</summary><p>פצל path והתקדם עם optional checks; אל תבלבל בין missing לבין ערך falsy.</p></details></article>
+<article class="exercise"><h3>4. Deduplicate לפי אסטרטגיה</h3><p>הסר כפילויות לפי email case-insensitive. שמור את הראשון בגרסה אחת ואת האחרון בשנייה.</p><details><summary>רמז</summary><p>Map שומר insertion order; חשוב מתי אתה מכניס ומתי רק מעדכן.</p></details></article>
+<article class="exercise"><h3>5. Immutable Update</h3><p>עדכן כתובת של user בתוך state מקונן בלי לשנות שום object קיים. כתוב assertions שמוכיחים identity נכון.</p><details><summary>רמז</summary><p>צריך להעתיק כל level לאורך הנתיב, לא את כל העולם.</p></details></article>
+<article class="exercise"><h3>6. Normalized Search</h3><p>חפש משתמשים לפי שם/email בלי תלות ב־case ורווחים. הפרד normalization מהחיפוש.</p></article>
+<article class="exercise"><h3>7. Frequency Window</h3><p>מצא את התו הראשון שאינו חוזר ואת המילה הנפוצה ביותר. הסבר time/space complexity.</p></article>
+<article class="exercise"><h3>8. Validation Result</h3><p>בנה validators שמחזירים את כל השגיאות עבור payload של יצירת משתמש. אין לזרוק exception עבור קלט צפוי ושגוי.</p><details><summary>רמז</summary><p>הבדל בין validation failure לבין programming/infrastructure failure.</p></details></article>
+
+<h2>רמה 2 — Functions, closures ו־object model</h2>
+<article class="exercise"><h3>9. Once</h3><p>כתוב <code>once(fn)</code> שמריץ את fn פעם אחת ומחזיר אותה תוצאה בהמשך. החלט מה קורה אם הקריאה הראשונה זרקה.</p><details><summary>רמז</summary><p>Closure צריך לשמור גם state וגם result; exception policy היא חלק מהחוזה.</p></details></article>
+<article class="exercise"><h3>10. Memoize עם Key Function</h3><p>ממש memoization שמקבל key selector, תומך בערכים falsy ואינו מתנגש בין אובייקטים שונים.</p><details><summary>רמז</summary><p>אל תשתמש ב־<code>if (cache[key])</code>. שקול Map/WeakMap לפי החוזה.</p></details></article>
+<article class="exercise"><h3>11. Event Emitter קטן</h3><p>ממש <code>on</code>,‏ <code>off</code>,‏ <code>once</code> ו־<code>emit</code>. Listener שמסיר את עצמו בזמן emit לא ישבור iteration.</p><details><summary>רמז</summary><p>Snapshot של listeners נותן semantics יציבים.</p></details></article>
+<article class="exercise"><h3>12. Private Counter</h3><p>צור counter פעם עם closure ופעם עם class private field. השווה encapsulation ו־memory.</p></article>
+<article class="exercise"><h3>13. Pipeline</h3><p>ממש <code>pipe(...functions)</code> וגרסה async שתומכת גם בפונקציות sync. שמור stack trace שימושי.</p></article>
+<article class="exercise"><h3>14. Custom Error Hierarchy</h3><p>צור ValidationError, ConflictError ו־ExternalServiceError עם <code>cause</code> ו־metadata בטוח ללוגים.</p></article>
+
+<h2>רמה 3 — Promises, Event Loop ו־Concurrency</h2>
+<article class="exercise"><h3>15. Delay ו־Timeout</h3><p>כתוב <code>delay(ms, signal)</code> שניתנת לביטול, ואז <code>withTimeout(promise, ms)</code> שלא משאיר timer מיותר.</p><details><summary>רמז</summary><p><code>Promise.race</code> לבדו לא מבטל את העבודה המפסידה. השתמש ב־AbortController כשאפשר.</p></details></article>
+<article class="exercise"><h3>16. Retry נכון</h3><p>ממש retry עם exponential backoff, jitter, max attempts ו־predicate שקובע אם התקלה retryable.</p><details><summary>רמז</summary><p>אל תעשה retry ל־validation או authentication errors; העבר AbortSignal.</p></details></article>
+<article class="exercise"><h3>17. Promise Pool</h3><p>עבד 100 משימות עם concurrency של 5, שמור את סדר התוצאות והחזר success/error לכל item.</p><details><summary>רמז</summary><p>כמה workers חולקים index; אין צורך להפעיל את כל ה־promises מראש.</p></details></article>
+<article class="exercise"><h3>18. Event Loop Prediction</h3><pre><code>console.log("A");
+setTimeout(() => console.log("B"), 0);
+Promise.resolve().then(() => console.log("C"));
+queueMicrotask(() => console.log("D"));
+console.log("E");</code></pre><p>נבא את הסדר והסבר call stack, microtask queue ו־timer phase. לאחר מכן הוסף nested microtask.</p></article>
+<article class="exercise"><h3>19. Async Cache Deduplication</h3><p>אם חמש בקשות לאותו key מגיעות יחד, הפעל fetch אחד בלבד ושתף promise. כישלון לא צריך להישאר cache לנצח.</p><details><summary>רמז</summary><p>Cache את ה־in-flight promise ומחק ב־catch/finally לפי policy.</p></details></article>
+<article class="exercise"><h3>20. Graceful Worker</h3><p>צור worker שמעבד queue, מפסיק לקבל עבודה ב־shutdown, מחכה ל־inflight עם deadline ואז מבטל.</p></article>
+
+<h2>רמה 4 — Node.js מעשי</h2>
+<article class="exercise"><h3>21. JSON File Repository</h3><p>בנה repository אסינכרוני עם atomic write, schema version וטיפול ב־corrupted file.</p><details><summary>רמז</summary><p>כתוב temp file באותה תיקייה ואז rename. חשוב על שתי כתיבות במקביל.</p></details></article>
+<article class="exercise"><h3>22. HTTP Router ללא Framework</h3><p>תמוך ב־method, path parameters, query ו־JSON body עם size limit. החזר error envelope אחיד.</p></article>
+<article class="exercise"><h3>23. Stream Transform</h3><p>קרא CSV גדול, המר records וכתוב JSONL בלי לטעון הכול. טפל ב־backpressure ובשורה שגויה.</p><details><summary>רמז</summary><p>השתמש ב־pipeline; אל תתעלם מ־write שמחזיר false.</p></details></article>
+<article class="exercise"><h3>24. Structured Logger</h3><p>כתוב logger ל־JSON עם level, timestamp, requestId ו־redaction לשדות password/token.</p></article>
+<article class="exercise"><h3>25. Rate Limiter</h3><p>ממש fixed window ואז token bucket בזיכרון. בדוק boundary ו־clock מוזרק.</p></article>
+
+<h2>Debugging</h2>
+<article class="exercise"><h3>26. forEach שלא מחכה</h3><pre><code>items.forEach(async item => {
+  await save(item);
+});
+console.log("done");</code></pre><p>הסבר ותקן פעם אחת sequential ופעם אחת concurrent עם limit.</p></article>
+<article class="exercise"><h3>27. Truthy Cache Bug</h3><pre><code>if (cache[key]) return cache[key];</code></pre><p>הדגם כשל עם 0, false ומחרוזת ריקה; תקן בלי לשנות semantics.</p></article>
+<article class="exercise"><h3>28. Lost Error Context</h3><pre><code>catch (error) {
+  throw new Error("Request failed");
+}</code></pre><p>שמור cause, הוסף context בטוח ואל תדליף secrets ללקוח.</p></article>
+<article class="exercise"><h3>29. Memory Leak ב־Listener</h3><p>Endpoint מוסיף listener גלובלי בכל request ולעולם לא מסיר. כתוב reproduction, מדידה ותיקון.</p></article>
+<article class="exercise"><h3>30. Blocking Event Loop</h3><p>בקשת HTTP מחשבת hash כבד ומעלה latency לכל המשתמשים. מדוד event-loop delay ובחר Worker Thread, process או queue.</p></article>
+
+<h2>פרויקט מסכם — TaskFlow HTTP API ללא Framework</h2>
+<section class="project"><p>בנה API ב־Node.js core בלבד כדי להבין מה framework עושה עבורך.</p><h3>דרישות</h3><ul><li>Routes ל־CRUD, filter, sort ו־cursor pagination.</li><li>Router קטן עם path parameters.</li><li>JSON body parser עם size limit ו־validation.</li><li>Repository לקובץ JSON עם atomic writes.</li><li>Error hierarchy ו־response envelope עקבי.</li><li>Request ID, structured logs ו־latency.</li><li>Graceful shutdown ו־health endpoint.</li><li>Unit ו־integration tests עם test runner המובנה של Node.</li></ul><h3>Milestones</h3><ol><li>Domain ופונקציות טהורות.</li><li>Repository memory ו־tests.</li><li>HTTP routing ו־validation.</li><li>Persistence ו־concurrency protection.</li><li>Observability ו־shutdown.</li><li>README שמסביר event loop, backpressure ו־trade-offs.</li></ol><h3>Definition of Done</h3><p>אין framework, אין global mutable state לא מבוקר, כל promise מטופל, קלט גדול נדחה, shutdown אינו מאבד request פעיל, ואתה מסוגל לבנות מחדש את השלד ללא AI.</p></section>
+</main></body></html>
