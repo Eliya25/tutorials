@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="מדריך Python מקיף בעברית למפתחי Backend — מהיסודות ועד async, concurrency ו-production">
+<title>Python למפתחי Backend — מהיסודות ועד Production</title>
+<style>
+:root{--ink:#17202a;--green:#156f55;--soft:#eef8f4;--line:#d7e2dd;--warn:#fff8e7}*{box-sizing:border-box}body{margin:auto;max-width:980px;padding:38px 24px 80px;color:var(--ink);font:17px/1.78 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--green);padding-bottom:14px}h2{margin-top:2.4em;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:7px}h3{margin-top:1.7em;color:#105640}a{color:#0c6049}.toc,.callout{background:var(--soft);border:1px solid #bfe0d3;border-radius:12px;padding:18px 24px;margin:20px 0}.warning{background:var(--warn);border-color:#ecd597}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#f1f3f5;color:#a11;padding:2px 6px;border-radius:4px}pre{background:#17202a;color:#eef6f3;padding:18px;border-radius:10px;overflow:auto;line-height:1.55}pre code{background:none;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{border:1px solid var(--line);padding:10px;vertical-align:top}th{background:var(--soft)}.ltr{direction:ltr;text-align:left}.nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:25px}.nav a{text-decoration:none;border:1px solid var(--line);padding:7px 12px;border-radius:999px}.check li{margin-bottom:7px}@media(max-width:600px){body{padding:22px 16px;font-size:16px}table{display:block;overflow:auto}}
+</style>
+</head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="17.python-practice.html">מעבר לתרגול Python</a><a href="14.django-tutorial.html">מדריך Django</a></nav>
+<h1>Python למפתחי Backend — מהיסודות ועד Production</h1>
+<div class="callout"><strong>מטרת המדריך:</strong> לא רק לזכור תחביר, אלא להבין את מודל האובייקטים, ניהול הזיכרון, שגיאות, typing, async ו־concurrency כדי שתוכל לקרוא ולכתוב שירותי Python ו־Django בביטחון. כל מושג נבנה על הקודם; כשמופיע מונח חדש הוא מוסבר לפני שמשתמשים בו.</div>
+
+<div class="toc"><h2 style="margin-top:0">מפת הלימוד</h2><ol>
+<li><a href="#s1">איך Python מריצה קוד</a></li><li><a href="#s2">שמות, אובייקטים וטיפוסים</a></li><li><a href="#s3">מספרים, מחרוזות ו־None</a></li><li><a href="#s4">Collections ו־mutability</a></li><li><a href="#s5">זרימת בקרה ו־pattern matching</a></li><li><a href="#s6">פונקציות, scope ו־closures</a></li><li><a href="#s7">Comprehensions, iterables ו־generators</a></li><li><a href="#s8">Exceptions וניקוי משאבים</a></li><li><a href="#s9">Modules, packages וסביבות</a></li><li><a href="#s10">OOP, dataclasses ו־protocols</a></li><li><a href="#s11">Decorators ו־descriptors</a></li><li><a href="#s12">Type hints ו־static analysis</a></li><li><a href="#s13">Files, serialization ו־I/O</a></li><li><a href="#s14">Testing ו־debugging</a></li><li><a href="#s15">Asyncio ו־event loop</a></li><li><a href="#s16">Threads, processes וה־GIL</a></li><li><a href="#s17">Memory model וביצועים</a></li><li><a href="#s18">Backend ו־production practices</a></li><li><a href="#s19">טעויות נפוצות</a></li><li><a href="#s20">מסלול המשך</a></li>
+</ol></div>
+
+<h2 id="s1">1. איך Python מריצה קוד</h2>
+<p>CPython, המימוש הנפוץ של Python, קורא את קובץ המקור, מפרק אותו ל־tokens, בונה Abstract Syntax Tree, מקמפל אותו ל־<strong>bytecode</strong> ואז מריץ את ה־bytecode בתוך virtual machine. לכן Python אינה פשוט “interpreted בלי compilation”: יש compilation, אבל לא ישירות לקוד מכונה כמו C.</p>
+<pre><code>python app.py
+python -m dis app.py       # הצגת bytecode
+python -m module_name      # הרצת module בתוך package context</code></pre>
+<p>הקובץ <code>__pycache__</code> שומר bytecode כדי לחסוך compilation בייבוא עתידי. הוא אינו שומר את תוצאת התוכנית ואינו הופך אותה למהירה כמו binary native.</p>
+
+<h2 id="s2">2. שמות, אובייקטים וטיפוסים</h2>
+<p>ב־Python משתנה הוא <strong>שם שמצביע לאובייקט</strong>, לא קופסה עם טיפוס קבוע. בהשמה <code>b = a</code> לא מעתיקים בהכרח את האובייקט; שני השמות יכולים להצביע לאותו אובייקט.</p>
+<pre><code>a = [1, 2]
+b = a
+b.append(3)
+assert a == [1, 2, 3]      # אותו list
+
+print(id(a), type(a))
+print(a is b)              # identity: True
+print(a == b)              # value equality: True</code></pre>
+<div class="callout"><strong><code>is</code> מול <code>==</code>:</strong> ‏<code>is</code> בודק אם זה אותו אובייקט בזיכרון; <code>==</code> בודק שוויון ערכים. משתמשים ב־<code>is None</code>, אבל לא ב־<code>is 1000</code> או להשוואת strings.</div>
+<p>Python היא dynamically typed אבל strongly typed: הטיפוס נקבע בזמן ריצה, אך השפה לא מחברת שרירותית string ו־integer. Type hints מוסיפים בדיקה סטטית לכלים, לא משנים את מנגנון הריצה.</p>
+
+<h2 id="s3">3. מספרים, מחרוזות ו־None</h2>
+<table><tr><th>טיפוס</th><th>מה חשוב להבין</th></tr><tr><td><code>int</code></td><td>מספר שלם בגודל דינמי; אין overflow רגיל של 32-bit.</td></tr><tr><td><code>float</code></td><td>IEEE-754; אינו מדויק לכסף. לכסף השתמש ב־<code>Decimal</code>.</td></tr><tr><td><code>str</code></td><td>רצף Unicode immutable.</td></tr><tr><td><code>bytes</code></td><td>בתים בינאריים; צריך encoding כדי להמיר ל־str.</td></tr><tr><td><code>None</code></td><td>היעדר ערך; singleton שנבדק עם <code>is None</code>.</td></tr></table>
+<pre><code>from decimal import Decimal
+price = Decimal("19.90")     # לא Decimal(19.90)
+
+text = "שלום"
+payload = text.encode("utf-8")
+assert payload.decode("utf-8") == text
+
+name = "Eliya"
+message = f"Hello {name}"</code></pre>
+<p>Falsy values כוללים <code>False</code>,‏ <code>None</code>, אפס ו־collections ריקים. אם אפס הוא ערך חוקי, אל תכתוב <code>if not value</code> כשאתה מתכוון רק ל־None.</p>
+
+<h2 id="s4">4. Collections ו־mutability</h2>
+<table><tr><th>מבנה</th><th>תכונות</th><th>שימוש טיפוסי</th></tr><tr><td><code>list</code></td><td>מסודר, mutable, כפילויות</td><td>רצף שמשתנה</td></tr><tr><td><code>tuple</code></td><td>מסודר, immutable</td><td>record קטן או key אם כל איבריו hashable</td></tr><tr><td><code>dict</code></td><td>מיפוי key→value, שומר insertion order</td><td>lookup ומודלים דינמיים</td></tr><tr><td><code>set</code></td><td>ערכים ייחודיים, membership ממוצע O(1)</td><td>deduplication וחיתוכים</td></tr></table>
+<pre><code>users_by_id = {user["id"]: user for user in users}
+active_names = {u["name"] for u in users if u["active"]}
+first, *middle, last = [1, 2, 3, 4]</code></pre>
+<p><strong>Shallow copy</strong> מעתיק container חיצוני אך משתף אובייקטים פנימיים. ‏<code>copy.deepcopy</code> מעתיק גרף אובייקטים, אך לעיתים עדיף לבנות מודל immutable וברור.</p>
+<pre><code>matrix = [[0] * 3 for _ in range(3)]  # שלוש שורות שונות
+# [[0] * 3] * 3 היה יוצר שלוש הפניות לאותה שורה</code></pre>
+
+<h2 id="s5">5. זרימת בקרה ו־pattern matching</h2>
+<pre><code>for item in items:
+    if item.is_valid():
+        process(item)
+else:
+    print("הלולאה הסתיימה ללא break")
+
+match event:
+    case {"type": "user.created", "payload": {"id": user_id}}:
+        handle_user(user_id)
+    case {"type": event_type}:
+        raise ValueError(f"unsupported event: {event_type}")</code></pre>
+<p>ה־<code>else</code> של loop רץ אם הלולאה הסתיימה בלי <code>break</code>. ‏Structural pattern matching אינו switch פשוט; הוא יכול לפרק מבני נתונים ולבצע guard.</p>
+
+<h2 id="s6">6. פונקציות, scope ו־closures</h2>
+<p>פונקציה היא אובייקט: אפשר להעביר אותה, לשמור אותה ולהחזיר אותה. פרמטרים מועברים בגישת <strong>object sharing</strong>: הפונקציה מקבלת reference לאותו אובייקט; mutation נראה בחוץ, rebinding מקומי לא.</p>
+<pre><code>def create_user(name: str, *, active: bool = True) -> dict[str, object]:
+    """הכוכבית מחייבת את active להיות keyword argument."""
+    return {"name": name, "active": active}
+
+def make_multiplier(factor: int):
+    def multiply(value: int) -> int:
+        return value * factor       # closure זוכר את factor
+    return multiply</code></pre>
+<div class="warning callout"><strong>Mutable default trap:</strong><pre><code>def add(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items</code></pre><p>Default arguments מחושבים פעם אחת בזמן הגדרת הפונקציה, לא בכל קריאה.</p></div>
+<p>סדר חיפוש שמות הוא LEGB: Local, Enclosing, Global, Builtins. ‏<code>nonlocal</code> משנה שם ב־enclosing scope; ‏<code>global</code> משנה שם module-level, ובדרך כלל dependency injection עדיפה עליו.</p>
+
+<h2 id="s7">7. Iterables, iterators ו־generators</h2>
+<p><strong>Iterable</strong> הוא אובייקט שניתן לבקש ממנו iterator. ‏<strong>Iterator</strong> מחזיק state ומחזיר פריט הבא באמצעות <code>next()</code>. Generator הוא דרך נוחה ליצור iterator עם <code>yield</code>, ולכן יכול לעבד stream גדול בלי לטעון הכול לזיכרון.</p>
+<pre><code>def read_batches(path: str, size: int = 1000):
+    batch = []
+    with open(path, encoding="utf-8") as file:
+        for line in file:
+            batch.append(line.rstrip("\n"))
+            if len(batch) == size:
+                yield batch
+                batch = []
+    if batch:
+        yield batch</code></pre>
+<p>Comprehension טובה לטרנספורמציה קצרה. אם יש כמה תנאים, side effects או טיפול בשגיאות—לולאה מפורשת קריאה יותר. Generator expression משתמש בסוגריים ועצלן: <code>sum(x*x for x in values)</code>.</p>
+
+<h2 id="s8">8. Exceptions וניקוי משאבים</h2>
+<pre><code>class InsufficientBalanceError(Exception):
+    pass
+
+try:
+    debit(account, amount)
+except InsufficientBalanceError as exc:
+    logger.info("payment rejected", extra={"account_id": account.id})
+    raise HTTPException(status_code=409, detail="insufficient balance") from exc
+else:
+    metrics.increment("payment.success")
+finally:
+    connection.close()</code></pre>
+<p>תופסים את החריגה הצרה שאתה יודע לטפל בה. ‏<code>raise ... from exc</code> שומר causal chain. אל תשתמש ב־<code>except Exception: pass</code>: הוא מסתיר תקלות ומשאיר state לא ברור.</p>
+<p>Context manager מרכז acquire/release ומבטיח ניקוי:</p>
+<pre><code>from contextlib import contextmanager
+
+@contextmanager
+def transaction(db):
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise</code></pre>
+
+<h2 id="s9">9. Modules, packages וסביבות</h2>
+<p>Module הוא קובץ Python; package הוא namespace של modules. בזמן import הקוד העליון בקובץ רץ פעם אחת ונשמר ב־<code>sys.modules</code>. לכן אין לשים ב־module פעולות רשת או חיבור DB בלתי נשלט.</p>
+<pre><code>python -m venv .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install django pytest ruff mypy</code></pre>
+<p><code>if __name__ == "__main__"</code> מבדיל בין הרצה ישירה לבין import. בפרויקט אמיתי משתמשים ב־<code>pyproject.toml</code>, נועלים גרסאות, ולא מתקינים dependencies גלובלית.</p>
+
+<h2 id="s10">10. OOP, dataclasses ו־protocols</h2>
+<p>Class מגדירה התנהגות ומצב. העדף composition כשאין יחס “is-a” אמיתי. ‏<code>@dataclass</code> מתאים ל־data objects ומייצר constructor, repr ושוויון.</p>
+<pre><code>from dataclasses import dataclass
+from typing import Protocol
+
+@dataclass(frozen=True, slots=True)
+class Money:
+    amount: int
+    currency: str
+
+class PaymentGateway(Protocol):
+    def charge(self, payment_id: str, money: Money) -> None: ...
+
+class PaymentService:
+    def __init__(self, gateway: PaymentGateway) -> None:
+        self.gateway = gateway</code></pre>
+<p>Protocol מגדיר interface לפי ההתנהגות הנדרשת (structural typing): implementation אינו חייב לרשת במפורש. זה מאפשר dependency inversion ו־tests פשוטים. ‏<code>frozen=True</code> מונע assignment רגיל אך אינו הופך כל אובייקט פנימי ל־immutable.</p>
+
+<h2 id="s11">11. Decorators ו־descriptors</h2>
+<p>Decorator מקבל callable ומחזיר callable. Django משתמש ב־decorators ל־permissions, transactions ו־views. חשוב לשמר metadata עם <code>functools.wraps</code>.</p>
+<pre><code>from functools import wraps
+from time import perf_counter
+
+def timed(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            print(func.__name__, perf_counter() - start)
+    return wrapper</code></pre>
+<p>Descriptor הוא אובייקט שמגדיר <code>__get__</code>,‏ <code>__set__</code> או <code>__delete__</code>. ‏Properties, methods ושדות Django ORM נשענים על הפרוטוקול הזה—זו הסיבה ש־<code>user.email</code> יכול להיראות כמו attribute רגיל אך להפעיל לוגיקה.</p>
+
+<h2 id="s12">12. Type hints ו־static analysis</h2>
+<pre><code>from collections.abc import Sequence
+from typing import TypeVar
+
+T = TypeVar("T")
+
+def first(items: Sequence[T]) -> T:
+    if not items:
+        raise ValueError("items must not be empty")
+    return items[0]
+
+def find_user(user_id: int) -> User | None: ...</code></pre>
+<p>העדף abstraction צרה בקלט (<code>Iterable</code>/<code>Sequence</code>) וטיפוס קונקרטי ברור בפלט. ‏<code>Any</code> מכבה בדיקה ומתפשט; השתמש בו רק בגבולות דינמיים. הרץ mypy או pyright ב־CI, אך זכור שה־runtime אינו אוכף hints מעצמו.</p>
+
+<h2 id="s13">13. Files, serialization ו־I/O</h2>
+<pre><code>from pathlib import Path
+import json
+
+path = Path("data/users.json")
+path.parent.mkdir(parents=True, exist_ok=True)
+payload = {"version": 1, "users": []}
+path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+loaded = json.loads(path.read_text(encoding="utf-8"))</code></pre>
+<p>JSON אינו תומך ישירות ב־datetime, Decimal או UUID; צריך encoding מפורש. אל תטען pickle ממקור לא מהימן—unpickling מסוגל להריץ קוד. בקבצים גדולים עבוד ב־streaming ובצע כתיבה אטומית: כתוב לקובץ זמני ואז החלף.</p>
+
+<h2 id="s14">14. Testing ו־debugging</h2>
+<pre><code>def test_transfer_moves_money(account_factory):
+    source = account_factory(balance=100)
+    target = account_factory(balance=0)
+
+    transfer(source, target, 30)
+
+    assert source.balance == 70
+    assert target.balance == 30
+
+@pytest.mark.parametrize("amount", [0, -1])
+def test_transfer_rejects_non_positive_amount(amount):
+    with pytest.raises(ValueError):
+        transfer(Account(100), Account(0), amount)</code></pre>
+<p>בדיקה טובה מתארת behavior, אינה תלויה בסדר, ואינה עושה mock לכל פרט פנימי. Unit tests מהירות ללוגיקה; integration tests בודקות DB/queue אמיתיים; E2E בודקות flow מרכזי. כל bug משמעותי צריך regression test.</p>
+<p>כלים חשובים: <code>breakpoint()</code>, logging מובנה, traceback מלא, ‏pytest, coverage, Ruff ו־mypy. Coverage מודד מה רץ—not האם בדקת נכון.</p>
+
+<h2 id="s15">15. Asyncio ו־event loop</h2>
+<p>Coroutine עוצרת ב־<code>await</code> רק כשהיא מחכה לפעולה async אמיתית. ה־event loop יכול להריץ coroutine אחרת בזמן ההמתנה. זה משפר concurrency של I/O, לא הופך חישוב CPU למהיר.</p>
+<pre><code>import asyncio
+
+async def fetch_all(client, urls: list[str]):
+    semaphore = asyncio.Semaphore(20)
+
+    async def fetch(url: str):
+        async with semaphore:
+            return await client.get(url, timeout=5)
+
+    return await asyncio.gather(*(fetch(url) for url in urls))</code></pre>
+<p>אל תקרא API סינכרוני חוסם מתוך async view; הוא יחסום את loop כולו. הגבל concurrency, הגדר timeout, טפל ב־cancellation וסגור clients. ‏<code>TaskGroup</code> מספק structured concurrency: חיי המשימות נשארים קשורים ל־scope.</p>
+
+<h2 id="s16">16. Threads, processes וה־GIL</h2>
+<table><tr><th>כלי</th><th>מתאים ל־</th><th>מחיר</th></tr><tr><td>asyncio</td><td>הרבה I/O async</td><td>כל ה־stack צריך לשתף פעולה</td></tr><tr><td>threads</td><td>I/O סינכרוני או libraries חוסמות</td><td>shared state, locks ו־races</td></tr><tr><td>processes</td><td>CPU-bound</td><td>זיכרון נפרד, serialization ו־IPC</td></tr><tr><td>job queue</td><td>עבודה ארוכה/עמידה</td><td>תשתית, retries ו־idempotency</td></tr></table>
+<p>ב־CPython המסורתי ה־GIL מאפשר thread אחד לבצע Python bytecode בכל רגע בתוך process. הוא אינו מבטל race conditions: פעולות יכולות להשתלב בין bytecodes ו־I/O משחרר את ה־GIL. אל תסמוך על “זה נראה atomic”; השתמש ב־lock או העבר ownership.</p>
+
+<h2 id="s17">17. Memory model וביצועים</h2>
+<p>CPython משתמש בעיקר ב־reference counting וב־cyclic garbage collector. reference cycle עלול לדרוש GC. ‏<code>__del__</code> מסבך cleanup; context managers עדיפים למשאבים חיצוניים.</p>
+<ul><li>מדוד לפני optimization: ‏<code>timeit</code>,‏ <code>cProfile</code>, sampling profiler.</li><li>בחר algorithm ומבנה נתונים לפני micro-optimization.</li><li>הימנע מ־N+1 DB queries; latency של הרשת גדולה בדרך כלל מעלות loop קטן.</li><li>Generators חוסכים זיכרון, אבל אינם תמיד מהירים יותר.</li><li><code>slots=True</code> יכול להקטין אובייקטים רבים, במחיר גמישות.</li></ul>
+
+<h2 id="s18">18. Backend ו־Production practices</h2>
+<ul class="check"><li>הפרד domain logic מ־HTTP, ORM וספקים חיצוניים.</li><li>קונפיגורציה מ־environment עם validation בזמן startup.</li><li>Structured logs עם request/correlation ID—ללא סודות.</li><li>Timeout לכל I/O חיצוני; retry רק לפעולה בטוחה/אידמפוטנטית, עם backoff ו־jitter.</li><li>DB transaction קצרה סביב invariant עסקי.</li><li>Connection pool מוגבל; יותר connections אינם תמיד יותר throughput.</li><li>Graceful shutdown: הפסק לקבל עבודה, סיים inflight וסגור resources.</li><li>Health/readiness checks, metrics ו־distributed tracing.</li><li>נעילת dependencies, scanning ועדכוני אבטחה.</li><li>Formatter/linter/type-check/tests כחלק מ־CI.</li></ul>
+<pre><code># pyproject.toml — מקור הגדרות מרכזי
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+strict = true</code></pre>
+
+<h2 id="s19">19. טעויות נפוצות</h2>
+<table><tr><th>טעות</th><th>למה היא מסוכנת</th><th>כיוון תיקון</th></tr><tr><td>mutable default</td><td>state משותף בין קריאות</td><td><code>None</code> ואז יצירה בפנים</td></tr><tr><td><code>except: pass</code></td><td>מסתיר corruption ותקלות</td><td>exception צרה, log/translate/re-raise</td></tr><tr><td>קוד blocking בתוך async</td><td>עוצר את כל event loop</td><td>async client או executor מתאים</td></tr><tr><td>business logic ב־view</td><td>קשה לבדוק ולמחזר</td><td>service/domain layer</td></tr><tr><td>import side effects</td><td>startup לא צפוי ו־tests שבירים</td><td>explicit initialization</td></tr><tr><td>לסמוך על hints בזמן ריצה</td><td>קלט עדיין יכול להיות שגוי</td><td>validation בגבולות</td></tr></table>
+
+<h2 id="s20">20. מסלול המשך</h2>
+<ol><li>פתור את <a href="17.python-practice.html">מסלול תרגול Python</a> בלי AI ב־attempt הראשון.</li><li>בנה את פרויקט ה־CLI המסכם עם tests ו־typing.</li><li>עבור ל־<a href="14.django-tutorial.html">Django</a> ובנה API על אותו domain.</li><li>חזור ל־async/concurrency רק לאחר שאתה מסוגל להסביר blocking מול non-blocking.</li></ol>
+<div class="callout"><strong>מבחן שליטה:</strong> אתה לא חייב לזכור כל method. אתה כן צריך להסביר references ו־mutability, לבחור collection, לטפל בשגיאות, לבודד dependencies, לכתוב test, ולהחליט בין sync, async, thread, process ו־queue.</div>
+</body></html>
