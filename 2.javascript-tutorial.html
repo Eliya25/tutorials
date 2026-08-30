@@ -60,7 +60,7 @@
 </head>
 <body>
 
-<p><a href="index.html">← מרכז הלמידה</a> · <a href="2.javascript-practice.html"><strong>מעבר למסלול התרגול והפרויקט המסכם</strong></a></p>
+<p><a href="index.html">← מרכז הלמידה</a> · <a href="0.problem-solving-tutorial.html"><strong>איך לפרק תרגיל ולבנות פרויקט</strong></a> · <a href="2.javascript-practice.html"><strong>מעבר למסלול התרגול</strong></a></p>
 
 <h1>JavaScript — המדריך המלא והמעמיק</h1>
 
@@ -77,6 +77,7 @@
 <li><a href="#s3">טיפוסי נתונים — Primitives מול Objects</a></li>
 <li><a href="#s4">Type Coercion ו-Equality — ה-quirks</a></li>
 <li><a href="#s5">אופרטורים</a></li>
+<li><a href="#s5b">Control Flow ופתרון בעיות — if, loops ופירוק</a></li>
 <li><a href="#s6">Functions</a></li>
 <li><a href="#s7">Scope ו-Closures — עמוק</a></li>
 <li><a href="#s8">this — הנושא הקשה ביותר</a></li>
@@ -178,7 +179,7 @@ let b = 5;</code></pre>
 
 <h3>ההבדל המהותי: Value מול Reference</h3>
 <blockquote>
-<p>זו אחת ההבחנות הכי חשובות ב-JS, ומקור לבאגים אינסופי. <strong>Primitives מועברים by value</strong> (עותק), <strong>objects מועברים by reference</strong> (מצביע לאותו אובייקט):</p>
+<p>זו אחת ההבחנות החשובות ב-JS. באופן מדויק, JavaScript תמיד מעבירה <strong>ערך</strong>. במקרה של primitive הערך הוא המספר/המחרוזת עצמם; במקרה של object הערך הוא reference לאובייקט. לכן העתקת משתנה של object מעתיקה את ה-reference, ושני המשתנים מגיעים לאותו object:</p>
 <pre><code>// Primitives — עותק:
 let a = 5;
 let b = a;      // b מקבל עותק
@@ -292,9 +293,119 @@ const obj2 = { ...obj1, x: 99 };   // spread — מרחיב object (ומדריס
 
 <hr>
 
+<h2 id="s5b">5.5 Control Flow ופתרון בעיות — להפוך דרישה לקוד</h2>
+
+<p>Control flow הוא הסדר שבו statements מתבצעים. בלי תנאים ולולאות, התוכנית הייתה מריצה כל שורה פעם אחת מלמעלה למטה. ‏<code>if</code> בוחר מסלול; loop חוזרת על פעולה; ‏<code>break</code>,‏ <code>continue</code> ו־<code>return</code> משנים את הזרימה.</p>
+
+<h3>if, else if ו־else</h3>
+<pre><code>function getAccessLevel(user) {
+  if (!user) {
+    return "anonymous";
+  }
+
+  if (user.isAdmin) {
+    return "admin";
+  }
+
+  if (user.isActive) {
+    return "member";
+  }
+
+  return "inactive";
+}</code></pre>
+<p>ה־<code>return</code> המוקדם הוא guard clause: הוא מסיים case מיוחד ומונע nesting עמוק. סדר התנאים חשוב—admin פעיל מתאים גם ל־<code>isActive</code>, ולכן בודקים את הכלל הספציפי קודם.</p>
+
+<h3>for...of — ברירת המחדל למעבר על ערכים</h3>
+<pre><code>const users = [
+  { name: "Dana", active: true },
+  { name: "Avi", active: false },
+];
+
+for (const user of users) {
+  console.log(user.name);
+}</code></pre>
+<p><code>user</code> הוא הערך הנוכחי בכל איטרציה. השתמש ב־<code>for...of</code> כשאתה רוצה לקרוא ערכים, לבצע כמה צעדים, להשתמש ב־<code>break</code>/<code>continue</code> או לעשות <code>await</code> סדרתי.</p>
+
+<h3>for הקלאסית</h3>
+<pre><code>for (let index = 0; index < users.length; index += 1) {
+  const user = users[index];
+  console.log(index, user.name);
+}</code></pre>
+<p>ללולאה שלושה חלקים: initialization פעם אחת; condition לפני כל איטרציה; update אחרי כל איטרציה. השתמש בה כשאתה באמת צריך לשלוט ב־index או בקפיצות. אם צריך רק index לצד value, ‏<code>users.entries()</code> עם <code>for...of</code> לעיתים ברור יותר.</p>
+
+<h3>while ו־do...while</h3>
+<pre><code>let attempts = 0;
+while (attempts < 3 && !connected) {
+  connected = tryConnect();
+  attempts += 1;
+}</code></pre>
+<p><code>while</code> מתאימה כאשר מספר החזרות אינו ידוע מראש והמשך הלולאה תלוי ב־state. ודא שבתוך הלולאה משהו מקרב את condition ל־false, אחרת נוצרת infinite loop. ‏<code>do...while</code> מבצעת פעם אחת לפני בדיקת התנאי ולכן נדירה יותר.</p>
+
+<h3>break ו־continue</h3>
+<pre><code>let selectedUser = null;
+
+for (const user of users) {
+  if (!user.active) {
+    continue;                 // דלג למשתמש הבא
+  }
+
+  if (user.id === targetId) {
+    selectedUser = user;
+    break;                    // מצאנו — אין צורך להמשיך
+  }
+}</code></pre>
+
+<h3>איך בוחרים בין Loop למתודת Array?</h3>
+<table>
+<tr><th>כוונה</th><th>כלי ברור</th></tr>
+<tr><td>לייצר ערך חדש מכל איבר</td><td><code>map</code></td></tr>
+<tr><td>לשמור רק איברים מתאימים</td><td><code>filter</code></td></tr>
+<tr><td>למצוא איבר ראשון</td><td><code>find</code></td></tr>
+<tr><td>לבדוק אם לפחות אחד/כולם</td><td><code>some</code> / <code>every</code></td></tr>
+<tr><td>כמה צעדים, break/continue או state מורכב</td><td><code>for...of</code></td></tr>
+<tr><td>חזרה עד שתנאי משתנה</td><td><code>while</code></td></tr>
+</table>
+<p>אין פרס על one-liner. אם אתה עדיין לומד או שהלוגיקה כוללת כמה counters ו־conditions, loop מפורשת יכולה להיות נכונה וקריאה יותר מ־<code>reduce</code> מורכב.</p>
+
+<h3>דוגמה: מדרישה ל־State</h3>
+<p>הדרישה: “החזר את שמות המשתמשים הפעילים ואת גילם הממוצע”. לפני קוד, מזהים מה צריך לשמור: array של שמות, סכום גילאים וכמות גילאים. אלה משתני ה־state של האלגוריתם.</p>
+<pre><code>function analyzeActiveUsers(users) {
+  const names = [];
+  let ageTotal = 0;
+  let ageCount = 0;
+
+  for (const user of users) {
+    if (!user.active) continue;
+
+    names.push(user.name);
+
+    if (user.age !== null && user.age !== undefined) {
+      ageTotal += user.age;
+      ageCount += 1;
+    }
+  }
+
+  return {
+    names,
+    averageAge: ageCount === 0 ? null : ageTotal / ageCount,
+  };
+}</code></pre>
+<p>החלק החשוב אינו לזכור <code>push</code>. הוא להבין שלממוצע צריך sum וגם count, וש־age חסר שונה מ־age ששווה אפס. זו בדיוק חשיבת decomposition.</p>
+<div class="callout"><strong>לפני הפרק הבא:</strong> עבור על <a href="0.problem-solving-tutorial.html">מדריך פתרון הבעיות</a>. הוא מראה את התהליך המלא: דרישה → input/output → edge cases → pseudocode → קוד → tests → feature → פרויקט.</div>
+
+<hr>
+
 <h2 id="s6">6. Functions</h2>
 
-<p>פונקציות ב-JavaScript הן <strong>first-class citizens</strong> — אפשר להעביר אותן כארגומנטים, להחזיר אותן, ולשמור אותן במשתנים. זה הבסיס לתכנות פונקציונלי ולכל ה-callbacks.</p>
+<p>פונקציה היא יחידת התנהגות בעלת שם: היא מקבלת inputs, מבצעת פעולה ומחזירה output. היא מאפשרת לפרק בעיה גדולה לחלקים שאפשר להבין ולבדוק בנפרד. רק אחרי הבסיס הזה חשוב לדעת שפונקציות הן גם <strong>first-class citizens</strong>—אפשר להעביר אותן, להחזיר אותן ולשמור אותן במשתנים.</p>
+
+<pre><code>function calculateTotal(price, quantity) {
+  const total = price * quantity;
+  return total;
+}
+
+const result = calculateTotal(19.9, 3);</code></pre>
+<p><code>price</code> ו־<code>quantity</code> הם parameters בהגדרה; ‏19.9 ו־3 הם arguments בקריאה. ‏<code>return</code> מסיים את הפונקציה ומחזיר ערך. פונקציה בלי return מפורש מחזירה <code>undefined</code>.</p>
 
 <h3>שלוש צורות הגדרה</h3>
 <pre><code>// 1. Function Declaration — מורם (hoisted) לגמרי
