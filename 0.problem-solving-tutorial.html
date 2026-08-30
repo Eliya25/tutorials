@@ -1,0 +1,87 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="מדריך מעשי לפירוק בעיות, פתרון תרגילים ובניית פרויקטים עצמאית"><title>איך פותרים תרגילים ובונים פרויקט — מדריך מעשי</title><style>
+:root{--ink:#16202a;--blue:#2457c5;--soft:#eef4ff;--line:#ccd8ef;--warn:#fff7df;--ok:#eaf8f0}*{box-sizing:border-box}body{margin:auto;max-width:980px;padding:38px 24px 80px;color:var(--ink);font:17px/1.82 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--blue);padding-bottom:14px}h2{margin-top:2.4em;color:var(--blue);border-bottom:1px solid var(--line);padding-bottom:7px}h3{margin-top:1.7em;color:#19449e}a{color:#174aa8}.toc,.callout{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:18px 24px;margin:20px 0}.warning{background:var(--warn);border-color:#ead59b}.success{background:var(--ok);border-color:#b9dec8}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#eef0f3;color:#a11;padding:2px 6px;border-radius:4px}pre{background:#17202a;color:#eef5ff;padding:18px;border-radius:10px;overflow:auto;line-height:1.55}pre code{background:none;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{border:1px solid var(--line);padding:10px;vertical-align:top}th{background:var(--soft)}.nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:25px}.nav a{text-decoration:none;border:1px solid var(--line);padding:7px 12px;border-radius:999px}.step{border-right:5px solid var(--blue);padding:4px 18px;margin:24px 0}li{margin-bottom:7px}@media(max-width:600px){body{padding:22px 16px;font-size:16px}table{display:block;overflow:auto}}</style></head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="17.python-tutorial.html">Python</a><a href="2.javascript-tutorial.html">JavaScript</a><a href="17.python-practice.html">תרגול Python</a><a href="2.javascript-practice.html">תרגול JavaScript</a></nav>
+<h1>איך פותרים תרגילים ובונים פרויקט — בלי שהקוד “יברח” לך</h1>
+<div class="callout"><strong>הפער שהמדריך פותר:</strong> לדעת syntax פירושו לדעת מה <code>for</code> עושה. לדעת לתכנת פירושו לזהות מתי צריך לולאה, מה עובר בה, איזה state שומרים, מתי להוציא פונקציה ואיך לבדוק שהפתרון נכון. זאת מיומנות נפרדת שנקראת problem decomposition, והיא נבנית באימון.</div>
+<div class="toc"><h2 style="margin-top:0">תוכן</h2><ol><li><a href="#p1">למה Syntax לא מספיק</a></li><li><a href="#p2">שיטת שבעת השלבים</a></li><li><a href="#p3">דוגמה מלאה: ניתוח משתמשים</a></li><li><a href="#p4">איך עוברים מפונקציה לפרויקט</a></li><li><a href="#p5">סולם התרגול</a></li><li><a href="#p6">איך להשתמש ב-AI בלי לאבד יכולת</a></li><li><a href="#p7">מה עושים כשנתקעים</a></li><li><a href="#p8">תוכנית אימון מעשית</a></li></ol></div>
+
+<h2 id="p1">1. למה לדעת Syntax עדיין לא מרגיש כמו לדעת לתכנת?</h2>
+<p>כשנותנים לך הוראה נקודתית—“עבור על users”—אתה מזהה את הכלי וכותב loop. בפרויקט הדרישה מגיעה בשפה עסקית: “משתמש מנהל יכול להשבית חשבון, אבל לא את עצמו, והפעולה צריכה להירשם”. אין בה מילים כמו loop או function. אתה צריך לתרגם אותה למודל, כללים, שלבים ונתונים.</p>
+<p>היכולת הזאת מורכבת מארבע מיומנויות:</p>
+<ul><li><strong>הבהרת הדרישה:</strong> מהו input, מהו output ומהם מקרי הקצה.</li><li><strong>פירוק:</strong> להפוך משימה גדולה לכמה פעולות שכל אחת קלה לכתיבה.</li><li><strong>בחירת ייצוג:</strong> לבחור list, dictionary, object, function או class לפי הצורך.</li><li><strong>חיבור ואימות:</strong> לחבר את החלקים ולבדוק scenarios, errors ו־state changes.</li></ul>
+<p>לכן התחושה שאתה מתאר נורמלית: יש לך “מילים” של השפה, אבל עדיין אין מספיק משפטים שלמים שכתבת בעצמך. הדרך קדימה אינה לשנן עוד methods אלא לפתור רצף משימות שעולות בגודל בהדרגה.</p>
+
+<h2 id="p2">2. שיטת שבעת השלבים</h2>
+<div class="step"><h3>שלב 1 — נסח את הבעיה במשפט אחד</h3><p>אם אינך יכול להסביר מה הפונקציה עושה בלי לדבר על הקוד, הדרישה עדיין מעורפלת. לדוגמה: “לקבל משתמשים ולהחזיר את שמות המשתמשים הפעילים בלבד, ללא שינוי הרשימה המקורית”.</p></div>
+<div class="step"><h3>שלב 2 — כתוב Input ו־Output מוחשיים</h3><pre><code>Input:
+[
+  {"name": "Dana", "active": true},
+  {"name": "Avi", "active": false},
+  {"name": "Noa", "active": true}
+]
+
+Output:
+["Dana", "Noa"]</code></pre><p>דוגמה מוחשית מאלצת אותך להבין את צורת הנתונים ומונעת כתיבה באוויר.</p></div>
+<div class="step"><h3>שלב 3 — רשום Rules ו־Edge Cases</h3><ul><li>מה קורה אם הרשימה ריקה?</li><li>מה קורה אם חסר <code>active</code>?</li><li>האם מותר לשנות את input?</li><li>האם צריך לשמור סדר?</li><li>מה קורה אם name ריק?</li></ul><p>לא כל תרגיל דורש טיפול בכל אפשרות. צריך להגדיר חוזה, לא לנחש.</p></div>
+<div class="step"><h3>שלב 4 — כתוב פתרון בעברית או Pseudocode</h3><pre><code>צור רשימת תוצאות ריקה
+עבור על כל משתמש
+    אם המשתמש פעיל
+        הוסף את השם שלו לתוצאות
+החזר את התוצאות</code></pre><p>אם ה־pseudocode אינו ברור, קוד לא יפתור את הערפול. אם הוא ברור, התרגום ל־Python או JavaScript כמעט מכני.</p></div>
+<div class="step"><h3>שלב 5 — הפוך כל שורה לכלי שפה</h3><table><tr><th>כוונה</th><th>כלי</th></tr><tr><td>“צור תוצאות”</td><td>list/array ריקה</td></tr><tr><td>“עבור על כל משתמש”</td><td><code>for</code> / <code>for...of</code></td></tr><tr><td>“אם פעיל”</td><td><code>if</code></td></tr><tr><td>“הוסף שם”</td><td><code>append</code> / <code>push</code></td></tr><tr><td>“החזר”</td><td><code>return</code></td></tr></table></div>
+<div class="step"><h3>שלב 6 — הרץ ידנית דוגמה קטנה</h3><p>עקוב אחרי המשתנים בכל איטרציה. אחרי Dana התוצאה היא <code>["Dana"]</code>; אחרי Avi היא לא משתנה; אחרי Noa היא מכילה שני שמות. Dry run כזה מגלה טעויות לפני debugger.</p></div>
+<div class="step"><h3>שלב 7 — כתוב Tests ורק אז שפר</h3><p>בדוק case רגיל, ריק ומקרה גבול. רק אחרי שהפתרון נכון שקול <code>filter/map</code>, comprehension, performance או abstraction. פתרון פשוט ונכון עדיף על one-liner שאינך יכול להסביר.</p></div>
+
+<h2 id="p3">3. דוגמה מלאה: מנתח משתמשים</h2>
+<p>הדרישה: “קבל רשימת משתמשים והחזר כמה פעילים יש, את שמותיהם ואת הממוצע של גיליהם. משתמש ללא גיל לא משתתף בממוצע”.</p>
+<h3>פירוק לפני קוד</h3><ol><li>צריך לעבור פעם אחת על המשתמשים.</li><li>צריך count של פעילים.</li><li>צריך list של שמות פעילים.</li><li>לממוצע צריך age total וגם age count.</li><li>בסוף, אם age count הוא אפס, הממוצע יהיה None/null.</li></ol>
+<pre><code>def analyze_users(users):
+    active_names = []
+    age_total = 0
+    age_count = 0
+
+    for user in users:
+        if not user.get("active", False):
+            continue
+
+        active_names.append(user["name"])
+
+        age = user.get("age")
+        if age is not None:
+            age_total += age
+            age_count += 1
+
+    average_age = age_total / age_count if age_count else None
+    return {
+        "active_count": len(active_names),
+        "active_names": active_names,
+        "average_age": average_age,
+    }</code></pre>
+<p>שים לב: ה־loop אינו החלק הקשה. ההחלטה איזה state צריך לשמור היא הלב. ברגע שכתבת “לממוצע צריך סכום וכמות”, הקוד נובע מהמודל.</p>
+<h3>מתי מפצלים לפונקציות?</h3><p>אם validation, חישוב average או normalization נעשים מורכבים או חוזרים במקומות אחרים, מוציאים אותם לפונקציה. לא מפצלים כל שתי שורות רק כדי שיהיו הרבה functions. פונקציה צריכה שם שמוסיף משמעות ו־contract שניתן לבדוק.</p>
+
+<h2 id="p4">4. איך עוברים מפונקציה לפרויקט?</h2>
+<p>פרויקט אינו “פונקציה ענקית”. הוא אוסף קטן של flows, וכל flow הוא שרשרת פעולות. לדוגמה, Task Manager מתחיל לא מ־database ו־framework אלא מהפעולה Add Task.</p>
+<table><tr><th>Milestone</th><th>מה בונים</th><th>מה עדיין לא בונים</th></tr><tr><td>1</td><td>Task model ו־validation</td><td>CLI, DB, auth</td></tr><tr><td>2</td><td>add/list/complete בזיכרון</td><td>קבצים ו־HTTP</td></tr><tr><td>3</td><td>Repository interface ומימוש memory</td><td>PostgreSQL</td></tr><tr><td>4</td><td>שמירה ל־JSON</td><td>Web API</td></tr><tr><td>5</td><td>CLI שמפעיל services</td><td>Frontend</td></tr><tr><td>6</td><td>Tests, errors ו־logging</td><td>Features חדשים</td></tr></table>
+<p>בכל milestone יש flow קטן שעובד מקצה לקצה. אינך צריך להחזיק את כל הפרויקט בראש; אתה צריך לדעת מהו השלב הנוכחי, מה נכנס אליו ומה Definition of Done שלו.</p>
+<h3>תבנית לכל Feature</h3><ol><li>כתוב user story.</li><li>הגדר input/output ושגיאות.</li><li>כתוב domain rule כפונקציה או method.</li><li>כתוב test.</li><li>חבר storage או API.</li><li>הרץ flow ידני.</li><li>רק אז refactor.</li></ol>
+
+<h2 id="p5">5. סולם התרגול</h2>
+<table><tr><th>רמה</th><th>משך</th><th>דוגמה</th><th>מטרה</th></tr><tr><td>Micro</td><td>10–20 דקות</td><td>filter users, count words</td><td>Syntax ו־patterns בסיסיים</td></tr><tr><td>Function</td><td>30–45 דקות</td><td>groupBy, validation, pagination</td><td>פירוק וחוזה</td></tr><tr><td>Feature</td><td>60–120 דקות</td><td>Add Task עם repository ו־tests</td><td>חיבור כמה חלקים</td></tr><tr><td>Mini-project</td><td>4–8 שעות בכמה ימים</td><td>Task CLI או API קטן</td><td>מבנה, state ו־integration</td></tr><tr><td>Production extension</td><td>לפי הצורך</td><td>PostgreSQL, auth, observability</td><td>Trade-offs ומערכת אמיתית</td></tr></table>
+<p>אל תדלג מ־micro exercise ישר לאפליקציה מלאה. אם Function-level עדיין קשה, פתרון עוד פרויקט בעזרת AI לא יתקן את הפער; צריך 15–30 פונקציות עצמאיות ואחר כך features קטנים.</p>
+
+<h2 id="p6">6. שימוש ב־AI בלי לאבד יכולת</h2>
+<div class="warning callout"><strong>כלל העבודה:</strong> AI נכנס אחרי שיש לך artifact משלך—pseudocode, ניסיון קוד, test נכשל או הסבר מדויק של התקיעה.</div>
+<ol><li>20–30 דקות ניסיון עצמאי.</li><li>אם נתקעת, בקש שאלה מכוונת או רמז אחד.</li><li>כתוב אתה את השינוי.</li><li>הרץ tests ופרש את השגיאה לפני שאתה שולח אותה.</li><li>בסוף בקש Code Review שמסביר בעיות, לא rewrite.</li><li>למחרת כתוב מחדש את החלק המרכזי בלי להסתכל.</li></ol>
+<p>מותר ל־AI לייצר boilerplate רק אם אתה כבר יודע להסביר אותו והתרגול אינו עליו. אם המטרה היא ללמוד routing, אל תיתן לו לכתוב router. אם המטרה היא business logic, אפשר לקבל scaffold בסיסי—but not the logic.</p>
+
+<h2 id="p7">7. מה עושים כשנתקעים?</h2>
+<p>אל תגיד רק “אני לא יודע”. סווג את התקיעה:</p>
+<ul><li><strong>לא הבנתי דרישה:</strong> כתוב שאלות ודוגמאות.</li><li><strong>לא יודע לייצג נתונים:</strong> צייר object/list ודוגמת input.</li><li><strong>לא יודע algorithm:</strong> פתר ידנית עבור שלושה פריטים ותעד את הצעדים.</li><li><strong>לא זוכר syntax:</strong> חפש syntax נקודתי, לא פתרון מלא.</li><li><strong>הקוד לא עובד:</strong> צמצם reproduction, קרא traceback והדפס state בגבולות.</li><li><strong>הפרויקט גדול מדי:</strong> בחר flow אחד והסר זמנית DB, auth ו־UI.</li></ul>
+<p>תקיעה איכותית נשמעת כך: “אני יודע שצריך לעבור על users ולשמור sum ו־count, אבל לא יודע איך להבדיל בין age חסר לבין age=0”. זאת שאלה שניתן לפתור וללמוד ממנה.</p>
+
+<h2 id="p8">8. תוכנית אימון של ארבעה שבועות</h2>
+<ul><li><strong>שבוע 1:</strong> ארבעה micro exercises ועוד שתי functions בכל אחת מהשפות שאתה מתרגל. דגש על loops, conditions ו־collections.</li><li><strong>שבוע 2:</strong> functions עם validation, grouping, errors ו־tests.</li><li><strong>שבוע 3:</strong> שני features: service + in-memory repository + tests.</li><li><strong>שבוע 4:</strong> mini-project קטן עם persistence, CLI/API ו־README.</li></ul>
+<p>בכל session שמור יומן קצר: מה הייתה הדרישה, איך פירקת, איפה נתקעת ומה תפתור שוב מחר. המדד אינו “כמה מדריכים קראתי”, אלא כמה פעמים הפכת דרישה לפתרון בלי שמישהו כתב אותו עבורך.</p>
+<div class="success callout"><strong>מתי הקוד מתחיל “להחליק”?</strong> כאשר אתה מזהה patterns שחוזרים: filter, aggregate, lookup, validation, state transition, repository ו־request flow. זה קורה אחרי חזרות מכוונות. המטרה אינה שלא תיתקע לעולם; המטרה היא שתדע לפרק את התקיעה ולהתקדם בעצמך.</div>
+</body></html>
