@@ -1,0 +1,199 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Python מתקדם למפתחי Backend — I/O, testing, async, concurrency, memory ו-production"><title>Python מתקדם ו-Backend — המדריך המעמיק</title><style>
+:root{--ink:#17202a;--green:#156f55;--soft:#eef8f4;--line:#d7e2dd;--warn:#fff8e7}*{box-sizing:border-box}body{margin:auto;max-width:980px;padding:38px 24px 80px;color:var(--ink);font:17px/1.82 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--green);padding-bottom:14px}h2{margin-top:2.4em;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:7px}h3{margin-top:1.7em;color:#105640}a{color:#0c6049}.toc,.callout{background:var(--soft);border:1px solid #bfe0d3;border-radius:12px;padding:18px 24px;margin:20px 0}.warning{background:var(--warn);border-color:#ecd597}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#f1f3f5;color:#a11;padding:2px 6px;border-radius:4px}pre{background:#17202a;color:#eef6f3;padding:18px;border-radius:10px;overflow:auto;line-height:1.55}pre code{background:none;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{border:1px solid var(--line);padding:10px;vertical-align:top}th{background:var(--soft)}.nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:25px}.nav a{text-decoration:none;border:1px solid var(--line);padding:7px 12px;border-radius:999px}li{margin-bottom:7px}@media(max-width:600px){body{padding:22px 16px;font-size:16px}table{display:block;overflow:auto}}</style></head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="17.python-tutorial.html">חלק א׳ — Foundations</a><a href="17.python-practice.html">תרגול Python</a><a href="14.django-tutorial.html">Django</a></nav>
+<h1>Python מתקדם ו־Backend — להבין מה קורה באמת</h1>
+<div class="callout"><strong>לפני שמתחילים:</strong> המדריך מניח שאתה מבין variables, collections, functions, scope, exceptions, modules ו־classes מחלק א׳. המטרה כאן היא להסביר לא רק syntax אלא lifecycle, עלויות, failure modes והחלטות שתפגוש בשירות Backend אמיתי.</div>
+<div class="toc"><h2 style="margin-top:0">תוכן</h2><ol><li><a href="#a1">Files, paths ו־I/O</a></li><li><a href="#a2">Serialization וגבולות אמון</a></li><li><a href="#a3">Testing לעומק</a></li><li><a href="#a4">Debugging, logging ו־tracebacks</a></li><li><a href="#a5">Asyncio מהיסודות</a></li><li><a href="#a6">Tasks, cancellation ו־structured concurrency</a></li><li><a href="#a7">Threads, race conditions ו־locks</a></li><li><a href="#a8">Processes, IPC וה־GIL</a></li><li><a href="#a9">Memory management ו־garbage collection</a></li><li><a href="#a10">Performance ו־profiling</a></li><li><a href="#a11">Production Backend patterns</a></li><li><a href="#a12">Packaging, tooling ו־project structure</a></li></ol></div>
+
+<h2 id="a1">1. Files, Paths ו־I/O</h2>
+<h3>Text מול Binary</h3>
+<p>קובץ הוא רצף bytes. כאשר פותחים אותו ב־text mode, Python מוסיפה שכבת encoding/decoding ומחזירה <code>str</code>. ב־binary mode מקבלים <code>bytes</code> ללא פרשנות. תמונה, ZIP או פרוטוקול בינארי נפתחים ב־<code>rb</code>; JSON או טקסט ב־<code>r</code> עם encoding מפורש.</p>
+<pre><code>from pathlib import Path
+
+text_path = Path("data/notes.txt")
+with text_path.open("r", encoding="utf-8") as file:
+    content = file.read()
+
+image_path = Path("assets/photo.png")
+with image_path.open("rb") as file:
+    header = file.read(8)</code></pre>
+<p><code>with</code> סוגר את file descriptor גם אם parsing נכשל. הסתמכות על garbage collector לסגירה יכולה להשאיר descriptors פתוחים זמן לא ידוע ולגרום לשגיאת “too many open files”.</p>
+<h3>Streaming במקום טעינה מלאה</h3>
+<p><code>read()</code> בלי size טוען את כל הקובץ לזיכרון. עבור קובץ של 10GB זה עלול להפיל process. file object הוא iterable שמחזיר שורה בכל פעם, ולכן אפשר לעבד memory קבוע בקירוב.</p>
+<pre><code>with Path("events.jsonl").open(encoding="utf-8") as file:
+    for line_number, line in enumerate(file, start=1):
+        if not line.strip():
+            continue
+        process_line(line_number, line)</code></pre>
+<h3>Atomic Write</h3>
+<p>אם התהליך קורס באמצע כתיבה ישירה, הקובץ עלול להישאר חלקי. דפוס בטוח יותר הוא לכתוב לקובץ זמני באותה filesystem, לבצע flush לפי דרישת durability, ואז <code>replace</code>. Rename באותה filesystem הוא בדרך כלל atomic מבחינת visibility: קורא רואה את הגרסה הישנה או החדשה, לא חצי קובץ.</p>
+<pre><code>import json
+from pathlib import Path
+
+def atomic_write_json(path: Path, data: object) -> None:
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    temporary.replace(path)</code></pre>
+<p>זה אינו פותר שתי כתיבות מקבילות; בשבילן צריך ownership, lock, optimistic version או database.</p>
+
+<h2 id="a2">2. Serialization וגבולות אמון</h2>
+<p>Serialization ממירה object למבנה שניתן לשמור או להעביר; deserialization עושה את הכיוון ההפוך. JSON מכיר object, array, string, number, boolean ו־null. הוא אינו מכיר datetime, Decimal, UUID או class שלך, ולכן צריך wire representation מפורש.</p>
+<pre><code>from dataclasses import asdict
+from datetime import datetime, timezone
+
+payload = {
+    "version": 2,
+    "created_at": datetime.now(timezone.utc).isoformat(),
+    "task": asdict(task),
+}</code></pre>
+<p>Schema version מאפשר לקרוא נתונים ישנים ולבצע migration. אל תערבב domain object עם JSON dictionary בכל הקוד; parser אחד מאמת את הגבול ומייצר model תקין.</p>
+<div class="warning callout"><strong>אבטחה:</strong> JSON הוא data. ‏Pickle הוא פרוטוקול Python שיכול לשחזר objects באמצעות ביצוע הוראות. לעולם אל תעשה unpickle למידע ממקור לא מהימן. Type hints גם אינן מאמתות JSON בזמן ריצה; השתמש ב־validation מפורש או library כמו Pydantic בגבול.</div>
+
+<h2 id="a3">3. Testing לעומק</h2>
+<h3>מה בדיקה מנסה להוכיח?</h3>
+<p>בדיקה אינה רק “להריץ שורה”. היא מציגה scenario, מפעילה behavior ובודקת outcome שניתן לצפייה. מבנה Arrange–Act–Assert עוזר להפריד הכנה, פעולה ואימות.</p>
+<pre><code>def test_transfer_moves_balance_between_accounts():
+    # Arrange
+    source = Account(balance=100)
+    target = Account(balance=20)
+
+    # Act
+    transfer(source, target, amount=30)
+
+    # Assert
+    assert source.balance == 70
+    assert target.balance == 50</code></pre>
+<h3>Unit, Integration ו־E2E</h3>
+<table><tr><th>סוג</th><th>מה הוא בודק</th><th>יתרון ומגבלה</th></tr><tr><td>Unit</td><td>יחידת לוגיקה עם dependencies נשלטות</td><td>מהירה ומדויקת, אך לא מוכיחה integration</td></tr><tr><td>Integration</td><td>שיתוף פעולה עם DB, filesystem או broker אמיתי</td><td>מוצאת אי־התאמות, אך איטית יותר</td></tr><tr><td>E2E</td><td>flow דרך interface ציבורי</td><td>ביטחון גבוה בזרימה, diagnosis קשה יותר</td></tr></table>
+<h3>Fixtures, Parametrize ו־Mocks</h3>
+<pre><code>@pytest.mark.parametrize(
+    ("amount", "expected_error"),
+    [(0, ValueError), (-1, ValueError), (101, InsufficientBalanceError)],
+)
+def test_transfer_rejects_invalid_amounts(amount, expected_error):
+    with pytest.raises(expected_error):
+        transfer(Account(100), Account(0), amount)</code></pre>
+<p>Mock מתאים לגבול חיצוני או nondeterministic כמו clock, email או payment provider. Mock של כל method פנימית מצמיד את הבדיקה ליישום, ולכן refactor שומר behavior עלול לשבור tests. Fake קטן שמממש Protocol הוא לעיתים ברור יותר.</p>
+<p>Regression test משחזרת bug לפני התיקון ואז נשארת כדי למנוע חזרה. Coverage אומר אילו שורות רצו; הוא אינו מוכיח assertions טובים או edge cases.</p>
+
+<h2 id="a4">4. Debugging, Logging ו־Tracebacks</h2>
+<p>דיבוג טוב מתחיל ב־reproduction קטן ועקבי. קרא traceback מלמטה כדי לראות את exception וההודעה, ואז עקוב למעלה כדי להבין את מסלול הקריאות. אל תתקן סימפטום לפני שאתה יכול להסביר את state שהוביל אליו.</p>
+<pre><code>def calculate_ratio(total: int, count: int) -> float:
+    breakpoint()
+    return total / count</code></pre>
+<p><code>breakpoint()</code> מאפשר לבדוק variables, call stack ולהתקדם שורה־שורה. בפרודקשן משתמשים ב־structured logging ו־observability, לא ב־print אקראי.</p>
+<pre><code>logger.info(
+    "order created",
+    extra={"order_id": order.id, "customer_id": order.customer_id},
+)</code></pre>
+<p>Log צריך לתאר event עם fields יציבים, level מתאים ו־correlation ID. אל תכתוב password, access token, full payment data או מידע רגיש. ‏<code>logger.exception</code> בתוך except שומר traceback; הודעת שגיאה בלי traceback לעיתים מאבדת את המידע החשוב ביותר.</p>
+
+<h2 id="a5">5. Asyncio מהיסודות</h2>
+<h3>Concurrency אינה Parallelism</h3>
+<p><strong>Concurrency</strong> היא היכולת לקדם כמה משימות באותה תקופה, למשל לעבור למשימה אחרת בזמן שהראשונה מחכה לרשת. <strong>Parallelism</strong> היא ביצוע אמיתי באותו רגע על כמה cores. Asyncio מספקת בעיקר concurrency ל־I/O בתוך thread אחד.</p>
+<h3>Blocking מול Non-blocking</h3>
+<p>קריאת רשת סינכרונית חוסמת את thread עד שה־OS מחזיר תוצאה. בקריאה async, coroutine נרשמת להמשך ומבצעת <code>await</code>; ה־event loop יכול בינתיים להריץ coroutine אחרת. ‏<code>await</code> אינו “פותח thread” ואינו הופך פונקציה רגילה לאסינכרונית.</p>
+<pre><code>import asyncio
+
+async def fetch_user(client, user_id: int):
+    response = await client.get(f"/users/{user_id}")
+    return response.json()
+
+async def main():
+    users = await asyncio.gather(
+        fetch_user(client, 1),
+        fetch_user(client, 2),
+    )
+
+asyncio.run(main())</code></pre>
+<p>קריאה ל־<code>async def</code> מחזירה coroutine object; הגוף מתחיל רק כאשר עושים await או מתזמנים Task. שכחת await עלולה ליצור warning ולא לבצע את הפעולה.</p>
+<h3>CPU-bound בתוך Event Loop</h3>
+<p>לולאת חישוב של חמש שניות שאינה עושה await תחסום את event loop לחמש שניות וכל הבקשות האחרות יחכו. Async מתאים ל־I/O; חישוב CPU כבד מועבר ל־process pool, worker נפרד או service מתאים.</p>
+
+<h2 id="a6">6. Tasks, Cancellation ו־Structured Concurrency</h2>
+<p>Task עוטפת coroutine ומתזמנת אותה ב־event loop. יצירת אלפי Tasks מיד יכולה להציף connection pool או ספק חיצוני; לכן מגבילים concurrency באמצעות Semaphore או worker pool.</p>
+<pre><code>async def fetch_all(client, urls: list[str]):
+    semaphore = asyncio.Semaphore(20)
+
+    async def fetch(url: str):
+        async with semaphore:
+            async with asyncio.timeout(5):
+                return await client.get(url)
+
+    async with asyncio.TaskGroup() as group:
+        tasks = [group.create_task(fetch(url)) for url in urls]
+    return [task.result() for task in tasks]</code></pre>
+<p>Cancellation היא בקשה ש־coroutine צריכה לאפשר לה להתפשט אחרי cleanup. תפיסת <code>CancelledError</code> ובליעתה יכולה לגרום ל־shutdown תקוע. השתמש ב־<code>try/finally</code> לסגירת resource ואז re-raise.</p>
+<p>TaskGroup הוא structured concurrency: המשימות שייכות ל־scope, והיציאה ממנו מחכה להן או מבטלת אחיות במקרה כשל. כך לא נשארות background tasks “יתומות”.</p>
+
+<h2 id="a7">7. Threads, Race Conditions ו־Locks</h2>
+<p>Threads באותו process חולקות זיכרון. זה מקל להעביר objects, אבל שתי threads יכולות לקרוא ולשנות state באותו זמן. פעולה עסקית שנראית כשורה אחת עשויה להיות רצף read–compute–write שניתן לשלב.</p>
+<pre><code>import threading
+
+balance = 100
+lock = threading.Lock()
+
+def withdraw(amount: int):
+    global balance
+    with lock:
+        if balance >= amount:
+            balance -= amount</code></pre>
+<p>בלי lock, שתי threads יכולות לקרוא balance=100, שתיהן לאשר משיכה של 80 ולכתוב 20—אחת המשיכות “נעלמה” מה־state. Lock מגדירה critical section ומבטיחה שרק thread אחת נמצאת בה. שמור אותה קצרה ואל תבצע בתוכה network call איטי.</p>
+<p>Deadlock מתרחש כשכל thread מחזיקה resource ומחכה לאחר. מניעה כוללת סדר נעילות עקבי, צמצום nested locks ו־timeouts מתאימים. Condition Variable מאפשרת להמתין לשינוי state בלי polling; Semaphore מגבילה מספר משתמשים במשאב.</p>
+
+<h2 id="a8">8. Processes, IPC וה־GIL</h2>
+<h3>מהו ה־GIL?</h3>
+<p>ב־CPython המסורתי, Global Interpreter Lock מאפשר בדרך כלל ל־thread אחת לבצע Python bytecode בכל רגע בתוך process. הסיבה המרכזית היסטורית היא פישוט הגנת internals וניהול reference counts. ה־GIL משתחרר בזמן I/O ובחלק מספריות native.</p>
+<p>לכן threads עדיין מועילות ל־I/O, אבל שתי threads שמבצעות Python CPU-bound לרוב לא ינצלו שני cores באופן מלא. ה־GIL גם אינו מבטיח correctness של הלוגיקה שלך: context switch יכול לקרות בין שלבי פעולה, ו־libraries עשויות לשחרר אותו.</p>
+<h3>Processes</h3>
+<p>Process נפרד מקבל memory address space ו־GIL משלו, ולכן כמה processes יכולים לבצע CPU work במקביל. המחיר הוא startup, יותר זיכרון והצורך להעביר מידע באמצעות serialization ו־IPC.</p>
+<pre><code>from concurrent.futures import ProcessPoolExecutor
+
+with ProcessPoolExecutor() as pool:
+    results = list(pool.map(calculate_checksum, paths))</code></pre>
+<p>הפונקציה וה־arguments צריכים להיות serializable לפי מנגנון ה־multiprocessing. העברת object ענק בין processes יכולה לעלות יותר מהחישוב. בחר task בגודל מספיק גדול ומדוד.</p>
+
+<h2 id="a9">9. Memory Management ו־Garbage Collection</h2>
+<p>CPython משתמשת בעיקר ב־<strong>reference counting</strong>. לכל object נשמר בקירוב מספר references פעילים; כשהמספר יורד לאפס, אפשר לשחרר אותו מיד. השמה, container ו־argument יכולים להוסיף reference; מחיקת שם או יציאה מ־scope מורידות.</p>
+<pre><code>a = []          # reference אחד
+b = a           # reference נוסף
+del a           # האובייקט חי דרך b
+del b           # כעת ניתן לשחרור</code></pre>
+<p>Reference cycle יוצר objects שמצביעים זה לזה גם כשאין גישה מבחוץ, ולכן count אינו מגיע לאפס. ה־cyclic garbage collector מאתר מחזורים מסוימים ומנקה אותם. ‏<code>weakref</code> מאפשר reference שאינו שומר object בחיים, שימושי ל־caches ו־registries מיוחדים.</p>
+<p>Memory leak ב־Python אינה חייבת להיות זיכרון “שאי אפשר לשחרר”; לרוב זו reference שנשארה בטעות ב־global cache, listener, task או collection שגדלה בלי גבול. בדוק ownership ו־lifecycle לפני tuning של GC.</p>
+<div class="callout"><strong>משאב חיצוני אינו זיכרון:</strong> socket, file ו־DB connection צריכים סגירה דטרמיניסטית עם context manager. GC אינה חוזה timing מתאים למשאבים כאלה.</div>
+
+<h2 id="a10">10. Performance ו־Profiling</h2>
+<p>אופטימיזציה מתחילה במדידה. זמן בקשת Backend מתחלק לעיתים ל־DB, network, serialization ו־queueing; שיפור microsecond בלולאה לא יעזור אם query לוקחת 300ms.</p>
+<ul><li><code>timeit</code> להשוואה קטנה ומבודדת.</li><li><code>cProfile</code> למדידת זמן מצטבר לפי functions.</li><li>Sampling profiler לתמונה עם פחות overhead בפרודקשן.</li><li><code>tracemalloc</code> למקור הקצאות זיכרון.</li><li>Metrics ו־tracing למדידה בתוך request אמיתי.</li></ul>
+<p>שפר קודם complexity, מספר queries, גודל payload ומספר round trips. אחר כך שקול caching, batching, generators או native libraries. Cache דורש key נכון, TTL, invalidation, size bound והתנהגות בכשל; אחרת הוא יוצר stale data או memory leak.</p>
+
+<h2 id="a11">11. Production Backend Patterns</h2>
+<h3>Boundaries ושכבות</h3>
+<p>HTTP handler צריך לתרגם request ל־input של use case ולתרגם result ל־response. Domain logic אינה צריכה לדעת על Django request, status code או ORM model אם אין צורך. הפרדה כזאת מאפשרת לבדוק business rules בלי server ובלי DB.</p>
+<h3>Timeout, Retry ו־Idempotency</h3>
+<p>לכל I/O חיצוני צריך timeout; בלי timeout worker עלול להיתקע ללא גבול. Retry מתאים לתקלה זמנית ולפעולה בטוחה. השתמש ב־exponential backoff ו־jitter כדי למנוע retry storm. POST שיוצר תשלום חייב idempotency key או הגנה אחרת, אחרת retry יכול ליצור כפילות.</p>
+<h3>Transactions</h3>
+<p>Transaction מקיפה invariant עסקי שצריך להיות אטומי. שמור אותה קצרה; network call בתוך transaction מחזיקה locks/connections בזמן לא ידוע. עבודה חיצונית אחרי commit יכולה להשתמש ב־outbox כאשר נדרשת אמינות בין database ל־message broker.</p>
+<h3>Lifecycle</h3>
+<p>ב־startup מאמתים configuration ויוצרים pools/clients. ב־request משתמשים במשאבים בגבולות. ב־shutdown מפסיקים לקבל traffic, מחכים ל־inflight עד deadline וסוגרים resources. Health, readiness ו־liveness הן בדיקות שונות—אל תשתמש ב־liveness כדי לבדוק כל provider חיצוני.</p>
+
+<h2 id="a12">12. Packaging, Tooling ו־Project Structure</h2>
+<pre><code>backend/
+├── pyproject.toml
+├── uv.lock
+├── src/backend/
+│   ├── domain/
+│   ├── application/
+│   ├── infrastructure/
+│   └── api/
+└── tests/
+    ├── unit/
+    └── integration/</code></pre>
+<p><code>pyproject.toml</code> הוא המרכז ל־metadata, build system והגדרות כלים. Lock file מקבע dependency graph שנפתר. Ruff מספק lint/format מהיר, mypy או Pyright בודקים types, pytest מריץ tests ו־pip-audit יכול לזהות vulnerabilities ידועות.</p>
+<p>מבנה התיקיות אינו המטרה; כיווני התלות הם החשובים. Domain אינו אמור לייבא adapter של PostgreSQL או framework web. Infrastructure יכולה לממש Protocol שה־application מגדירה.</p>
+<div class="callout"><strong>מבחן שליטה מתקדם:</strong> אתה מוכן לעבור ל־Django כאשר אתה מסוגל להסביר למה await אינו thread, למה GIL אינו מונע race, מתי process עדיף, איך file נכתב אטומית, מה ההבדל בין unit ל־integration test, ולמה timeout/retry/idempotency הם שלושה חוזים שונים.</div>
+</body></html>
