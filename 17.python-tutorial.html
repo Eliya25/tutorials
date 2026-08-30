@@ -2,29 +2,56 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="מדריך Python מקיף בעברית למפתחי Backend — מהיסודות ועד async, concurrency ו-production">
-<title>Python למפתחי Backend — מהיסודות ועד Production</title>
+<meta name="description" content="Python Foundations בעברית — מדריך מפורט מההרצה והתחביר ועד OOP ו-typing">
+<title>Python Foundations — המדריך המעמיק</title>
 <style>
 :root{--ink:#17202a;--green:#156f55;--soft:#eef8f4;--line:#d7e2dd;--warn:#fff8e7}*{box-sizing:border-box}body{margin:auto;max-width:980px;padding:38px 24px 80px;color:var(--ink);font:17px/1.78 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--green);padding-bottom:14px}h2{margin-top:2.4em;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:7px}h3{margin-top:1.7em;color:#105640}a{color:#0c6049}.toc,.callout{background:var(--soft);border:1px solid #bfe0d3;border-radius:12px;padding:18px 24px;margin:20px 0}.warning{background:var(--warn);border-color:#ecd597}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#f1f3f5;color:#a11;padding:2px 6px;border-radius:4px}pre{background:#17202a;color:#eef6f3;padding:18px;border-radius:10px;overflow:auto;line-height:1.55}pre code{background:none;color:inherit;padding:0}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{border:1px solid var(--line);padding:10px;vertical-align:top}th{background:var(--soft)}.ltr{direction:ltr;text-align:left}.nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:25px}.nav a{text-decoration:none;border:1px solid var(--line);padding:7px 12px;border-radius:999px}.check li{margin-bottom:7px}@media(max-width:600px){body{padding:22px 16px;font-size:16px}table{display:block;overflow:auto}}
 </style>
 </head><body>
-<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="17.python-practice.html">מעבר לתרגול Python</a><a href="14.django-tutorial.html">מדריך Django</a></nav>
-<h1>Python למפתחי Backend — מהיסודות ועד Production</h1>
-<div class="callout"><strong>מטרת המדריך:</strong> לא רק לזכור תחביר, אלא להבין את מודל האובייקטים, ניהול הזיכרון, שגיאות, typing, async ו־concurrency כדי שתוכל לקרוא ולכתוב שירותי Python ו־Django בביטחון. כל מושג נבנה על הקודם; כשמופיע מונח חדש הוא מוסבר לפני שמשתמשים בו.</div>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="17.python-advanced-tutorial.html">חלק ב׳ — Python מתקדם</a><a href="17.python-practice.html">תרגול Python</a><a href="14.django-tutorial.html">Django</a></nav>
+<h1>Python Foundations — להבין את השפה מהיסוד</h1>
+<div class="callout"><strong>מטרת המדריך:</strong> לבנות בסיס בלי לדלג על שלבים: מה קורה מהרגע שמריצים קובץ, איך שמות נקשרים לאובייקטים, כיצד collections ופונקציות עובדות, ועד OOP ו־typing. לכל מושג יש מודל מנטלי, דוגמה והסבר למה הוא חשוב. I/O, testing, async, concurrency, memory ו־Production מורחבים בחלק ב׳.</div>
 
 <div class="toc"><h2 style="margin-top:0">מפת הלימוד</h2><ol>
-<li><a href="#s1">איך Python מריצה קוד</a></li><li><a href="#s2">שמות, אובייקטים וטיפוסים</a></li><li><a href="#s3">מספרים, מחרוזות ו־None</a></li><li><a href="#s4">Collections ו־mutability</a></li><li><a href="#s5">זרימת בקרה ו־pattern matching</a></li><li><a href="#s6">פונקציות, scope ו־closures</a></li><li><a href="#s7">Comprehensions, iterables ו־generators</a></li><li><a href="#s8">Exceptions וניקוי משאבים</a></li><li><a href="#s9">Modules, packages וסביבות</a></li><li><a href="#s10">OOP, dataclasses ו־protocols</a></li><li><a href="#s11">Decorators ו־descriptors</a></li><li><a href="#s12">Type hints ו־static analysis</a></li><li><a href="#s13">Files, serialization ו־I/O</a></li><li><a href="#s14">Testing ו־debugging</a></li><li><a href="#s15">Asyncio ו־event loop</a></li><li><a href="#s16">Threads, processes וה־GIL</a></li><li><a href="#s17">Memory model וביצועים</a></li><li><a href="#s18">Backend ו־production practices</a></li><li><a href="#s19">טעויות נפוצות</a></li><li><a href="#s20">מסלול המשך</a></li>
+<li><a href="#s1">איך Python מריצה קוד</a></li><li><a href="#s2">שמות, אובייקטים וטיפוסים</a></li><li><a href="#s3">מספרים, מחרוזות ו־None</a></li><li><a href="#s4">Collections ו־mutability</a></li><li><a href="#s5">זרימת בקרה ו־pattern matching</a></li><li><a href="#s6">פונקציות, scope ו־closures</a></li><li><a href="#s7">Comprehensions, iterables ו־generators</a></li><li><a href="#s8">Exceptions וניקוי משאבים</a></li><li><a href="#s9">Modules, packages וסביבות</a></li><li><a href="#s10">OOP, dataclasses ו־protocols</a></li><li><a href="#s11">Decorators ו־descriptors</a></li><li><a href="#s12">Type hints ו־static analysis</a></li><li><a href="17.python-advanced-tutorial.html#a1">חלק ב׳: Files ו־I/O</a></li><li><a href="17.python-advanced-tutorial.html#a3">Testing ו־debugging</a></li><li><a href="17.python-advanced-tutorial.html#a5">Asyncio ו־event loop</a></li><li><a href="17.python-advanced-tutorial.html#a7">Threads, processes וה־GIL</a></li><li><a href="17.python-advanced-tutorial.html#a9">Memory וביצועים</a></li><li><a href="17.python-advanced-tutorial.html#a11">Backend ו־Production</a></li>
 </ol></div>
 
 <h2 id="s1">1. איך Python מריצה קוד</h2>
-<p>CPython, המימוש הנפוץ של Python, קורא את קובץ המקור, מפרק אותו ל־tokens, בונה Abstract Syntax Tree, מקמפל אותו ל־<strong>bytecode</strong> ואז מריץ את ה־bytecode בתוך virtual machine. לכן Python אינה פשוט “interpreted בלי compilation”: יש compilation, אבל לא ישירות לקוד מכונה כמו C.</p>
+<h3>קודם כל: מה קורה כשאנחנו מריצים קובץ?</h3>
+<p>כשאתה כותב <code>python app.py</code>, המעבד אינו יודע לקרוא ישירות את המילים <code>if</code>,‏ <code>for</code> או <code>print</code>. המעבד מבין הוראות מכונה בינאריות של הארכיטקטורה שלו. לכן צריך רכיב שיקרא את קוד ה־Python, יוודא שהוא בנוי בצורה חוקית ויבצע את המשמעות שלו. ברוב המחשבים הרכיב הזה הוא <strong>CPython</strong> — המימוש הרשמי והנפוץ ביותר של Python, שנכתב בעיקר בשפת C.</p>
+<p>חשוב להפריד בין <strong>השפה Python</strong>, כלומר החוקים והתחביר, לבין <strong>מימוש של Python</strong>, כלומר תוכנה שמריצה את החוקים האלה. CPython הוא המימוש הנפוץ, אבל קיימים גם PyPy עם JIT,‏ Jython על JVM ו־MicroPython למערכות קטנות.</p>
+<h3>שלב 1 — קריאת הטקסט ויצירת Tokens</h3>
+<p>בהתחלה CPython קורא את התווים בקובץ ומחלק אותם ליחידות בעלות משמעות שנקראות <strong>tokens</strong>. לדוגמה, בשורה <code>total = price + tax</code> קיימים שם <code>total</code>, סימן השמה, שם <code>price</code>, אופרטור חיבור ושם <code>tax</code>. בשלב הזה עדיין לא מבינים את כל משמעות התוכנית; רק מזהים את אבני הבניין.</p>
+<h3>שלב 2 — Parsing ו־AST</h3>
+<p>ה־parser בודק אם סדר ה־tokens מתאים לדקדוק של Python ובונה <strong>Abstract Syntax Tree</strong>, או AST. זהו עץ שמתאר את המבנה הלוגי של הקוד. למשל, השמה היא node אחד, והחיבור שבצד ימין הוא node פנימי שמכיל שני operands. אם שכחת נקודתיים אחרי <code>if</code>, השגיאה מתגלה כאן כ־<code>SyntaxError</code>, לפני שהתוכנית מתחילה לבצע את הלוגיקה שלך.</p>
+<pre><code># הקוד
+total = price + tax
+
+# מודל מפושט של העץ
+Assignment
+├── target: total
+└── value: Add
+    ├── price
+    └── tax</code></pre>
+<h3>שלב 3 — Compilation ל־Bytecode</h3>
+<p>לאחר מכן CPython מקמפל את ה־AST ל־<strong>bytecode</strong>. אלה הוראות עבור המכונה הווירטואלית של Python, לא הוראות ישירות למעבד. הוראות כמו “טען שם”, “בצע חיבור” ו־“שמור שם” כלליות ולכן אותו bytecode יכול לרוץ על מערכות שונות כל עוד מותקן עליהן interpreter מתאים.</p>
+<h3>שלב 4 — Python Virtual Machine</h3>
+<p>לולאת הריצה של CPython קוראת כל הוראת bytecode ומבצעת אותה. אם ההוראה היא חיבור, Python בודקת בזמן ריצה מהם סוגי האובייקטים ומה משמעות החיבור עבורם. זאת אחת הסיבות ש־Python גמישה, אך בדרך כלל איטית יותר מקוד C שעבר compilation לקוד מכונה מותאם מראש.</p>
 <pre><code>python app.py
 python -m dis app.py       # הצגת bytecode
 python -m module_name      # הרצת module בתוך package context</code></pre>
-<p>הקובץ <code>__pycache__</code> שומר bytecode כדי לחסוך compilation בייבוא עתידי. הוא אינו שומר את תוצאת התוכנית ואינו הופך אותה למהירה כמו binary native.</p>
+<p>בתיקיית <code>__pycache__</code> נשמר לעיתים bytecode של modules שיובאו, כדי שלא יהיה צורך לקמפל אותם מחדש בכל הרצה אם המקור לא השתנה. זהו cache של שלב ההכנה בלבד: הוא אינו שומר תוצאות עסקיות ואינו הופך את הקוד ל־native binary.</p>
+<div class="callout"><strong>המודל שצריך לזכור:</strong> Source code → Tokens → AST → Bytecode → Python Virtual Machine → פעולות על אובייקטים. לא צריך לזכור כל הוראת bytecode; כן צריך להבין ששגיאת תחביר מתרחשת לפני הריצה, בעוד <code>TypeError</code> יכול להתרחש רק כשהשורה מבוצעת.</div>
 
 <h2 id="s2">2. שמות, אובייקטים וטיפוסים</h2>
-<p>ב־Python משתנה הוא <strong>שם שמצביע לאובייקט</strong>, לא קופסה עם טיפוס קבוע. בהשמה <code>b = a</code> לא מעתיקים בהכרח את האובייקט; שני השמות יכולים להצביע לאותו אובייקט.</p>
+<h3>המודל החשוב ביותר בשפה</h3>
+<p>כמעט כל דבר ב־Python הוא אובייקט: מספר, מחרוזת, list, פונקציה, class ואפילו module. אובייקט כולל לפחות <strong>זהות</strong>, <strong>טיפוס</strong> ו<strong>ערך</strong>. הזהות מבדילה בינו לבין אובייקטים אחרים; הטיפוס קובע אילו פעולות הוא תומך; והערך הוא המידע שהוא מייצג.</p>
+<p>משתנה ב־Python אינו קופסה שמכילה את הערך ואינו “בעל טיפוס” קבוע. הוא <strong>שם שנקשר לאובייקט</strong>. השורה <code>age = 25</code> יוצרת או מאתרת אובייקט integer שערכו 25 וקושרת אליו את השם <code>age</code>. מאוחר יותר אפשר לקשור את אותו שם לאובייקט מסוג אחר:</p>
+<pre><code>age = 25          # age מצביע כרגע ל-int
+age = "twenty"    # עכשיו אותו שם מצביע ל-str</code></pre>
+<p>האובייקט עצמו עדיין בעל טיפוס ברור; רק השם יכול לעבור בין אובייקטים. זו המשמעות של <strong>dynamic typing</strong>: הקישור והבדיקה נעשים בזמן ריצה.</p>
+<h3>Assignment אינו בהכרח Copy</h3>
+<p>בהשמה <code>b = a</code>, Python קושרת גם את <code>b</code> לאותו אובייקט. היא לא מבטיחה ליצור עותק. אם האובייקט mutable ואחד השמות משנה אותו, השינוי נראה דרך כל שם שמצביע אליו.</p>
 <pre><code>a = [1, 2]
 b = a
 b.append(3)
@@ -33,10 +60,37 @@ assert a == [1, 2, 3]      # אותו list
 print(id(a), type(a))
 print(a is b)              # identity: True
 print(a == b)              # value equality: True</code></pre>
-<div class="callout"><strong><code>is</code> מול <code>==</code>:</strong> ‏<code>is</code> בודק אם זה אותו אובייקט בזיכרון; <code>==</code> בודק שוויון ערכים. משתמשים ב־<code>is None</code>, אבל לא ב־<code>is 1000</code> או להשוואת strings.</div>
-<p>Python היא dynamically typed אבל strongly typed: הטיפוס נקבע בזמן ריצה, אך השפה לא מחברת שרירותית string ו־integer. Type hints מוסיפים בדיקה סטטית לכלים, לא משנים את מנגנון הריצה.</p>
+<h3>Mutation מול Rebinding</h3>
+<p><strong>Mutation</strong> משנה את תוכן האובייקט הקיים, למשל <code>append</code> על list. ‏<strong>Rebinding</strong> קושר שם לאובייקט אחר, למשל <code>a = [9]</code>. Rebinding של <code>a</code> לא משנה לאן <code>b</code> מצביע.</p>
+<pre><code>a = [1, 2]
+b = a
+a.append(3)       # mutation: שניהם רואים [1, 2, 3]
+a = [9]           # rebinding: רק a עבר לאובייקט אחר
+print(a)          # [9]
+print(b)          # [1, 2, 3]</code></pre>
+<div class="callout"><strong><code>is</code> מול <code>==</code>:</strong> ‏<code>is</code> בודק identity — האם שני השמות מצביעים ממש לאותו אובייקט. ‏<code>==</code> מפעיל השוואת ערכים שהטיפוס מגדיר. שני lists נפרדים יכולים להיות שווים ב־<code>==</code> אך שונים ב־<code>is</code>. משתמשים ב־<code>is None</code>, מפני ש־None הוא singleton, ולא ב־<code>is</code> להשוואת מספרים או strings.</div>
+<h3>Strongly Typed</h3>
+<p>Python היא גם <strong>strongly typed</strong>: היא אינה מבצעת כל המרה אפשרית בשקט. ‏<code>"5" + 2</code> יגרום ל־<code>TypeError</code>, כי חיבור string ו־integer אינו מוגדר. עליך לבחור אם לבצע <code>int("5") + 2</code> או <code>"5" + str(2)</code>. זה מונע פרשנות שרירותית של הנתונים.</p>
+<h3>Type Hints אינם משנים את Runtime</h3>
+<pre><code>def double(value: int) -> int:
+    return value * 2
+
+double("ha")  # Python עצמה תריץ ותחזיר "haha"</code></pre>
+<p>ה־hint אומר לכלים ולמפתחים מה החוזה הצפוי, אך CPython לא אוכפת אותו אוטומטית. mypy או Pyright יכולים לזהות את הקריאה השגויה לפני הרצה; validation של קלט חיצוני עדיין חייב לקרות בזמן ריצה.</p>
 
 <h2 id="s3">3. מספרים, מחרוזות ו־None</h2>
+<h3>Integer ופעולות חשבון</h3>
+<p><code>int</code> מייצג מספר שלם חיובי, שלילי או אפס. בניגוד לטיפוס 32-bit בשפות מסוימות, integer של Python יכול לגדול כל עוד יש זיכרון, במחיר של יותר הקצאות ועבודה. האופרטור <code>/</code> מחזיר float, ‏<code>//</code> מבצע floor division, ‏<code>%</code> מחזיר שארית ו־<code>**</code> חזקה.</p>
+<pre><code>7 / 2       # 3.5
+7 // 2      # 3
+7 % 2       # 1
+2 ** 10     # 1024
+divmod(7, 2)  # (3, 1)</code></pre>
+<h3>Float ולמה כסף הוא מקרה מיוחד</h3>
+<p>רוב ערכי <code>float</code> נשמרים לפי IEEE-754 בבסיס בינארי. מספר עשרוני פשוט כמו 0.1 אינו ניתן לייצוג בינארי סופי, ולכן נשמר קירוב. זאת אינה “תקלה של Python”; זו תכונה של floating point ברוב השפות והמעבדים.</p>
+<pre><code>0.1 + 0.2 == 0.3       # False
+print(0.1 + 0.2)       # 0.30000000000000004</code></pre>
+<p>למדידות מדעיות משווים לעיתים עם tolerance. לכסף משתמשים ב־integer של אגורות או ב־<code>Decimal</code>, כאשר יוצרים אותו מ־string כדי לא להכניס מראש את שגיאת ה־float.</p>
 <table><tr><th>טיפוס</th><th>מה חשוב להבין</th></tr><tr><td><code>int</code></td><td>מספר שלם בגודל דינמי; אין overflow רגיל של 32-bit.</td></tr><tr><td><code>float</code></td><td>IEEE-754; אינו מדויק לכסף. לכסף השתמש ב־<code>Decimal</code>.</td></tr><tr><td><code>str</code></td><td>רצף Unicode immutable.</td></tr><tr><td><code>bytes</code></td><td>בתים בינאריים; צריך encoding כדי להמיר ל־str.</td></tr><tr><td><code>None</code></td><td>היעדר ערך; singleton שנבדק עם <code>is None</code>.</td></tr></table>
 <pre><code>from decimal import Decimal
 price = Decimal("19.90")     # לא Decimal(19.90)
@@ -47,18 +101,76 @@ assert payload.decode("utf-8") == text
 
 name = "Eliya"
 message = f"Hello {name}"</code></pre>
-<p>Falsy values כוללים <code>False</code>,‏ <code>None</code>, אפס ו־collections ריקים. אם אפס הוא ערך חוקי, אל תכתוב <code>if not value</code> כשאתה מתכוון רק ל־None.</p>
+<h3>Strings, Unicode ו־Bytes</h3>
+<p><code>str</code> הוא טקסט Unicode; ‏<code>bytes</code> הוא רצף של ערכים בינאריים בין 0 ל־255. רשת, קובץ ותהליך אחר מעבירים bytes. ‏Encoding הוא החוק שממיר תווים לבתים, ו־decoding הוא הכיוון ההפוך. UTF-8 הוא encoding נפוץ שתומך בעברית ובשפות נוספות.</p>
+<p>String הוא immutable: פעולות כמו <code>upper</code> או <code>replace</code> מחזירות string חדש. הדבר מאפשר לשתף strings בבטחה ולהשתמש בהם כ־dictionary keys.</p>
+<pre><code>name = "  Eliya Cohen  "
+clean = name.strip().lower()
+first, last = clean.split(maxsplit=1)
+slug = clean.replace(" ", "-")
+print(f"{first=}, {last=}, {slug=}")</code></pre>
+<h3>None ו־Truthiness</h3>
+<p><code>None</code> מציין בדרך כלל “אין ערך”. הוא שונה מאפס, string ריק או list ריקה—אלה ערכים קיימים שעשויים להיות תקינים. בבדיקה בוליאנית, ‏<code>False</code>,‏ <code>None</code>, אפס ו־collections ריקים הם falsy; רוב הערכים האחרים truthy.</p>
+<pre><code>def display_count(count: int | None) -> str:
+    if count is None:
+        return "not measured"
+    return str(count)       # גם 0 הוא מדידה חוקית</code></pre>
+<p>לכן <code>if not count</code> היה מערבב בין “לא נמדד” לבין “נמדד אפס”. לפני בדיקת truthiness שאל מה בדיוק החוזה העסקי.</p>
 
 <h2 id="s4">4. Collections ו־mutability</h2>
+<p>Collection מחזיק כמה ערכים. הבחירה אינה רק עניין תחבירי: היא קובעת אם יש סדר, אם מותרות כפילויות, איך מבצעים lookup, האם אפשר לשנות את המבנה ומהי עלות הפעולות.</p>
 <table><tr><th>מבנה</th><th>תכונות</th><th>שימוש טיפוסי</th></tr><tr><td><code>list</code></td><td>מסודר, mutable, כפילויות</td><td>רצף שמשתנה</td></tr><tr><td><code>tuple</code></td><td>מסודר, immutable</td><td>record קטן או key אם כל איבריו hashable</td></tr><tr><td><code>dict</code></td><td>מיפוי key→value, שומר insertion order</td><td>lookup ומודלים דינמיים</td></tr><tr><td><code>set</code></td><td>ערכים ייחודיים, membership ממוצע O(1)</td><td>deduplication וחיתוכים</td></tr></table>
+<h3>List — רצף דינמי</h3>
+<p>List תומכת בגישה לפי index, slicing, הוספה ומחיקה. גישה לפי index היא O(1) בממוצע; חיפוש ערך הוא O(n); הוספה לסוף amortized O(1); והכנסה בתחילת הרשימה O(n), כי צריך להזיז את האיברים. עבור queue השתמש ב־<code>collections.deque</code> במקום <code>pop(0)</code>.</p>
+<pre><code>numbers = [10, 20, 30]
+numbers.append(40)
+numbers.extend([50, 60])
+last = numbers.pop()
+middle = numbers[1:4]      # list חדשה
+reversed_copy = numbers[::-1]</code></pre>
+<h3>Tuple — מבנה קבוע</h3>
+<p>Tuple אינה ניתנת להוספה או הסרה לאחר יצירה. היא מתאימה לקבוצה קטנה של ערכים ששייכים יחד או לתוצאה מרובת ערכים. Immutable מתייחס ל־tuple עצמה; אם היא מחזיקה list, הרשימה הפנימית עדיין mutable.</p>
+<h3>Dictionary — Hash Table</h3>
+<p>Dictionary ממפה key ייחודי לערך ומשתמשת ב־hash כדי להגיע אליו בממוצע O(1). Key חייב להיות hashable: בדרך כלל immutable ובעל hash יציב. לכן list לא יכולה לשמש key, אבל string או tuple של ערכים hashable כן.</p>
+<pre><code>user = {"id": 42, "name": "Eliya"}
+name = user["name"]                 # KeyError אם חסר
+role = user.get("role", "user")     # fallback
+user["active"] = True
+
+for key, value in user.items():
+    print(key, value)</code></pre>
+<h3>Set — ייחודיות ופעולות קבוצות</h3>
+<pre><code>requested = {"python", "django", "sql"}
+completed = {"python", "git"}
+remaining = requested - completed
+shared = requested & completed
+all_topics = requested | completed</code></pre>
+<p>Set טובה לבדיקת membership ולהסרת כפילויות כשסדר אינו העיקר. אם אתה זקוק לסדר המקורי, אפשר להשתמש ב־<code>dict.fromkeys(items)</code> או לעבור עם set עזר.</p>
 <pre><code>users_by_id = {user["id"]: user for user in users}
 active_names = {u["name"] for u in users if u["active"]}
 first, *middle, last = [1, 2, 3, 4]</code></pre>
-<p><strong>Shallow copy</strong> מעתיק container חיצוני אך משתף אובייקטים פנימיים. ‏<code>copy.deepcopy</code> מעתיק גרף אובייקטים, אך לעיתים עדיף לבנות מודל immutable וברור.</p>
+<h3>Shallow Copy מול Deep Copy</h3>
+<p><strong>Shallow copy</strong> יוצרת container חיצוני חדש אבל משאירה references לאותם אובייקטים פנימיים. לכן mutation של list פנימית יופיע בשני המבנים. ‏<code>deepcopy</code> מנסה להעתיק רקורסיבית את כל גרף האובייקטים, אך יכולה להיות יקרה ולהעתיק דברים שלא רצית. לעיתים עדיף ליצור במפורש object חדש מהשדות הנדרשים.</p>
 <pre><code>matrix = [[0] * 3 for _ in range(3)]  # שלוש שורות שונות
-# [[0] * 3] * 3 היה יוצר שלוש הפניות לאותה שורה</code></pre>
+# [[0] * 3] * 3 היה יוצר שלוש הפניות לאותה שורה
+
+original = {"db": {"host": "prod"}}
+shallow = original.copy()
+shallow["db"]["host"] = "test"
+print(original["db"]["host"])  # test</code></pre>
 
 <h2 id="s5">5. זרימת בקרה ו־pattern matching</h2>
+<h3>Conditions</h3>
+<p><code>if</code>,‏ <code>elif</code> ו־<code>else</code> בוחרים איזה block להריץ. ב־Python ההזחה היא חלק מהתחביר, בדרך כלל ארבעה spaces. השוואות יכולות להתחבר, ו־<code>and</code>/<code>or</code> מבצעים short-circuit: הצד השני אינו מחושב אם התוצאה כבר ידועה.</p>
+<pre><code>if 18 <= age < 67 and user.is_active:
+    allow_access()
+elif not user.is_active:
+    explain_inactive_account()
+else:
+    deny_access()</code></pre>
+<p><code>and</code> ו־<code>or</code> מחזירים אחד מה־operands, לא תמיד boolean. הביטוי <code>name = supplied_name or "Guest"</code> משתמש ב־fallback לכל ערך falsy, כולל string ריק; ודא שזה אכן החוזה הרצוי.</p>
+<h3>Loops</h3>
+<p><code>for</code> עובר על iterable ישירות—אין צורך לנהל index אם אינך צריך אותו. ‏<code>enumerate</code> מספק index, ‏<code>zip</code> מחבר iterables ו־<code>range</code> יוצר רצף מספרים עצלן. ‏<code>break</code> מסיים לולאה, ‏<code>continue</code> עובר לאיטרציה הבאה.</p>
 <pre><code>for item in items:
     if item.is_valid():
         process(item)
@@ -71,9 +183,19 @@ match event:
     case {"type": event_type}:
         raise ValueError(f"unsupported event: {event_type}")</code></pre>
 <p>ה־<code>else</code> של loop רץ אם הלולאה הסתיימה בלי <code>break</code>. ‏Structural pattern matching אינו switch פשוט; הוא יכול לפרק מבני נתונים ולבצע guard.</p>
+<h3>מתי להשתמש ב־match?</h3>
+<p><code>match</code> מתאים כשמבנה הנתון קובע את הפעולה, למשל events מסוגים שונים. הוא לא מחליף polymorphism או dictionary dispatch בכל מקום. Pattern יכול גם bind שמות, ולכן צריך להיזהר ש־case כללי לא יתפוס לפני case ספציפי.</p>
 
 <h2 id="s6">6. פונקציות, scope ו־closures</h2>
-<p>פונקציה היא אובייקט: אפשר להעביר אותה, לשמור אותה ולהחזיר אותה. פרמטרים מועברים בגישת <strong>object sharing</strong>: הפונקציה מקבלת reference לאותו אובייקט; mutation נראה בחוץ, rebinding מקומי לא.</p>
+<h3>למה בכלל פונקציות?</h3>
+<p>פונקציה נותנת שם ליחידת התנהגות, מקבלת inputs ומחזירה output. היא מאפשרת לפרק בעיה, למנוע כפילות ולבדוק לוגיקה בנפרד. פונקציה טובה בדרך כלל עושה דבר אחד ברור והשם שלה מתאר את התוצאה או הפעולה.</p>
+<pre><code>def calculate_total(price, quantity):
+    total = price * quantity
+    return total
+
+result = calculate_total(19.90, 3)</code></pre>
+<p><code>price</code> ו־<code>quantity</code> הם <strong>parameters</strong> בהגדרה; ‏19.90 ו־3 הם <strong>arguments</strong> בקריאה. ‏<code>return</code> מסיים את הפונקציה ומחזיר ערך. אם אין return מפורש, מוחזר <code>None</code>.</p>
+<h3>Positional, Keyword ו־Default Arguments</h3>
 <pre><code>def create_user(name: str, *, active: bool = True) -> dict[str, object]:
     """הכוכבית מחייבת את active להיות keyword argument."""
     return {"name": name, "active": active}
@@ -82,15 +204,52 @@ def make_multiplier(factor: int):
     def multiply(value: int) -> int:
         return value * factor       # closure זוכר את factor
     return multiply</code></pre>
+<p>Argument positional משויך לפי המיקום. Keyword משויך לפי השם ומשפר קריאות. Default מאפשר להשמיט argument. כוכבית יחידה בהגדרה אומרת שהפרמטרים אחריה keyword-only, שימושי כדי שקריאה כמו <code>create_user("Eliya", active=False)</code> תהיה ברורה.</p>
+<pre><code>def connect(host, port=5432, *, timeout=5, ssl=True):
+    ...
+
+connect("db.internal")
+connect("db.internal", 5433, timeout=2, ssl=False)</code></pre>
+<h3>*args ו־**kwargs</h3>
+<p><code>*args</code> אוסף arguments positional נוספים ל־tuple; ‏<code>**kwargs</code> אוסף keyword arguments נוספים ל־dict. הם שימושיים ב־wrappers וב־APIs גמישים, אך שימוש יתר מסתיר את החוזה ומחליש type checking.</p>
+<h3>איך Arguments עוברים לפונקציה?</h3>
+<p>Python מעבירה references לאובייקטים בגישה שמכונה <strong>call by sharing</strong>. הפונקציה מקבלת שם מקומי שמצביע לאותו אובייקט. Mutation נראה לקורא; rebinding של השם המקומי לא משנה את השם של הקורא.</p>
+<pre><code>def mutate(items):
+    items.append("new")     # משנה את אותו list
+
+def rebind(items):
+    items = ["other"]        # משנה רק את השם המקומי
+
+values = []
+mutate(values)
+rebind(values)
+print(values)               # ["new"]</code></pre>
 <div class="warning callout"><strong>Mutable default trap:</strong><pre><code>def add(item, items=None):
     if items is None:
         items = []
     items.append(item)
     return items</code></pre><p>Default arguments מחושבים פעם אחת בזמן הגדרת הפונקציה, לא בכל קריאה.</p></div>
-<p>סדר חיפוש שמות הוא LEGB: Local, Enclosing, Global, Builtins. ‏<code>nonlocal</code> משנה שם ב־enclosing scope; ‏<code>global</code> משנה שם module-level, ובדרך כלל dependency injection עדיפה עליו.</p>
+<h3>Scope ו־LEGB</h3>
+<p>שם מקומי קיים בתוך קריאת פונקציה. Python מחפשת שם לפי LEGB: ‏Local, אחר כך Enclosing בפונקציה עוטפת, אחר כך Global ברמת module ולבסוף Builtins כמו <code>len</code>. השמה בתוך פונקציה יוצרת שם מקומי כברירת מחדל.</p>
+<p><code>nonlocal</code> מאפשר rebinding של שם ב־enclosing function; ‏<code>global</code> עושה זאת לשם ברמת module. שניהם חוקיים, אך state גלובלי מקשה על tests ו־concurrency, ולכן בדרך כלל מעבירים dependencies במפורש.</p>
+<h3>Functions הן Objects ו־Closures</h3>
+<p>פונקציה ב־Python היא אובייקט: ניתן לשמור אותה ב־list, להעביר אותה כ־argument ולהחזיר אותה. Closure היא פונקציה פנימית ששומרת גישה לשמות מה־scope העוטף גם אחרי שהפונקציה החיצונית הסתיימה. בדוגמת <code>make_multiplier</code>, כל פונקציה מוחזרת זוכרת factor משלה.</p>
+<div class="callout"><strong>בדיקת הבנה:</strong> לפני מעבר לפרק הבא, ודא שאתה מסוגל להסביר למה שינוי list בתוך פונקציה יכול להופיע בחוץ, אבל השורה <code>items = []</code> לא מחליפה את המשתנה של הקורא.</div>
 
 <h2 id="s7">7. Iterables, iterators ו־generators</h2>
-<p><strong>Iterable</strong> הוא אובייקט שניתן לבקש ממנו iterator. ‏<strong>Iterator</strong> מחזיק state ומחזיר פריט הבא באמצעות <code>next()</code>. Generator הוא דרך נוחה ליצור iterator עם <code>yield</code>, ולכן יכול לעבד stream גדול בלי לטעון הכול לזיכרון.</p>
+<h3>הבעיה שהפרוטוקול פותר</h3>
+<p>לולאת <code>for</code> צריכה לדעת לעבור על list, tuple, file, set, dictionary ו־generator אף שהם בנויים אחרת. במקום לכתוב לולאה מיוחדת לכל טיפוס, Python מגדירה <strong>iterator protocol</strong>: חוזה קטן שכל מבנה יכול לממש.</p>
+<p><strong>Iterable</strong> הוא אובייקט שאפשר לבקש ממנו iterator באמצעות <code>iter()</code>. ‏<strong>Iterator</strong> הוא אובייקט שמחזיק את מיקום ההתקדמות ומחזיר את הפריט הבא באמצעות <code>next()</code>. כשהפריטים נגמרים, הוא מעלה <code>StopIteration</code>; לולאת <code>for</code> מטפלת בכך מאחורי הקלעים.</p>
+<pre><code>numbers = [10, 20, 30]
+iterator = iter(numbers)
+
+print(next(iterator))  # 10
+print(next(iterator))  # 20
+print(next(iterator))  # 30
+# next(iterator) יעלה StopIteration</code></pre>
+<p>Iterable יכול ליצור iterator חדש בכל קריאה ולכן אפשר בדרך כלל לעבור עליו שוב. Iterator עצמו הוא stateful ולעיתים חד־פעמי: אחרי שנצרך, הוא נשאר בסוף.</p>
+<h3>Generator ו־yield</h3>
+<p>פונקציה שמכילה <code>yield</code> אינה מריצה מיד את כל הגוף. הקריאה אליה יוצרת generator object. בכל <code>next()</code>, הקוד ממשיך עד yield הבא, מחזיר ערך ומשהה את frame של הפונקציה—כולל משתנים מקומיים ומיקום ביצוע.</p>
 <pre><code>def read_batches(path: str, size: int = 1000):
     batch = []
     with open(path, encoding="utf-8") as file:
@@ -101,9 +260,31 @@ def make_multiplier(factor: int):
                 batch = []
     if batch:
         yield batch</code></pre>
-<p>Comprehension טובה לטרנספורמציה קצרה. אם יש כמה תנאים, side effects או טיפול בשגיאות—לולאה מפורשת קריאה יותר. Generator expression משתמש בסוגריים ועצלן: <code>sum(x*x for x in values)</code>.</p>
+<p>היתרון הוא <strong>lazy evaluation</strong>: אפשר לקרוא קובץ של עשרות GB בקבוצות קטנות. המחיר הוא שהנתונים מחושבים בזמן הצריכה, שגיאות עשויות להופיע מאוחר, ו־generator שנצרך לא ניתן “להחזיר להתחלה” בלי ליצור חדש.</p>
+<h3>Comprehensions</h3>
+<pre><code>squares = [number ** 2 for number in numbers]
+even_squares = [number ** 2 for number in numbers if number % 2 == 0]
+by_id = {user.id: user for user in users}
+unique_domains = {email.split("@", 1)[1] for email in emails}
+
+# generator expression — לא בונה list מראש
+total = sum(number ** 2 for number in numbers)</code></pre>
+<p>Comprehension טובה לטרנספורמציה קצרה וברורה. אם יש כמה branches, טיפול בחריגות או side effects, לולאה רגילה תהיה קריאה וניתנת לדיבוג יותר.</p>
 
 <h2 id="s8">8. Exceptions וניקוי משאבים</h2>
+<h3>מהי Exception?</h3>
+<p>Exception היא אובייקט שמתאר מצב שבו המסלול הרגיל אינו יכול להמשיך. כשמבצעים <code>raise</code>, Python עוצרת את ה־flow הנוכחי ומתחילה <strong>stack unwinding</strong>: היא יוצאת מקריאות הפונקציות עד שהיא מוצאת <code>except</code> מתאים. אם אין handler, התהליך מציג traceback ומסיים את הפעולה.</p>
+<pre><code>def parse_age(raw: str) -> int:
+    try:
+        age = int(raw)
+    except ValueError as exc:
+        raise ValueError("age must be an integer") from exc
+
+    if age < 0:
+        raise ValueError("age must not be negative")
+    return age</code></pre>
+<p>ה־traceback הוא שרשרת הקריאות שהובילה לשגיאה. אל תמהר למחוק אותו; הוא אחד הכלים החשובים ביותר בדיבוג. ‏<code>raise ... from exc</code> מתרגם exception משכבת infrastructure לחוזה של השכבה שלך ושומר את הסיבה המקורית.</p>
+<h3>ארבעת חלקי try</h3>
 <pre><code>class InsufficientBalanceError(Exception):
     pass
 
@@ -116,8 +297,10 @@ else:
     metrics.increment("payment.success")
 finally:
     connection.close()</code></pre>
-<p>תופסים את החריגה הצרה שאתה יודע לטפל בה. ‏<code>raise ... from exc</code> שומר causal chain. אל תשתמש ב־<code>except Exception: pass</code>: הוא מסתיר תקלות ומשאיר state לא ברור.</p>
-<p>Context manager מרכז acquire/release ומבטיח ניקוי:</p>
+<ul><li><code>try</code> מכיל רק את הקוד שעלול להיכשל בצורה שאתה מטפל בה.</li><li><code>except</code> רץ עבור exception מתאים.</li><li><code>else</code> רץ אם לא נזרקה exception; הוא מונע מ־except לתפוס בטעות שגיאה מקוד ההמשך.</li><li><code>finally</code> רץ כמעט תמיד ומשמש לניקוי, גם כשיש return או exception.</li></ul>
+<p>תפוס את החריגה הצרה שאתה יודע לטפל בה. ‏<code>except Exception: pass</code> מסתיר תקלות, מאבד traceback ועלול להשאיר state חלקי. אם אינך יכול לפתור את השגיאה, הוסף context ואז re-raise.</p>
+<h3>Context Manager</h3>
+<p>משאבים כמו file, lock או database transaction צריכים להיסגר גם כשמשהו נכשל. Context manager מגדיר פעולת כניסה ויציאה, וה־<code>with</code> מבטיח שהיציאה תקרה.</p>
 <pre><code>from contextlib import contextmanager
 
 @contextmanager
@@ -128,18 +311,67 @@ def transaction(db):
     except Exception:
         db.rollback()
         raise</code></pre>
+<p>הערך שאחרי <code>yield</code> נמסר ל־<code>as</code>; הקוד לפניו הוא acquire והקוד אחריו cleanup. אפשר לממש אותו גם עם <code>__enter__</code>/<code>__exit__</code>. החזרת <code>True</code> מ־<code>__exit__</code> בולעת exception, ולכן עושים זאת רק בכוונה ברורה.</p>
 
 <h2 id="s9">9. Modules, packages וסביבות</h2>
-<p>Module הוא קובץ Python; package הוא namespace של modules. בזמן import הקוד העליון בקובץ רץ פעם אחת ונשמר ב־<code>sys.modules</code>. לכן אין לשים ב־module פעולות רשת או חיבור DB בלתי נשלט.</p>
+<h3>למה לחלק קוד?</h3>
+<p>ככל שתוכנית גדלה, קובץ יחיד הופך קשה להבנה ולבדיקה. <strong>Module</strong> הוא בדרך כלל קובץ <code>.py</code> שמרכז שמות בעלי אחריות משותפת. <strong>Package</strong> הוא תיקייה של modules שמספקת namespace ומבנה לפרויקט.</p>
+<pre><code>taskflow/
+├── pyproject.toml
+├── src/
+│   └── taskflow/
+│       ├── __init__.py
+│       ├── domain.py
+│       ├── services.py
+│       └── cli.py
+└── tests/
+    └── test_services.py</code></pre>
+<h3>מה import עושה?</h3>
+<p>בפעם הראשונה ש־module מיובא, Python מאתרת אותו לפי <code>sys.path</code>, יוצרת module object ומריצה את הקוד העליון שלו. התוצאה נשמרת ב־<code>sys.modules</code>, ולכן import נוסף באותו process בדרך כלל מחזיר את אותו object בלי להריץ מחדש.</p>
+<p>מכאן נובעות שתי תופעות: קוד top-level בעל side effects רץ בזמן import, ו־circular imports יכולים לראות module שעדיין לא סיים initialization. שמור top-level להגדרות, constants ויצירת classes/functions; העבר חיבורי רשת ו־startup לפונקציה מפורשת.</p>
+<h3>Absolute ו־Relative Imports</h3>
+<pre><code># absolute — בדרך כלל ברור יותר
+from taskflow.domain import Task
+
+# relative — בתוך אותו package
+from .domain import Task</code></pre>
+<p>הרצה עם <code>python -m taskflow.cli</code> שומרת package context, בעוד הרצת קובץ פנימי ישירות עלולה לשבור imports. זו הסיבה ש־<code>-m</code> חשוב.</p>
+<h3>Virtual Environment</h3>
+<p>שני פרויקטים יכולים להזדקק לגרסאות שונות של אותה ספרייה. Virtual environment יוצרת סביבת interpreter ו־site-packages מבודדת לפרויקט. היא אינה container ואינה VM; היא בעיקר מבודדת dependencies של Python.</p>
 <pre><code>python -m venv .venv
 # Linux/macOS: source .venv/bin/activate
 # Windows PowerShell: .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install django pytest ruff mypy</code></pre>
-<p><code>if __name__ == "__main__"</code> מבדיל בין הרצה ישירה לבין import. בפרויקט אמיתי משתמשים ב־<code>pyproject.toml</code>, נועלים גרסאות, ולא מתקינים dependencies גלובלית.</p>
+<p><code>if __name__ == "__main__"</code> מבדיל בין הרצה ישירה לבין import. בפרויקט מודרני <code>pyproject.toml</code> מתאר metadata, dependencies והגדרות כלים. Lock file מבטיח שהצוות ו־CI מתקינים אותן גרסאות בפועל. כלים כמו uv יכולים לנהל environment, lock והתקנה במהירות, אך חשוב להבין את העקרונות גם אם הכלי משתנה.</p>
 
 <h2 id="s10">10. OOP, dataclasses ו־protocols</h2>
-<p>Class מגדירה התנהגות ומצב. העדף composition כשאין יחס “is-a” אמיתי. ‏<code>@dataclass</code> מתאים ל־data objects ומייצר constructor, repr ושוויון.</p>
+<h3>Object ו־Class</h3>
+<p>Class היא תבנית שמגדירה איזה state והתנהגות יהיו לאובייקטים. Instance הוא אובייקט שנוצר מה־class. ‏<code>__init__</code> מאתחלת instance שכבר נוצר, ו־<code>self</code> הוא reference ל־instance שעליו method פועלת.</p>
+<pre><code>class BankAccount:
+    bank_name = "Example Bank"          # class attribute
+
+    def __init__(self, owner: str, balance: int = 0):
+        if balance < 0:
+            raise ValueError("balance cannot be negative")
+        self.owner = owner               # instance attributes
+        self._balance = balance
+
+    @property
+    def balance(self) -> int:
+        return self._balance
+
+    def deposit(self, amount: int) -> None:
+        if amount <= 0:
+            raise ValueError("amount must be positive")
+        self._balance += amount</code></pre>
+<p>Class attribute משותף דרך ה־class; instance attribute שייך לכל instance. חיפוש attribute מתחיל ב־instance ואז ממשיך ל־class ולמחלקות בסיס לפי Method Resolution Order. קו תחתון בשם כמו <code>_balance</code> הוא convention של “פנימי”, לא חסימה אבטחתית.</p>
+<h3>Encapsulation ו־Properties</h3>
+<p>Encapsulation פירושה לשמור invariant מאחורי API ברור. ‏<code>@property</code> מאפשר לקרוא method כאילו היה attribute, ו־setter יכול לבצע validation. אל תיצור getters/setters אוטומטיים לכל שדה; השתמש בהם כשיש behavior או חוזה שחשוב להגן עליו.</p>
+<h3>Inheritance מול Composition</h3>
+<p>Inheritance מתאימה ליחס אמיתי של “הוא סוג של” ולחוזה substitution תקין. Composition מחברת אובייקטים לפי “יש לו” ומאפשרת להחליף רכיב בלי היררכיה עמוקה. בשירותי Backend, composition ו־dependency injection בדרך כלל גמישות יותר.</p>
+<h3>Dataclasses</h3>
+<p>כאשר class בעיקר מחזיקה נתונים, <code>@dataclass</code> מייצרת <code>__init__</code>,‏ <code>__repr__</code> ו־<code>__eq__</code>. אפשר להוסיף validation ב־<code>__post_init__</code>.</p>
 <pre><code>from dataclasses import dataclass
 from typing import Protocol
 
@@ -154,10 +386,26 @@ class PaymentGateway(Protocol):
 class PaymentService:
     def __init__(self, gateway: PaymentGateway) -> None:
         self.gateway = gateway</code></pre>
-<p>Protocol מגדיר interface לפי ההתנהגות הנדרשת (structural typing): implementation אינו חייב לרשת במפורש. זה מאפשר dependency inversion ו־tests פשוטים. ‏<code>frozen=True</code> מונע assignment רגיל אך אינו הופך כל אובייקט פנימי ל־immutable.</p>
+<p><code>frozen=True</code> מונע assignment רגיל לשדות אך אינו מקפיא objects mutable שנמצאים בפנים. ‏<code>slots=True</code> מצמצם בדרך כלל זיכרון ומונע attributes מקריים, אך משנה חלק מגמישות ה־object.</p>
+<h3>Protocol ו־Duck Typing</h3>
+<p>Python פועלת הרבה לפי duck typing: אם object מספק את ההתנהגות הנדרשת, אין חובה שיירש class מסוים. ‏<code>Protocol</code> נותן לכלי type checking דרך לתאר את החוזה הזה. מימוש gateway אמיתי ו־fake לבדיקה יכולים להתאים לאותו Protocol בלי inheritance מפורשת.</p>
 
 <h2 id="s11">11. Decorators ו־descriptors</h2>
-<p>Decorator מקבל callable ומחזיר callable. Django משתמש ב־decorators ל־permissions, transactions ו־views. חשוב לשמר metadata עם <code>functools.wraps</code>.</p>
+<h3>Functions מסדר גבוה</h3>
+<p>לפני decorator צריך להבין שפונקציה היא object. פונקציה יכולה לקבל פונקציה ולהחזיר פונקציה—זאת higher-order function. Decorator הוא תחביר נוח להחלפת function באחרת בזמן ההגדרה.</p>
+<pre><code>def logged(func):
+    def wrapper(*args, **kwargs):
+        print(f"calling {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@logged
+def add(a, b):
+    return a + b
+
+# שקול רעיונית ל:
+# add = logged(add)</code></pre>
+<p>Django משתמשת ב־decorators להרשאות, transactions ו־views. ה־wrapper חייב להחזיר את תוצאת הפונקציה ולשמר את metadata שלה.</p>
 <pre><code>from functools import wraps
 from time import perf_counter
 
@@ -170,9 +418,24 @@ def timed(func):
         finally:
             print(func.__name__, perf_counter() - start)
     return wrapper</code></pre>
-<p>Descriptor הוא אובייקט שמגדיר <code>__get__</code>,‏ <code>__set__</code> או <code>__delete__</code>. ‏Properties, methods ושדות Django ORM נשענים על הפרוטוקול הזה—זו הסיבה ש־<code>user.email</code> יכול להיראות כמו attribute רגיל אך להפעיל לוגיקה.</p>
+<h3>Decorator עם Arguments</h3>
+<p>כאשר כותבים <code>@retry(max_attempts=3)</code>, הפונקציה החיצונית מקבלת configuration ומחזירה decorator; ה־decorator מקבל function ומחזיר wrapper. אלה שלוש שכבות, ולכן קל להתבלבל. כתוב שמות ברורים ו־tests ל־return, exception ו־metadata.</p>
+<h3>Descriptors</h3>
+<p>Descriptor הוא object שמגדיר לפחות אחת מהמתודות <code>__get__</code>,‏ <code>__set__</code> או <code>__delete__</code>. כש־descriptor נמצא על class, גישה ל־attribute יכולה להפעיל את הלוגיקה שלו במקום להחזיר value פשוט.</p>
+<p>Functions על class הן descriptors: זו הסיבה ש־<code>account.deposit</code> מקבלת אוטומטית את <code>account</code> כ־self. גם <code>property</code> ושדות Django ORM משתמשים ברעיון. ‏<code>user.email</code> נראה כמו attribute רגיל, אך descriptor יכול לבצע validation, tracking או גישה ל־state אחר.</p>
+<div class="callout"><strong>סדר לימוד:</strong> Decorators שימושיים ביום־יום. Descriptors הם מנגנון פנימי מתקדם; חשוב להבין מה הם מסבירים, אך אין צורך לכתוב descriptor מותאם לפני שאתה שולט ב־classes ו־properties.</div>
 
 <h2 id="s12">12. Type hints ו־static analysis</h2>
+<h3>איזו בעיה Type Hints פותרות?</h3>
+<p>במערכת גדולה, שם כמו <code>data</code> לא אומר מה מותר להעביר ומה מוחזר. Type hint מתעדת חוזה בצורה שכלים יכולים לבדוק לפני הריצה, IDE יכול להציע השלמה, ו־reviewer יכול להבין בלי לעקוב אחרי כל מסלול.</p>
+<pre><code>def calculate_total(prices: list[float]) -> float:
+    return sum(prices)
+
+def load_user(user_id: int) -> User | None:
+    ...</code></pre>
+<p><code>User | None</code> מכריח את הקורא להתמודד עם האפשרות שאין משתמש. לאחר בדיקת <code>if user is None</code>, type checker מבצע narrowing ויודע שבמסלול האחר זה User.</p>
+<h3>Collections Abstractions</h3>
+<p>אם פונקציה רק עוברת על values, היא אינה צריכה לדרוש list. ‏<code>Iterable[T]</code> מקבל list, tuple או generator. אם צריך <code>len</code> ו־index, ‏<code>Sequence[T]</code> מדויק יותר. קבל interface מינימלי שמתאים להתנהגות.</p>
 <pre><code>from collections.abc import Sequence
 from typing import TypeVar
 
@@ -184,7 +447,11 @@ def first(items: Sequence[T]) -> T:
     return items[0]
 
 def find_user(user_id: int) -> User | None: ...</code></pre>
-<p>העדף abstraction צרה בקלט (<code>Iterable</code>/<code>Sequence</code>) וטיפוס קונקרטי ברור בפלט. ‏<code>Any</code> מכבה בדיקה ומתפשט; השתמש בו רק בגבולות דינמיים. הרץ mypy או pyright ב־CI, אך זכור שה־runtime אינו אוכף hints מעצמו.</p>
+<h3>Generics ו־TypeVar</h3>
+<p>בדוגמת <code>first</code>, ‏TypeVar אומר שהטיפוס המוחזר זהה לטיפוס האיברים: Sequence של User מחזירה User, ושל str מחזירה str. בלי generic היינו מאבדים את הקשר הזה.</p>
+<h3>Any, object ו־Unknown Data</h3>
+<p><code>Any</code> אומר לכלי “אל תבדוק אותי” ומתפשט לקוד שקורא לו. ‏<code>object</code> אומר “יכול להיות כל object, ולכן לפני פעולה צריך לבדוק/narrow”. בגבול JSON חיצוני, type hint אינה validation; צריך parser או schema שמוודא את runtime data.</p>
+<p>הרץ mypy או Pyright ב־CI. התחל strict בקוד חדש או החמר בהדרגה. אל תעקוף שגיאות עם casts ו־ignores לפני שהבנת אם הכלי גילה bug אמיתי.</p>
 
 <h2 id="s13">13. Files, serialization ו־I/O</h2>
 <pre><code>from pathlib import Path
