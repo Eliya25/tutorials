@@ -1,0 +1,137 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="100 תרגילי Python מדורגים ו-8 פרויקטים לקראת Backend ו-Django"><title>Python Exercise Bank — 100 תרגילים מדורגים</title><style>
+:root{--ink:#17202a;--green:#116149;--soft:#eaf6f1;--line:#cfe0d9;--easy:#3a8f68;--medium:#bc7a12;--hard:#b23b4d;--backend:#315eb5}*{box-sizing:border-box}body{margin:auto;max-width:1040px;padding:34px 22px 80px;color:var(--ink);font:17px/1.75 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--green);padding-bottom:14px}h2{margin-top:2.5em;color:var(--green);border-bottom:2px solid var(--line);padding-bottom:8px}h3{margin:.2em 0}.hero,.rules,.gate,.project{border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0;background:#fff}.hero,.rules{background:var(--soft)}.exercise{border:1px solid var(--line);border-right:5px solid var(--green);border-radius:11px;padding:15px 18px;margin:12px 0}.exercise p{margin:6px 0}.meta{font-size:.88rem;color:#596961}.easy{border-right-color:var(--easy)}.medium{border-right-color:var(--medium)}.hard{border-right-color:var(--hard)}.backend{border-right-color:var(--backend)}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#eef1f0;color:#9b1830;padding:2px 5px;border-radius:4px}pre{background:#17202a;color:#eef7f3;padding:16px;border-radius:9px;overflow:auto}.nav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:24px}.nav a{text-decoration:none;color:var(--green);border:1px solid var(--line);border-radius:999px;padding:6px 11px}.toc{columns:2;background:#f7faf9;border:1px solid var(--line);border-radius:12px;padding:18px 30px}.toc a{color:var(--green)}.check{font-weight:700;color:var(--green)}details{background:var(--soft);padding:8px 11px;border-radius:8px;margin-top:8px}summary{cursor:pointer;font-weight:650}@media(max-width:650px){body{padding:20px 14px}.toc{columns:1}.exercise{padding:13px}}</style></head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="0.problem-solving-tutorial.html">שיטת פתרון</a><a href="17.python-tutorial.html">Python Foundations</a><a href="17.python-advanced-tutorial.html">Python מתקדם</a><a href="17.python-practice.html">המסלול המקוצר</a></nav>
+<section class="hero"><h1>Python Exercise Bank — ‏100 תרגילים ו־8 Mini‑Projects</h1><p>המאגר בנוי כדי להפוך ידע ב־syntax ליכולת פתרון. הוא מתקדם מ־conditions ו־loops אל data processing, decomposition, OOP, files, testing, async ו־Backend logic לקראת Django.</p></section>
+<section class="rules"><h2 style="margin-top:0">איך עובדים עם המאגר</h2><ol><li>פתור לפי הסדר בתוך כל רמה; מותר לדלג רק אם אתה מסוגל להסביר ולכתוב את הפתרון מיד.</li><li>לפני קוד כתוב Input, Output, שני edge cases ו־pseudocode.</li><li>ניסיון ראשון ללא AI במשך 25–40 דקות. מותר לבדוק syntax נקודתי בתיעוד.</li><li>כתוב לפחות שלוש בדיקות לכל פתרון: רגילה, ריקה/מינימלית ו־edge case.</li><li>לאחר review, פתור שוב מהזיכרון אחרי 2–3 ימים.</li><li>אל תמשיך לרמה הבאה לפני שעברת את שער המעבר.</li></ol></section>
+<div class="toc"><ol><li><a href="#l1">רמה 1 — לוגיקה בסיסית</a></li><li><a href="#l2">רמה 2 — Collections ועיבוד נתונים</a></li><li><a href="#l3">רמה 3 — Functions ו־Decomposition</a></li><li><a href="#l4">רמה 4 — OOP ו־Domain Modeling</a></li><li><a href="#l5">רמה 5 — Files, Errors ו־Modules</a></li><li><a href="#l6">רמה 6 — Testing ו־Debugging</a></li><li><a href="#l7">רמה 7 — Async ו־Backend Logic</a></li><li><a href="#projects">8 Mini‑Projects</a></li></ol></div>
+
+<h2 id="l1">רמה 1 — לוגיקה בסיסית: 1–20</h2>
+<p>המטרה: לתרגם דרישה ל־variables, conditions ו־loops בלי להסתבך בארכיטקטורה.</p>
+<article class="exercise easy"><h3>1. חיובי, שלילי או אפס</h3><p>כתוב פונקציה שמקבלת מספר ומחזירה אחת משלוש מחרוזות. בדוק גם float.</p></article>
+<article class="exercise easy"><h3>2. זוגי או אי־זוגי</h3><p>החזר boolean שמציין אם integer זוגי. הגדר מה קורה לקלט שאינו integer.</p></article>
+<article class="exercise easy"><h3>3. הגדול משלושה</h3><p>קבל שלושה מספרים והחזר את הגדול בלי להשתמש ב־<code>max</code>. טפל בשוויון.</p></article>
+<article class="exercise easy"><h3>4. שנת קפיצה</h3><p>ממש את כללי leap year: מתחלקת ב־4, למעט מאות שאינן מתחלקות ב־400.</p></article>
+<article class="exercise easy"><h3>5. מחיר לאחר הנחה</h3><p>קבל מחיר ואחוז הנחה. אמת שטווח ההנחה 0–100 והחזר מחיר מעוגל לשתי ספרות.</p></article>
+<article class="exercise easy"><h3>6. ציון לאות</h3><p>המר 0–100 ל־A/B/C/D/F. קלט מחוץ לטווח צריך לעורר <code>ValueError</code>.</p></article>
+<article class="exercise easy"><h3>7. סכום 1 עד N</h3><p>פתור פעם בלולאה ופעם בנוסחה. הסבר את סיבוכיות הזמן של כל פתרון.</p></article>
+<article class="exercise easy"><h3>8. לוח הכפל</h3><p>החזר list של עשר תוצאות עבור מספר נתון. אל תדפיס מתוך פונקציית החישוב.</p></article>
+<article class="exercise easy"><h3>9. עצרת</h3><p>חשב factorial בלולאה. הגדר מה קורה ל־0 ולמספר שלילי.</p></article>
+<article class="exercise easy"><h3>10. ספירת ספרות</h3><p>ספור ספרות ב־integer ללא המרה ל־string; אחר כך כתוב פתרון עם string והשווה.</p></article>
+<article class="exercise easy"><h3>11. היפוך מספר</h3><p>הפוך 1234 ל־4321 באמצעות פעולות חשבון. שמור את סימן המספר.</p></article>
+<article class="exercise easy"><h3>12. סכום ספרות</h3><p>חשב סכום ספרות של מספר חיובי ושלילי. החלט כיצד להתייחס לסימן.</p></article>
+<article class="exercise easy"><h3>13. מספר ראשוני</h3><p>בדוק primality בלי לחלק עד המספר עצמו. הסבר מדוע מספיק לבדוק עד השורש.</p></article>
+<article class="exercise easy"><h3>14. כל הראשוניים עד N</h3><p>השתמש בפונקציה מהתרגיל הקודם. לאחר מכן חקור Sieve of Eratosthenes.</p></article>
+<article class="exercise easy"><h3>15. FizzBuzz מורחב</h3><p>כפולות 3→Fizz, ‏5→Buzz, ‏7→Pop ושילובים. אל תשכפל conditions לכל שילוב.</p></article>
+<article class="exercise easy"><h3>16. ספירת תו</h3><p>קבל string ותו וספור הופעות ללא <code>count</code>. הוסף אפשרות case-insensitive.</p></article>
+<article class="exercise easy"><h3>17. היפוך מחרוזת</h3><p>פתור בלולאה וב־slicing. הסבר איזה פתרון קריא יותר ואיזה יוצר objects זמניים.</p></article>
+<article class="exercise easy"><h3>18. Palindrome</h3><p>התעלם מרווחים, punctuation ו־case. אל תערבב normalization עם הבדיקה.</p></article>
+<article class="exercise easy"><h3>19. ספירת תנועות</h3><p>ספור vowels באנגלית והחזר dictionary של הכמות לכל תנועה.</p></article>
+<article class="exercise easy"><h3>20. Guessing Engine</h3><p>פונקציה מקבלת secret ורשימת guesses ומחזירה באיזה ניסיון הצליחו או None. היא לא קוראת input בעצמה.</p></article>
+<section class="gate"><h3>שער מעבר 1</h3><p class="check">עבור הלאה רק אם פתרת לפחות 16/20 ללא פתרון חיצוני, ואתה מסוגל לבצע dry run ללולאה ולהסביר כל variable.</p></section>
+
+<h2 id="l2">רמה 2 — Collections ועיבוד נתונים: 21–40</h2>
+<article class="exercise medium"><h3>21. מינימום ומקסימום</h3><p>מצא בשני משתנים במעבר אחד וללא <code>min/max</code>. רשימה ריקה צריכה לקבל חוזה מפורש.</p></article>
+<article class="exercise medium"><h3>22. הסרת כפילויות</h3><p>שמור את סדר ההופעה הראשון. פתור עם set עזר והסבר למה <code>set(items)</code> לא מבטיח את אותו חוזה.</p></article>
+<article class="exercise medium"><h3>23. האיבר השני בגודלו</h3><p>התעלם מכפילויות ופתור במעבר אחד. בדוק רשימה עם פחות משני ערכים ייחודיים.</p></article>
+<article class="exercise medium"><h3>24. חיתוך רשימות</h3><p>החזר ערכים משותפים ללא כפילויות ובסדר הרשימה הראשונה.</p></article>
+<article class="exercise medium"><h3>25. הזזת אפסים</h3><p>העבר אפסים לסוף ושמור סדר יחסי של שאר הערכים. כתוב גרסה שמחזירה חדש וגרסה in-place.</p></article>
+<article class="exercise medium"><h3>26. Rotation</h3><p>סובב list ימינה K מקומות; טפל ב־K גדול מאורך הרשימה וברשימה ריקה.</p></article>
+<article class="exercise medium"><h3>27. Chunking</h3><p>חלק iterable לקבוצות בגודל N. אל תאבד קבוצה חלקית בסוף.</p></article>
+<article class="exercise medium"><h3>28. Merge Sorted Lists</h3><p>מזג שתי רשימות ממוינות ב־O(n+m), ללא <code>sort</code> בסוף.</p></article>
+<article class="exercise medium"><h3>29. Two Sum</h3><p>החזר indices של שני ערכים שסכומם target. התחל ב־O(n²), ואז שפר עם dictionary.</p></article>
+<article class="exercise medium"><h3>30. Sliding Average</h3><p>חשב ממוצע לכל חלון בגודל K. כתוב תחילה פתרון פשוט ואז sliding window ב־O(n).</p></article>
+<article class="exercise medium"><h3>31. שכיחות מילים</h3><p>נרמל טקסט והחזר את עשר המילים הנפוצות, עם tie-break אלפביתי.</p></article>
+<article class="exercise medium"><h3>32. Anagrams</h3><p>בדוק אם שתי מחרוזות anagrams; לאחר מכן קבץ רשימת מילים לקבוצות anagram.</p></article>
+<article class="exercise medium"><h3>33. Group Users by Role</h3><p>החזר <code>dict[str, list[User]]</code>. משתמש ללא role נכנס ל־<code>unknown</code>.</p></article>
+<article class="exercise medium"><h3>34. אינדקס לפי ID</h3><p>המר רשימת records ל־dictionary. ID כפול צריך לגרום ל־exception במקום דריסה.</p></article>
+<article class="exercise medium"><h3>35. Merge Profiles</h3><p>מזג default, stored ו־request profile לפי priority בלי לשנות inputs. תמוך ב־nested dictionaries.</p></article>
+<article class="exercise medium"><h3>36. Inventory Report</h3><p>קבל מוצרים והחזר total value, out-of-stock, low-stock והקטגוריה היקרה ביותר.</p></article>
+<article class="exercise medium"><h3>37. Orders by Customer</h3><p>קבץ הזמנות לפי לקוח, חשב total לכל לקוח ומיין בירידה ללא mutation של הקלט.</p></article>
+<article class="exercise medium"><h3>38. Pagination</h3><p>ממש offset pagination שמחזירה items ו־metadata. אמת page/page_size.</p></article>
+<article class="exercise medium"><h3>39. Cursor Pagination בסיסית</h3><p>עבוד עם records ממוינים לפי ID והחזר next cursor. הסבר מה קורה אם record נמחק.</p></article>
+<article class="exercise medium"><h3>40. Diff בין Dictionaries</h3><p>החזר keys שנוספו, נמחקו ושונו, כולל old/new values.</p></article>
+<section class="gate"><h3>שער מעבר 2</h3><p class="check">פתור לפחות 15/20, כולל 29, 30, 36 ו־37. עליך לדעת להסביר מתי list, set או dict נותנים representation מתאים יותר.</p></section>
+
+<h2 id="l3">רמה 3 — Functions ו־Problem Decomposition: 41–55</h2>
+<article class="exercise hard"><h3>41. Password Policy</h3><p>בנה validators עצמאיים שמחזירים את כל השגיאות. ה־policy צריך להיות configurable.</p></article>
+<article class="exercise hard"><h3>42. Pipeline</h3><p>ממש <code>pipe(value, functions)</code> שבו כל פונקציה מקבלת את תוצאת הקודמת. טפל בכשל עם context.</p></article>
+<article class="exercise hard"><h3>43. Generic group_by</h3><p>קבל iterable ו־key function. אל תניח שניתן לעבור על input פעמיים.</p></article>
+<article class="exercise hard"><h3>44. Memoization</h3><p>כתוב decorator עם key function ו־cache מוגבל. החלט מה קורה ל־exceptions.</p></article>
+<article class="exercise hard"><h3>45. Retry סינכרוני</h3><p>Decorator עם max attempts, backoff ו־exceptions מותרים. הזרק sleep כדי לבדוק בלי להמתין.</p></article>
+<article class="exercise hard"><h3>46. Rate Limiter פשוט</h3><p>Fixed window לפי user ID עם clock מוזרק. בדוק בדיוק את גבול החלון.</p></article>
+<article class="exercise hard"><h3>47. TTL Cache</h3><p>ממש get/set עם expiration ו־max size. אל תשתמש ב־sleep ב־tests.</p></article>
+<article class="exercise hard"><h3>48. Event Dispatcher</h3><p>הרשם handlers לפי event type, אפשר unsubscribe, ואל תאפשר שינוי הרשימה לשבור dispatch פעיל.</p></article>
+<article class="exercise hard"><h3>49. Command Parser</h3><p>פרש פקודות CLI עם quoted strings, flags ו־validation. הפרד tokenization, parsing ו־execution.</p></article>
+<article class="exercise hard"><h3>50. Rule Engine</h3><p>מערכת שמקבלת rules ומחזירה reasons לקבלת/דחיית loan request. אל תקודד את כל הכללים ב־if אחד.</p></article>
+<article class="exercise hard"><h3>51. CSV Aggregator</h3><p>עבד rows כ־iterable, אמת כל row והחזר report כולל rejected rows וסיבות.</p></article>
+<article class="exercise hard"><h3>52. State Machine להזמנה</h3><p>הגדר transitions חוקיים בין pending/paid/shipped/cancelled. מעבר לא חוקי מעלה domain error.</p></article>
+<article class="exercise hard"><h3>53. Idempotent Command</h3><p>קבל command ID ושמור תוצאות, כך שאותה פקודה פעמיים לא תבצע side effect נוסף.</p></article>
+<article class="exercise hard"><h3>54. Booking Conflict</h3><p>קבל intervals ובדוק התנגשות; אחר כך מצא slots פנויים בטווח יום.</p></article>
+<article class="exercise hard"><h3>55. Expense Report</h3><p>פרק ל־parse, validate, categorize, aggregate ו־format. כל שלב צריך להיות ניתן לבדיקה בנפרד.</p></article>
+<section class="gate"><h3>שער מעבר 3</h3><p class="check">בחר שלושה תרגילים והסבר את הפירוק לפני הקוד. עליך לכתוב functions קטנות לפי אחריות בלי להפוך כל שתי שורות ל־abstraction.</p></section>
+
+<h2 id="l4">רמה 4 — OOP ו־Domain Modeling: 56–68</h2>
+<article class="exercise hard"><h3>56. BankAccount</h3><p>הגן על invariant של balance, הוסף deposit/withdraw ו־transaction history immutable.</p></article>
+<article class="exercise hard"><h3>57. Money Value Object</h3><p>Dataclass frozen עם minor units ו־currency. חיבור בין מטבעות שונים אסור.</p></article>
+<article class="exercise hard"><h3>58. Task Entity</h3><p>ID, title, status ו־timestamps. Transition ל־completed צריך להיות method ולא שינוי שדה חופשי.</p></article>
+<article class="exercise hard"><h3>59. Shopping Cart</h3><p>Cart items, quantities, totals והנחות. הפרד Product identity ממחיר בזמן ההוספה.</p></article>
+<article class="exercise hard"><h3>60. Library Loans</h3><p>BookCopy, Member ו־Loan. אי אפשר להשאיל עותק מושאל או לעבור את מגבלת החבר.</p></article>
+<article class="exercise hard"><h3>61. Workout Domain</h3><p>Workout, ExerciseSet ו־Exercise. אמת reps/weight וזמן סיום לאחר התחלה.</p></article>
+<article class="exercise hard"><h3>62. Notification Protocol</h3><p>הגדר Protocol ושלושה adapters: console, fake ו־email stub. Service תלוי רק בחוזה.</p></article>
+<article class="exercise hard"><h3>63. Repository Protocol</h3><p>save/get/list/delete עם InMemory implementation. קבע semantics ל־missing ול־duplicate.</p></article>
+<article class="exercise hard"><h3>64. Unit of Work Fake</h3><p>Context manager שמבצע commit או rollback. כתוב tests ל־exception באמצע use case.</p></article>
+<article class="exercise hard"><h3>65. Pricing Strategies</h3><p>Regular, percentage ו־buy-X-get-Y ללא if לפי type בתוך Checkout.</p></article>
+<article class="exercise hard"><h3>66. Audit Trail</h3><p>Domain events עבור שינויים חשובים. אירוע צריך להיות immutable ולהכיל רק data נחוצה.</p></article>
+<article class="exercise hard"><h3>67. Optimistic Version</h3><p>Entity עם version; repository דוחה save אם הגרסה השתנתה מאז הקריאה.</p></article>
+<article class="exercise hard"><h3>68. Service Layer</h3><p>Use case של complete task שמחבר repository, clock ו־event publisher ללא framework.</p></article>
+
+<h2 id="l5">רמה 5 — Files, Exceptions ו־Modules: 69–78</h2>
+<article class="exercise backend"><h3>69. Safe Text Reader</h3><p>קרא UTF‑8 line-by-line, שמור line number ודווח על decoding/format errors.</p></article>
+<article class="exercise backend"><h3>70. JSON Repository</h3><p>שמור וטעון entities עם schema version. קובץ חסר שונה מקובץ corrupted.</p></article>
+<article class="exercise backend"><h3>71. Atomic Writer</h3><p>כתוב temp file ואז replace. הזרק failure לפני replace והוכח שהקובץ המקורי נשאר.</p></article>
+<article class="exercise backend"><h3>72. JSONL Streaming</h3><p>עבד מיליון events ללא טעינה מלאה והחזר report של accepted/rejected.</p></article>
+<article class="exercise backend"><h3>73. CSV Importer</h3><p>מפה headers, המר types, אסוף שגיאות לפי row והמשך אחרי row פגום.</p></article>
+<article class="exercise backend"><h3>74. Configuration Loader</h3><p>מזג defaults, file ו־environment; המר booleans/integers ואמת שדות חובה.</p></article>
+<article class="exercise backend"><h3>75. Custom Error Hierarchy</h3><p>Domain, Validation ו־Infrastructure errors עם cause. אל תדליף פרטים פנימיים למשתמש.</p></article>
+<article class="exercise backend"><h3>76. Transaction Context Manager</h3><p>commit בהצלחה ו־rollback בכשל, תוך שימור exception המקורית.</p></article>
+<article class="exercise backend"><h3>77. Package Refactor</h3><p>פצל קובץ של 300 שורות ל־domain/application/infrastructure בלי circular imports.</p></article>
+<article class="exercise backend"><h3>78. CLI Entry Point</h3><p>בנה <code>python -m taskflow</code>, exit codes, stderr לשגיאות ו־stdout לתוצאה.</p></article>
+
+<h2 id="l6">רמה 6 — Testing ו־Debugging: 79–88</h2>
+<article class="exercise backend"><h3>79. Test Matrix</h3><p>כתוב parametrize לפונקציית validation עם valid, boundaries ו־invalid types.</p></article>
+<article class="exercise backend"><h3>80. Fake Clock</h3><p>בדוק expiry ו־timestamps ללא sleep או patch גלובלי.</p></article>
+<article class="exercise backend"><h3>81. Fake Repository</h3><p>בדוק service כולל success, not found, conflict ו־save failure.</p></article>
+<article class="exercise backend"><h3>82. Property-Based Thinking</h3><p>ל־reverse הגדֵר properties: פעמיים מחזיר מקור ואורך נשמר. אחר כך השתמש ב־Hypothesis.</p></article>
+<article class="exercise backend"><h3>83. Regression: Mutable Default</h3><p>הוכח ששתי קריאות חולקות list, תקן וכתוב test שמונע חזרה.</p></article>
+<article class="exercise backend"><h3>84. Regression: Shallow Copy</h3><p>שחזר mutation של nested config ותקן עם contract ברור, לא אוטומטית deepcopy.</p></article>
+<article class="exercise backend"><h3>85. Lost Exception Context</h3><p>קוד תופס Exception וזורק חדשה. תקן עם exception צרה ו־<code>raise ... from</code>.</p></article>
+<article class="exercise backend"><h3>86. Hidden Nondeterminism</h3><p>Test תלוי ב־datetime.now ובסדר set. הפוך אותו deterministic.</p></article>
+<article class="exercise backend"><h3>87. Memory Growth</h3><p>Cache לא מוגבל גדל בכל request. כתוב reproduction, מדידה ו־eviction policy.</p></article>
+<article class="exercise backend"><h3>88. Integration Test ל־Filesystem</h3><p>השתמש ב־temporary directory ובדוק write/read/corruption ללא תלות במחשב שלך.</p></article>
+
+<h2 id="l7">רמה 7 — Async ו־Backend Logic: 89–100</h2>
+<article class="exercise backend"><h3>89. Async Delay</h3><p>כתוב coroutine שמדגימה concurrency של שלוש המתנות ומדוד מול הרצה סדרתית.</p></article>
+<article class="exercise backend"><h3>90. Fetch with Timeout</h3><p>עטוף client מוזרק ב־timeout ומפה timeout ל־error של השכבה שלך.</p></article>
+<article class="exercise backend"><h3>91. Bounded Concurrency</h3><p>עבד 100 items עם מקסימום 10 פעילים ושמור תוצאה/שגיאה לכל item.</p></article>
+<article class="exercise backend"><h3>92. Producer–Consumer</h3><p>Queue, producer ושני consumers עם shutdown שלא מאבד עבודה.</p></article>
+<article class="exercise backend"><h3>93. Cancellation Cleanup</h3><p>בטל task באמצע והוכח ש־resource נסגר ו־CancelledError אינה נבלעת.</p></article>
+<article class="exercise backend"><h3>94. Retry Async</h3><p>Backoff, jitter, cancellation ו־retry predicate. אל תעשה retry ל־validation.</p></article>
+<article class="exercise backend"><h3>95. In‑Flight Deduplication</h3><p>חמש קריאות לאותו key מפעילות fetch אחד; כשל מסיר את ה־promise/future מה־cache.</p></article>
+<article class="exercise backend"><h3>96. Thread Race</h3><p>שחזר lost update, תקן עם Lock והסבר למה GIL אינו חוזה correctness.</p></article>
+<article class="exercise backend"><h3>97. Process Pool</h3><p>השווה sequential/threads/processes ל־CPU task וכתוב מסקנה ממדידה.</p></article>
+<article class="exercise backend"><h3>98. Idempotent Order Creation</h3><p>אותו request ID מחזיר אותה תוצאה ואינו יוצר order נוסף, גם בשתי קריאות מקבילות.</p></article>
+<article class="exercise backend"><h3>99. Cursor Feed</h3><p>Feed עם ordering יציב לפי timestamp+ID. הוסף records בין pages ובדוק שאין כפילות.</p></article>
+<article class="exercise backend"><h3>100. Complete Workout Use Case</h3><p>אמת ownership/state, חשב summary, שמור transactionally ופרסם event רק אחרי הצלחה.</p></article>
+<section class="gate"><h3>שער סיום</h3><p class="check">אתה מוכן ל־Django כאשר אתה מסוגל לפתור Feature-level exercise עם model, service, repository fake ו־tests בלי framework ובלי ש־AI כותב את הלוגיקה.</p></section>
+
+<h2 id="projects">8 Mini‑Projects לקראת Django</h2>
+<section class="project"><h3>פרויקט 1 — Number & Text Toolkit</h3><p>CLI שמפעיל 8–10 תרגילי רמה 1, עם parsing, errors ו־tests. המטרה היא functions וארגון בסיסי.</p></section>
+<section class="project"><h3>פרויקט 2 — Personal Expense Analyzer</h3><p>ייבוא CSV, validation, קטגוריות, דוח חודשי ו־export JSON. המטרה היא data processing ו־files.</p></section>
+<section class="project"><h3>פרויקט 3 — TaskFlow CLI</h3><p>Tasks, statuses, JSON repository, atomic write, search, tests ו־logging. המטרה היא שכבות ו־persistence.</p></section>
+<section class="project"><h3>פרויקט 4 — Workout Domain</h3><p>Workout, exercises, sets, templates ו־progress calculations בזיכרון עם service ו־tests. זה יהיה ה־domain שתעביר אחר כך ל־Django.</p></section>
+<section class="project"><h3>פרויקט 5 — Booking Engine</h3><p>Resources, time slots, conflict detection, cancellation ו־optimistic version. המטרה היא invariants ו־concurrency thinking.</p></section>
+<section class="project"><h3>פרויקט 6 — Async API Aggregator</h3><p>שלושה fake providers, timeout, retry, bounded concurrency, partial results ו־structured logs.</p></section>
+<section class="project"><h3>פרויקט 7 — In‑Memory REST Domain</h3><p>לפני web framework, בנה request-like commands, validation, services, repositories ו־error mapping. אחר כך חבר FastAPI או Django.</p></section>
+<section class="project"><h3>פרויקט 8 — Django Preparation Capstone</h3><p>Workout Tracking core מלא: entities, use cases, repository protocols, pytest ו־JSON adapter. בשלב הבא החלף רק את adapter ב־Django ORM ואת ה־interface ב־DRF.</p></section>
+<div class="rules"><h3>Definition of Done לכל Mini‑Project</h3><ul><li>README עם requirements, assumptions ו־commands.</li><li>אין business logic ב־CLI או framework layer.</li><li>Errors צפויות מטופלות ו־tracebacks אינן נבלעות.</li><li>Unit tests ללוגיקה ו־integration tests ל־adapter.</li><li>Ruff ו־type checker עוברים.</li><li>אתה מסוגל להסביר כל קובץ, flow ו־trade‑off בלי AI.</li></ul></div>
+</body></html>
