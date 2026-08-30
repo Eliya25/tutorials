@@ -1,0 +1,144 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="100 תרגילי Linux מדורגים מהפקודות הבסיסיות ועד networking ו-production troubleshooting"><title>Linux Exercise Bank — 100 תרגילים מדורגים</title><style>
+:root{--ink:#17202a;--orange:#b75516;--soft:#fff3e7;--line:#ead3c2;--easy:#468a60;--medium:#b57913;--hard:#a83e4c;--prod:#315eb5;--danger:#fff0f0}*{box-sizing:border-box}body{margin:auto;max-width:1040px;padding:34px 22px 80px;color:var(--ink);font:17px/1.75 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--orange);padding-bottom:14px}h2{margin-top:2.5em;color:var(--orange);border-bottom:2px solid var(--line);padding-bottom:8px}h3{margin:.2em 0}.hero,.rules,.gate,.lab{border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0}.hero,.rules{background:var(--soft)}.danger{background:var(--danger);border-color:#e2b9b9}.exercise{border:1px solid var(--line);border-right:5px solid var(--orange);border-radius:11px;padding:15px 18px;margin:12px 0}.exercise p{margin:6px 0}.easy{border-right-color:var(--easy)}.medium{border-right-color:var(--medium)}.hard{border-right-color:var(--hard)}.prod{border-right-color:var(--prod)}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#f2efec;color:#963416;padding:2px 5px;border-radius:4px}pre{background:#17202a;color:#fff4e9;padding:16px;border-radius:9px;overflow:auto}.nav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:24px}.nav a{text-decoration:none;color:var(--orange);border:1px solid var(--line);border-radius:999px;padding:6px 11px}.toc{columns:2;background:#fffbf7;border:1px solid var(--line);border-radius:12px;padding:18px 30px}.toc a{color:#91410f}.check{font-weight:700;color:#366b49}details{background:var(--soft);padding:8px 11px;border-radius:8px;margin-top:8px}summary{cursor:pointer;font-weight:650}@media(max-width:650px){body{padding:20px 14px}.toc{columns:1}.exercise{padding:13px}}</style></head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="16-linux-tutorial.html">מדריך Linux</a><a href="0.problem-solving-tutorial.html">שיטת פתרון</a></nav>
+<section class="hero"><h1>Linux Exercise Bank — ‏100 תרגילים ו־10 מעבדות</h1><p>מסלול מעשי ל־Ubuntu VM: מהתמצאות ב־filesystem ועד ניהול שירותים, networking, SSH, Bash, security ופתרון תקלות Production.</p></section>
+<section class="rules danger"><h2 style="margin-top:0">כללי בטיחות לפני שמתחילים</h2><ul><li>בצע את התרגילים ב־Ubuntu VM שלך, לא על שרת עבודה או מערכת צבאית.</li><li>צור snapshot ל־VM לפני תרגילי users, packages, disks, firewall ו־systemd.</li><li>כל תרגילי הקבצים יתבצעו רק בתוך <code>~/linux-practice-lab</code>.</li><li>לפני <code>rm</code>,‏ <code>chmod</code>,‏ <code>chown</code> או פקודת <code>sudo</code>, הרץ <code>pwd</code> ו־<code>ls -la</code> ואמת את היעד המדויק.</li><li>אל תריץ פקודה שאינך יכול להסביר, ואל תדביק פקודות destructive מהאינטרנט.</li><li>אל תשנה SSH או firewall לפני שיש לך console ישיר או snapshot שממנו ניתן להתאושש.</li></ul></section>
+<section class="rules"><h2 style="margin-top:0">הכנת המעבדה</h2><pre><code>mkdir -p ~/linux-practice-lab
+cd ~/linux-practice-lab
+pwd
+touch LAB_ONLY
+ls -la</code></pre><p>בתחילת כל session: היכנס לתיקייה, הרץ <code>pwd</code>, וכתוב בקובץ notes מה עשית ומה למדת. בתרגיל שמבקש “לחקור”, השתמש ב־<code>man</code>,‏ <code>--help</code> ו־<code>apropos</code> לפני חיפוש פתרון.</p></section>
+<div class="toc"><ol><li><a href="#l1">ניווט וקבצים</a></li><li><a href="#l2">טקסט, Pipes וחיפוש</a></li><li><a href="#l3">Permissions, Users וקישורים</a></li><li><a href="#l4">Processes ו־systemd</a></li><li><a href="#l5">Packages, Environment ו־Shell</a></li><li><a href="#l6">Storage ו־Filesystem</a></li><li><a href="#l7">Networking ו־SSH</a></li><li><a href="#l8">Bash Automation</a></li><li><a href="#l9">Security ו־Troubleshooting</a></li><li><a href="#labs">10 מעבדות מסכמות</a></li></ol></div>
+
+<h2 id="l1">רמה 1 — ניווט, תיקיות וקבצים: 1–20</h2>
+<article class="exercise easy"><h3>1. איפה אני?</h3><p>הרץ <code>pwd</code>, הסבר מהו absolute path וזהה את תיקיית הבית שלך.</p></article>
+<article class="exercise easy"><h3>2. רשימה בסיסית</h3><p>השווה <code>ls</code>,‏ <code>ls -l</code>,‏ <code>ls -a</code> ו־<code>ls -lah</code>. הסבר כל עמודה ב־long listing.</p></article>
+<article class="exercise easy"><h3>3. מעבר בין תיקיות</h3><p>תרגל <code>cd</code> עם absolute path, relative path,‏ <code>..</code>,‏ <code>.</code>,‏ <code>~</code> ו־<code>cd -</code>.</p></article>
+<article class="exercise easy"><h3>4. בניית עץ תיקיות</h3><p>צור <code>projects/api/{src,tests,docs}</code> בפקודה אחת עם <code>mkdir -p</code>.</p></article>
+<article class="exercise easy"><h3>5. יצירת קבצים</h3><p>צור חמישה קבצים עם <code>touch</code>; בדוק timestamps עם <code>stat</code> והפעל touch שוב.</p></article>
+<article class="exercise easy"><h3>6. Copy</h3><p>העתק file, שנה שם בעותק והעתק directory עם האפשרות המתאימה. ודא שהמקור נשאר.</p></article>
+<article class="exercise easy"><h3>7. Move ו־Rename</h3><p>השתמש ב־<code>mv</code> פעם לשינוי שם ופעם להעברה. בדוק מה קורה אם היעד קיים.</p></article>
+<article class="exercise easy"><h3>8. מחיקה בטוחה</h3><p>צור קובץ ניסוי ומחק אותו עם <code>rm -i</code>. מחק תיקייה ריקה עם <code>rmdir</code>. אל תשתמש ב־recursive removal.</p></article>
+<article class="exercise easy"><h3>9. זיהוי סוג קובץ</h3><p>הפעל <code>file</code> על text, directory, executable ותמונה אם קיימת. הסבר למה extension אינו המקור היחיד.</p></article>
+<article class="exercise easy"><h3>10. קריאת קובץ</h3><p>השווה <code>cat</code>,‏ <code>less</code>,‏ <code>head</code> ו־<code>tail</code>. בתוך less תרגל חיפוש ויציאה.</p></article>
+<article class="exercise easy"><h3>11. Line Numbers</h3><p>הצג קובץ עם מספרי שורות באמצעות שתי פקודות שונות.</p></article>
+<article class="exercise easy"><h3>12. Wildcards</h3><p>צור קובצי <code>.log</code>,‏ <code>.txt</code> ו־<code>.json</code>; תרגל <code>*</code>,‏ <code>?</code> ו־character classes.</p></article>
+<article class="exercise easy"><h3>13. Quoting</h3><p>צור קובץ ששמו מכיל spaces. גש אליו עם quotes ועם escaping. השווה single ו־double quotes סביב variable.</p></article>
+<article class="exercise easy"><h3>14. Absolute מול Relative</h3><p>פתח אותו קובץ פעם מכל סוג path; שנה working directory והסבר למה relative path נשבר.</p></article>
+<article class="exercise easy"><h3>15. Metadata</h3><p>השתמש ב־<code>stat</code> וזהה size, owner, permissions, inode ו־timestamps.</p></article>
+<article class="exercise easy"><h3>16. Find לפי שם</h3><p>מצא את כל קובצי <code>.log</code> רק בתוך תיקיית המעבדה. אחר כך הוסף case-insensitive search.</p></article>
+<article class="exercise easy"><h3>17. Find לפי זמן וגודל</h3><p>מצא קבצים ששונו לאחרונה וקבצים מעל גודל שקבעת. השתמש בקובצי מעבדה בלבד.</p></article>
+<article class="exercise easy"><h3>18. Locate מול Find</h3><p>בדוק אם <code>locate</code> מותקן, והסבר database index מול traversal בזמן אמת.</p></article>
+<article class="exercise easy"><h3>19. Command Discovery</h3><p>תרגל <code>which</code>,‏ <code>type</code>,‏ <code>command -v</code> ו־<code>whereis</code> על <code>ls</code> ועל alias.</p></article>
+<article class="exercise easy"><h3>20. Documentation</h3><p>מצא באמצעות <code>man</code> את option שממיין <code>ls</code> לפי זמן. השתמש ב־<code>apropos</code> למציאת כלי לפי תיאור.</p></article>
+<section class="gate"><h3>שער מעבר 1</h3><p class="check">אתה צריך לנווט בלי פחד, להסביר את מיקום ה־working directory ולבצע copy/move/delete רק אחרי אימות היעד.</p></section>
+
+<h2 id="l2">רמה 2 — טקסט, Redirection, Pipes וחיפוש: 21–35</h2>
+<article class="exercise medium"><h3>21. stdout ו־stderr</h3><p>הרץ פקודה מצליחה ונכשלת. הפנה stdout ו־stderr לקבצים נפרדים באמצעות file descriptors.</p></article>
+<article class="exercise medium"><h3>22. Overwrite מול Append</h3><p>השווה <code>&gt;</code> ו־<code>&gt;&gt;</code>. הוכח מתי תוכן קודם נדרס.</p></article>
+<article class="exercise medium"><h3>23. Pipe ראשון</h3><p>חבר <code>ls -la</code> ל־<code>less</code>. הסבר שה־pipe מעביר stdout כתוכן ולא arguments.</p></article>
+<article class="exercise medium"><h3>24. Grep בסיסי</h3><p>חפש מילה בקובץ עם line numbers, case-insensitive ו־invert match.</p></article>
+<article class="exercise medium"><h3>25. Grep רקורסיבי</h3><p>חפש TODO בכל קובצי המעבדה, תוך הכללת extension מסוים והחרגת directory.</p></article>
+<article class="exercise medium"><h3>26. Regex</h3><p>מצא שורות שמתחילות ב־ERROR, כתובות IPv4 בסיסיות וכתובות email באמצעות <code>grep -E</code>.</p></article>
+<article class="exercise medium"><h3>27. Sort ו־Unique</h3><p>מיין שמות, הסר כפילויות וספור שכיחות עם <code>sort | uniq -c</code>. הסבר למה sort קודם.</p></article>
+<article class="exercise medium"><h3>28. wc</h3><p>ספור lines, words ו־bytes. צור pipeline שסופר כמה שורות log מכילות ERROR.</p></article>
+<article class="exercise medium"><h3>29. cut</h3><p>צור CSV פשוט והוצא עמודות. הסבר מגבלות cut עבור CSV עם quotes.</p></article>
+<article class="exercise medium"><h3>30. tr</h3><p>המר lowercase ל־uppercase, החלף delimiter ומחק תווים מסוימים מ־stream.</p></article>
+<article class="exercise medium"><h3>31. sed</h3><p>החלף טקסט בתצוגה בלבד, אחר כך בקובץ copy. הדפס רק טווח שורות.</p></article>
+<article class="exercise medium"><h3>32. awk</h3><p>מקובץ של name,role,salary הדפס עובדים מעל סף וחשב sum לפי עמודה.</p></article>
+<article class="exercise medium"><h3>33. xargs בטוח</h3><p>צור רשימת filenames והעבר כ־arguments ל־<code>stat</code>. תמוך בשמות עם spaces באמצעות null delimiter.</p></article>
+<article class="exercise medium"><h3>34. tee</h3><p>שמור output לקובץ ובמקביל הצג אותו. בנה pipeline קטן לניתוח log.</p></article>
+<article class="exercise medium"><h3>35. Log Report</h3><p>מקובץ access log דמה, החזר status codes לפי שכיחות ואת חמשת ה־paths הנפוצים.</p></article>
+
+<h2 id="l3">רמה 3 — Permissions, Users, Groups וקישורים: 36–50</h2>
+<article class="exercise medium"><h3>36. קריאת Permissions</h3><p>פענח את עשרת התווים הראשונים של <code>ls -l</code>: סוג, owner, group ו־others.</p></article>
+<article class="exercise medium"><h3>37. chmod Symbolic</h3><p>הוסף והסר read/write/execute עם symbolic mode על script במעבדה.</p></article>
+<article class="exercise medium"><h3>38. chmod Numeric</h3><p>צור permissions ‏644, 600, 755 ו־700 והסבר את החיבור הבינארי של 4/2/1.</p></article>
+<article class="exercise medium"><h3>39. Directory Permissions</h3><p>בדוק בנפרד מה מאפשרים r, w ו־x על directory. השתמש בתיקיית ניסוי בלבד.</p></article>
+<article class="exercise medium"><h3>40. umask</h3><p>בדוק umask נוכחי, צור file ו־directory והסבר כיצד permissions ההתחלתיות חושבו.</p></article>
+<article class="exercise medium"><h3>41. Identity</h3><p>השווה <code>whoami</code>,‏ <code>id</code>,‏ <code>groups</code> ו־<code>who</code>.</p></article>
+<article class="exercise medium"><h3>42. Users Database</h3><p>קרא בצורה בטוחה את <code>/etc/passwd</code> והסבר כל field. אל תערוך אותו ידנית.</p></article>
+<article class="exercise medium"><h3>43. Groups Database</h3><p>חקור <code>/etc/group</code> וזהה primary מול supplementary groups.</p></article>
+<article class="exercise medium"><h3>44. sudo</h3><p>השתמש ב־<code>sudo -l</code> כדי לראות הרשאות. הסבר למה לא עובדים כ־root כברירת מחדל.</p></article>
+<article class="exercise hard"><h3>45. משתמש מעבדה</h3><p>לאחר snapshot, צור user זמני עם <code>adduser</code>, בדוק home/groups ואז מחק דרך כלי המערכת.</p></article>
+<article class="exercise hard"><h3>46. Shared Group</h3><p>צור group מעבדה, הוסף שני users ובנה directory משותפת עם permissions מתאימות.</p></article>
+<article class="exercise medium"><h3>47. chown ו־chgrp</h3><p>שנה owner/group לקובץ מעבדה ואמת עם <code>stat</code>. אל תפעל מחוץ למעבדה.</p></article>
+<article class="exercise medium"><h3>48. Hard Link</h3><p>צור hard link, השווה inode, ערוך דרך אחד ומחק שם אחד. הסבר למה הנתונים נשארים.</p></article>
+<article class="exercise medium"><h3>49. Symbolic Link</h3><p>צור symlink יחסי ומוחלט, הזז target וראה מתי הקישור נשבר.</p></article>
+<article class="exercise hard"><h3>50. setgid Directory</h3><p>ב־shared lab directory הפעל setgid והוכח שקבצים חדשים יורשים group. הסבר sticky bit רעיונית.</p></article>
+<section class="gate"><h3>שער מעבר 3</h3><p class="check">עליך להסביר 640 ו־750 בלי לנחש, ולהבדיל בין file permissions, directory permissions, ownership ו־group membership.</p></section>
+
+<h2 id="l4">רמה 4 — Processes, Signals, Logs ו־systemd: 51–65</h2>
+<article class="exercise hard"><h3>51. Process Snapshot</h3><p>השווה <code>ps</code>,‏ <code>ps aux</code> ו־<code>ps -ef</code>; זהה PID, PPID, user ו־command.</p></article>
+<article class="exercise hard"><h3>52. Process Tree</h3><p>השתמש ב־<code>pstree</code> וחקור parent/child של shell ופקודה שהרצת.</p></article>
+<article class="exercise hard"><h3>53. top</h3><p>מצא processes לפי CPU/memory, החלף sorting וצא בלי להרוג דבר. נסה <code>htop</code> אם מותקן.</p></article>
+<article class="exercise hard"><h3>54. Background Job</h3><p>הרץ <code>sleep</code> ברקע, בדוק <code>jobs</code>, העבר ל־foreground ועצור/המשך.</p></article>
+<article class="exercise hard"><h3>55. Signals</h3><p>שלח SIGTERM לתהליך ניסוי ורק אחר כך SIGKILL לתהליך חדש. הסבר את ההבדל.</p></article>
+<article class="exercise hard"><h3>56. nice ו־renice</h3><p>הרץ CPU demo קצר בעדיפות שונה. הסבר priority ולא “הגבלת CPU”.</p></article>
+<article class="exercise hard"><h3>57. Open Files</h3><p>מצא files ו־sockets פתוחים של process עם <code>lsof</code>.</p></article>
+<article class="exercise hard"><h3>58. /proc</h3><p>בחר PID שלך וחקור cmdline, status, fd ו־environ בזהירות.</p></article>
+<article class="exercise hard"><h3>59. Exit Codes</h3><p>הרץ פקודה מצליחה ונכשלת ובדוק <code>$?</code>. חבר עם <code>&amp;&amp;</code> ו־<code>||</code>.</p></article>
+<article class="exercise hard"><h3>60. journalctl</h3><p>הצג logs מה־boot הנוכחי, לפי unit, לפי priority ובטווח זמן.</p></article>
+<article class="exercise hard"><h3>61. systemctl Inspect</h3><p>בדוק status, is-active ו־is-enabled של service קיים. אל תשנה אותו עדיין.</p></article>
+<article class="exercise hard"><h3>62. Service Lifecycle</h3><p>על service מעבדה בלבד תרגל start/stop/restart/reload והסבר את ההבדלים.</p></article>
+<article class="exercise hard"><h3>63. Unit File בסיסי</h3><p>צור script בטוח שמדפיס heartbeat ו־user unit שמריץ אותו. בדוק logs ו־restart policy.</p></article>
+<article class="exercise hard"><h3>64. Failure Investigation</h3><p>הכנס path שגוי ל־unit המעבדה, חקור status/journal, תקן ו־daemon-reload.</p></article>
+<article class="exercise hard"><h3>65. Graceful Shutdown</h3><p>כתוב Python/Bash service שתופס SIGTERM, מסיים עבודה ומדפיס shutdown log.</p></article>
+
+<h2 id="l5">רמה 5 — Packages, Environment ו־Shell: 66–75</h2>
+<article class="exercise hard"><h3>66. apt Update מול Upgrade</h3><p>הסבר מה כל אחת עושה לפני הרצה. הצג packages שניתנים לשדרוג בלי לשנות מערכת.</p></article>
+<article class="exercise hard"><h3>67. Package Ownership</h3><p>מצא איזו package סיפקה binary קיים והצג את רשימת הקבצים שלה.</p></article>
+<article class="exercise hard"><h3>68. Install/Remove Lab Tool</h3><p>לאחר snapshot, התקן כלי קטן, אמת version, הסר והסבר remove מול purge.</p></article>
+<article class="exercise hard"><h3>69. Environment Variables</h3><p>צור variable מקומי, export אותו וראה אותו ב־child shell. הסבר inheritance חד־כיווני.</p></article>
+<article class="exercise hard"><h3>70. PATH</h3><p>הוסף directory מעבדה זמנית ל־PATH והרץ script ללא path. אל תדרוס את PATH הקיים.</p></article>
+<article class="exercise hard"><h3>71. Shell Startup</h3><p>זהה login מול interactive shell וקבצי startup הרלוונטיים ב־Ubuntu.</p></article>
+<article class="exercise hard"><h3>72. Aliases ו־Functions</h3><p>צור alias תצוגה ו־shell function שמקבלת argument. הסבר מתי script עדיף.</p></article>
+<article class="exercise hard"><h3>73. Command History</h3><p>חפש history, השתמש ב־reverse search והסבר למה אסור להקליד secrets בפקודה.</p></article>
+<article class="exercise hard"><h3>74. Shell Expansion</h3><p>הדגם variable, command, arithmetic, brace, tilde ו־glob expansion ואת סדר ההשפעה של quoting.</p></article>
+<article class="exercise hard"><h3>75. Cron</h3><p>צור job מעבדה שכותב timestamp לקובץ כל כמה דקות, עם absolute paths ו־redirect ל־log; לאחר הבדיקה הסר אותו.</p></article>
+
+<h2 id="l6">רמה 6 — Storage ו־Filesystem: 76–82</h2>
+<article class="exercise prod"><h3>76. Disk Usage</h3><p>השווה <code>df -h</code> ו־<code>du -sh</code>. הסבר filesystem free space מול directory usage.</p></article>
+<article class="exercise prod"><h3>77. מי תופס מקום?</h3><p>מצא את חמש התיקיות הגדולות בתוך המעבדה בלבד עם <code>du</code> ו־sort.</p></article>
+<article class="exercise prod"><h3>78. Inodes</h3><p>בדוק <code>df -i</code> והסבר כיצד filesystem יכול להיגמר מ־inodes גם כשיש bytes פנויים.</p></article>
+<article class="exercise prod"><h3>79. lsblk ו־blkid</h3><p>מפה block devices, partitions, filesystem types ו־mount points ללא שינוי.</p></article>
+<article class="exercise prod"><h3>80. mount</h3><p>צפה mounts קיימים והסבר device, mount point ו־filesystem. אל תערוך <code>/etc/fstab</code>.</p></article>
+<article class="exercise prod"><h3>81. Archive</h3><p>צור tar archive, הצג תוכן ללא extraction, חלץ לתיקיית יעד והשווה gzip מול archive.</p></article>
+<article class="exercise prod"><h3>82. Deleted but Open</h3><p>פתח file בתהליך ניסוי, מחק את השם ומצא אותו ב־<code>lsof +L1</code>. הסבר מדוע המקום טרם שוחרר.</p></article>
+
+<h2 id="l7">רמה 7 — Networking ו־SSH: 83–95</h2>
+<article class="exercise prod"><h3>83. Interfaces ו־Addresses</h3><p>השתמש ב־<code>ip addr</code> וזהה loopback, interface, IPv4, prefix ו־state.</p></article>
+<article class="exercise prod"><h3>84. Routing Table</h3><p>הצג <code>ip route</code>, זהה default gateway והסבר כיצד route נבחר לפי longest prefix.</p></article>
+<article class="exercise prod"><h3>85. Neighbor Table</h3><p>הצג <code>ip neigh</code> והסבר את הקשר בין IP ל־MAC ברשת המקומית.</p></article>
+<article class="exercise prod"><h3>86. ping נכון</h3><p>בדוק loopback, gateway ו־host ציבורי עם מספר packets מוגבל. הסבר מה ping מוכיח ומה לא.</p></article>
+<article class="exercise prod"><h3>87. DNS</h3><p>השתמש ב־<code>dig</code> או <code>resolvectl</code> ל־A, AAAA ו־NS. השווה שם ל־IP.</p></article>
+<article class="exercise prod"><h3>88. Listening Sockets</h3><p>השתמש ב־<code>ss -lntup</code> וזהה protocol, local address, port ו־process.</p></article>
+<article class="exercise prod"><h3>89. HTTP עם curl</h3><p>בדוק headers, status, redirects, timing ו־JSON endpoint. השתמש ב־example.com או שירות שלך.</p></article>
+<article class="exercise prod"><h3>90. Local HTTP Server</h3><p>הרץ server מקומי זמני, מצא את socket עם ss, פנה אליו ב־curl וסגור בצורה מסודרת.</p></article>
+<article class="exercise prod"><h3>91. netcat מקומי</h3><p>צור listener ו־client על localhost בשני terminals והעבר טקסט. אל תסרוק hosts חיצוניים.</p></article>
+<article class="exercise prod"><h3>92. Route Trace</h3><p>השתמש ב־<code>tracepath</code> או traceroute ליעד מורשה והסבר hops ו־timeouts.</p></article>
+<article class="exercise prod"><h3>93. SSH Keys</h3><p>צור key ייעודי למעבדה עם passphrase, בדוק permissions והסבר private מול public key. אל תפרסם private key.</p></article>
+<article class="exercise prod"><h3>94. SSH ל־VM</h3><p>התחבר ל־Ubuntu VM ממחשב הבית, אמת host key והשתמש ב־verbose mode ל־diagnosis.</p></article>
+<article class="exercise prod"><h3>95. SCP ו־SFTP</h3><p>העבר קובץ מעבדה בשני הכלים, אמת checksum לפני/אחרי והסבר interactive מול copy command.</p></article>
+
+<h2 id="l8">רמה 8 — Bash Automation: 96–100</h2>
+<article class="exercise prod"><h3>96. Script בטוח ראשון</h3><p>Shebang, <code>set -euo pipefail</code>, arguments, usage ו־exit codes. הסבר כל option ולא רק העתק.</p></article>
+<article class="exercise prod"><h3>97. Backup Script</h3><p>Archive תיקיית מעבדה לשם עם timestamp, אמת destination והסר backups ישנים לפי retention בטוח.</p></article>
+<article class="exercise prod"><h3>98. Health Check</h3><p>בדוק process, port ו־HTTP status והחזר exit code מתאים. הוסף timeout ו־log.</p></article>
+<article class="exercise prod"><h3>99. Log Analyzer</h3><p>קבל path כ־argument, אמת file, חשב errors/top paths והפק report. טפל ב־spaces.</p></article>
+<article class="exercise prod"><h3>100. Deployment Script מקומי</h3><p>Validate config, copy artifact, restart user service, health check ו־rollback לגרסה קודמת אם נכשל.</p></article>
+<section class="gate"><h3>שער סיום</h3><p class="check">אתה מוכן לעבוד על שרת מעבדה עצמאי כאשר אתה מסוגל לאתר בעיה לפי שכבות: process → logs → socket → route/DNS → permissions/storage, בלי להריץ פקודות אקראיות.</p></section>
+
+<h2 id="labs">10 מעבדות מסכמות</h2>
+<section class="lab"><h3>1. Filesystem Scavenger Hunt</h3><p>בנה עץ של 50 קבצים, מצא לפי שם/זמן/גודל, הפק archive ודוח checksums.</p></section>
+<section class="lab"><h3>2. Permissions Lab</h3><p>שני users ו־group חולקים project; רק owner יכול למחוק, הקבוצה יכולה לערוך וקבצים יורשים group.</p></section>
+<section class="lab"><h3>3. Log Investigation</h3><p>קבל logs עם failures, הפק timeline, top errors ו־root-cause hypothesis באמצעות grep/sed/awk.</p></section>
+<section class="lab"><h3>4. Process Incident</h3><p>Process צורך CPU, אחר מחזיק deleted file ושלישי לא מגיב ל־TERM. חקור וטפל לפי escalation מסודר.</p></section>
+<section class="lab"><h3>5. systemd Service</h3><p>פרוס אפליקציית Python קטנה כ־user service עם environment, restart, logs ו־graceful shutdown.</p></section>
+<section class="lab"><h3>6. Disk Full Simulation</h3><p>רק בתוך virtual disk/safe lab, חקור bytes מול inodes, deleted-open file ו־log cleanup. השתמש ב־snapshot.</p></section>
+<section class="lab"><h3>7. Network Troubleshooting</h3><p>אבחן שלושה תרחישים: DNS שבור, service מאזין רק ל־localhost, ו־port לא מאזין. כתוב decision tree.</p></section>
+<section class="lab"><h3>8. SSH Hardening Lab</h3><p>ב־snapshot ועם console fallback: key auth, user לא־root, permissions ו־logs. אל תנעל password לפני שבדקת session נוסף.</p></section>
+<section class="lab"><h3>9. Backup and Restore</h3><p>Backup של config+data, checksum, retention ו־restore לתיקייה חדשה. Backup נחשב רק אחרי restore test.</p></section>
+<section class="lab"><h3>10. Production Debugging Capstone</h3><p>Service לא זמין: בדוק systemd, journal, process, permissions, env, port, route, DNS, disk ו־resource pressure; כתוב RCA ופעולת מניעה.</p></section>
+<div class="rules"><h3>קצב מומלץ</h3><p>3–4 תרגילים ביום מתאימים לרמות 1–3. מרמה 4, עשה 1–2 תרגילים עמוקים. מעבדה מסכמת יכולה לקחת 2–4 sessions. לכל תרגיל רשום: הפקודה, מה ציפית, מה קרה ולמה.</p></div>
+</body></html>
