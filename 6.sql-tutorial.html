@@ -363,6 +363,45 @@ LEFT JOIN employees m ON e.manager_id = m.id;</code></pre>
 <p><strong>מודל מנטלי:</strong> חשוב על INNER JOIN כחיתוך (intersection) של שתי הקבוצות, ו-LEFT JOIN כ"כל השמאל, עם תוספת מהימין אם יש". רוב באגי ה-JOIN הם בלבול בין השניים — או שכפול שורות כי תנאי ה-<code>ON</code> אינו ייחודי (JOIN על עמודה שאינה unique משכפל שורות — היזהר).</p>
 </blockquote>
 
+<h3>הטבלה השמאלית, Row Flow ו־Cardinality</h3>
+<p>הטבלה השמאלית אינה הטבלה "החשובה בעסק" אלא מה שמופיע משמאל למילת <code>JOIN</code> בתוצאה שנבנתה עד אותו רגע. ב־<code>FROM users u LEFT JOIN orders o</code>,‏ users היא הצד הנשמר. אם user אחת מתאימה לשלוש orders, מתקבלות שלוש שורות — JOIN אינו "מוסיף רשימה" לשורה אלא יוצר row לכל זוג מתאים.</p>
+<pre><code>users                 orders
+id | name             id  | user_id
+1  | Dana             101 | 1
+2  | Eli              102 | 1
+
+-- LEFT JOIN מחזיר:
+Dana | 101
+Dana | 102
+Eli  | NULL</code></pre>
+<p>לפני כל JOIN אמור בקול: <strong>מה מייצגת שורה אחת לפני החיבור, מה מייצגת שורה אחריו, והאם הקשר הוא 1:1,‏ 1:N או N:M?</strong> זו הדרך לזהות aggregate מנופח לפני שהוא מגיע ל־Production.</p>
+
+<h3>תנאי ב־ON מול תנאי ב־WHERE</h3>
+<pre><code>-- שומר את כל המשתמשים; מצרף רק paid orders
+FROM users u
+LEFT JOIN orders o
+  ON o.user_id = u.id AND o.status = 'paid'
+
+-- מסנן אחרי ה-JOIN; משתמש בלי paid order נופל כי NULL אינו 'paid'
+FROM users u
+LEFT JOIN orders o ON o.user_id = u.id
+WHERE o.status = 'paid'</code></pre>
+<p>ב־INNER JOIN לרוב אפשר להזיז predicate בין ON ל־WHERE בלי לשנות את התוצאה הלוגית. ב־OUTER JOIN המיקום קובע אם השורה הלא־תואמת נשמרת.</p>
+
+<h3>Join Explosion — שתי טבלאות Child</h3>
+<p>אם order אחת כוללת 3 items ו־2 payments, חיבור שתיהן ישירות מחזיר 6 שורות. SUM של items או payments ייספר כמה פעמים. הפתרון הוא לעיתים pre-aggregation:</p>
+<pre><code>WITH item_totals AS (
+  SELECT order_id, SUM(quantity * unit_price) AS item_total
+  FROM order_items GROUP BY order_id
+), payment_totals AS (
+  SELECT order_id, SUM(amount) FILTER (WHERE status='paid') AS paid_total
+  FROM payments GROUP BY order_id
+)
+SELECT o.id, i.item_total, p.paid_total
+FROM orders o
+LEFT JOIN item_totals i ON i.order_id = o.id
+LEFT JOIN payment_totals p ON p.order_id = o.id;</code></pre>
+
 <hr>
 
 <h2 id="s8">8. Subqueries ו-EXISTS</h2>
@@ -397,6 +436,29 @@ WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);</code></pre>
 <blockquote>
 <p><strong>עצה:</strong> הרבה subqueries ניתנות לכתיבה גם כ-JOIN, ולרוב ה-planner ממילא ממיר ביניהן. בחר לפי קריאוּת. אבל <code>NOT EXISTS</code> עדיף כמעט תמיד על <code>NOT IN</code> כשיכולים להיות NULLs — זה מונע את הבאג השקט מפרק 4.</p>
 </blockquote>
+
+<h3>ארבע צורות תוצאה של Subquery</h3>
+<ul><li><strong>Scalar</strong> — ערך יחיד; יותר משורה אחת היא שגיאה.</li><li><strong>Single-column set</strong> — עמודה עם שורות רבות, למשל עבור IN.</li><li><strong>Row</strong> — כמה עמודות בשורה אחת, להשוואת row constructors.</li><li><strong>Existence</strong> — ל־EXISTS אכפת רק אם נמצאה שורה, לא אילו עמודות נבחרו.</li></ul>
+<p>Subquery לא־מתואמת נוחה לחשיבה כאילו מחשבים את הסט/ערך ואז מפעילים את השאילתה החיצונית. זו אינה הבטחה על סדר פיזי: PostgreSQL יכול להפוך אותה ל־join, cache פנימי או plan אחר.</p>
+
+<h3>Correlated Subquery — תלות בשורה החיצונית</h3>
+<pre><code>SELECT p.id, p.name
+FROM products p
+WHERE p.price &gt; (
+  SELECT AVG(p2.price)
+  FROM products p2
+  WHERE p2.category_id = p.category_id
+);</code></pre>
+<p>לוגית, הממוצע תלוי ב־category של product החיצוני. אין להסיק אוטומטית שה־DB "מריץ query מלאה N פעמים"; planner עשוי לשכתב. בודקים ב־EXPLAIN, ובמקרה הצורך מחשבים averages פעם אחת ב־CTE ומבצעים JOIN.</p>
+
+<h3>המלכודת של NOT IN</h3>
+<pre><code>-- אם subquery מחזירה אפילו NULL אחד, ההשוואה יכולה להפוך ל-UNKNOWN
+WHERE p.id NOT IN (SELECT product_id FROM order_items)
+
+-- ניסוח בטוח וברור ל-anti relationship
+WHERE NOT EXISTS (
+  SELECT 1 FROM order_items oi WHERE oi.product_id = p.id
+)</code></pre>
 
 <hr>
 
@@ -436,6 +498,14 @@ JOIN high_spenders hs ON u.id = hs.user_id
 ORDER BY hs.spent DESC;</code></pre>
 
 <p>אפשר לשרשר כמה CTEs, וכל אחד יכול להתייחס לקודמים — זה הופך שאילתה של 50 שורות מקוננות למספר שלבים ברורים. לקריאוּת ותחזוקה זה שדרוג ענק.</p>
+
+<h3>CTE אינו בהכרח Temporary Table</h3>
+<p>CTE מגדיר תוצאת ביניים לוגית בתוך statement אחד. הוא אינו נשמר בין שאילתות ואינו מקבל index משלו. בגרסאות PostgreSQL מודרניות, CTE לא־רקורסיבי וללא side effects יכול לעבור <strong>inlining</strong>, כך שה־planner מאחד אותו עם השאילתה החיצונית. אפשר להשתמש ב־<code>MATERIALIZED</code> או <code>NOT MATERIALIZED</code> כשיש סיבה מדודה, אבל לא כהרגל.</p>
+<pre><code>WITH expensive AS MATERIALIZED (
+  SELECT ...
+)
+SELECT ... FROM expensive;</code></pre>
+<p>Materialization יכולה למנוע חישוב חוזר, אך גם למנוע predicate pushdown וליצור intermediate result גדול. הבחירה היא trade-off שנבדק ב־EXPLAIN.</p>
 
 <h3>Recursive CTE — הנושא המתקדם</h3>
 <p>זה הכלי לשאילתות היררכיות/גרפיות: עץ ארגוני, קטגוריות מקוננות, "כל הצאצאים". ה-CTE קורא לעצמו עד שאין עוד שורות:</p>
@@ -521,6 +591,34 @@ FROM orders;</code></pre>
 
 <p><code>LAG</code>/<code>LEAD</code> מאפשרות לגשת לשורה קודמת/הבאה בלי self-join — מושלם לחישוב "כמה גדל לעומת אתמול", growth rates, וכו'. זה הופך ניתוחים שהיו דורשים קוד למספר שורות SQL.</p>
 
+<h3>Window Function אינה GROUP BY</h3>
+<p><code>GROUP BY</code> מכווץ כמה שורות לשורה אחת לכל קבוצה. Window function משאירה כל שורה ומחשבת ערך ביחס ל־window שלה:</p>
+<pre><code>SELECT order_id, user_id, total,
+       SUM(total) OVER (PARTITION BY user_id) AS user_total,
+       ROW_NUMBER() OVER (
+         PARTITION BY user_id ORDER BY created_at DESC, order_id DESC
+       ) AS recency
+FROM orders;</code></pre>
+<p>שובר השוויון <code>order_id DESC</code> הופך את הסדר ל־deterministic אם לכמה הזמנות אותו timestamp.</p>
+
+<h3>Window Frame — המלכודת החשובה</h3>
+<pre><code>SUM(total) OVER (
+  ORDER BY created_at
+  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+)</code></pre>
+<p><code>PARTITION BY</code> קובע אילו שורות שייכות לקבוצה; <code>ORDER BY</code> קובע סדר; frame קובע אילו מהשורות סביב השורה הנוכחית משתתפות בחישוב. ברירת המחדל עם ORDER BY יכולה להתנהג כ־RANGE ולכלול peers עם אותו ערך ordering. לחישוב מצטבר לפי שורה מגדירים לעיתים <code>ROWS</code> במפורש.</p>
+
+<h3>לסנן לפי תוצאת Window</h3>
+<p>Window functions מחושבות אחרי WHERE, ולכן אי אפשר להשתמש ב־alias שלהן ישירות ב־WHERE של אותה רמה. עוטפים:</p>
+<pre><code>WITH ranked AS (
+  SELECT p.*,
+         ROW_NUMBER() OVER (
+           PARTITION BY category_id ORDER BY sales DESC, id
+         ) AS rn
+  FROM products p
+)
+SELECT * FROM ranked WHERE rn &lt;= 3;</code></pre>
+
 <blockquote>
 <p><strong>למה זה כל כך חזק:</strong> כל מה שכאן — ranking, top-N per group, running totals, period-over-period — היו בלי window functions דורשים subqueries מקוננות או משיכת הכל לאפליקציה ולולאה. window functions מעבירות את החישוב ל-DB, קרוב לנתונים, ובצורה קריאה. שווה להשקיע ולשלוט בהן.</p>
 </blockquote>
@@ -570,6 +668,65 @@ WHERE created_at > '2024'                  -- ❌ (דילג על העמודה ה
 </ul>
 <p>הכלל: אנדקס עמודות שמופיעות הרבה ב-<code>WHERE</code>, ב-<code>JOIN</code> (במיוחד FKs!), וב-<code>ORDER BY</code>. אל תאנדקס עמודות שכמעט לא מסננות (כמו boolean עם התפלגות 50/50). מדוד עם EXPLAIN (הפרק הבא) לפני ואחרי.</p>
 
+<h3>מה יש באמת בתוך B-tree?</h3>
+<p>B-tree אינו "עותק ממוין של הטבלה" אלא עץ של <strong>pages</strong> בגודל קבוע. עמודי ה־root וה־internal מכוונים לעמודי leaf; בעלים נשמרים ערכי המפתח והפניה לגרסת השורה ב־heap. העץ נשאר מאוזן, ולכן מספר הקפיצות גדל לאט מאוד גם כשהטבלה גדלה למיליוני שורות.</p>
+<ol>
+<li>PostgreSQL מתחיל ב־root page.</li>
+<li>בכל רמה הוא משווה את ערך החיפוש ובוחר child page.</li>
+<li>ב־leaf הוא מוצא entries מתאימים.</li>
+<li>ב־Index Scan רגיל הוא ניגש גם ל־heap כדי לקרוא את השורה ולבדוק visibility.</li>
+</ol>
+<p>זו הסיבה ש־index lookup אינו בחינם: אם query מחזירה חצי טבלה, אלפי קפיצות אקראיות מהאינדקס ל־heap עלולות להיות יקרות יותר מקריאה רציפה של הטבלה. לכן <strong>Seq Scan אינו כישלון אוטומטי</strong>; הוא לעיתים התוכנית הנכונה.</p>
+
+<h3>Selectivity ו־Cardinality — לפני שיוצרים Index</h3>
+<p><strong>Cardinality</strong> היא כמות הערכים השונים בעמודה. <strong>Selectivity</strong> מתארת איזה חלק מהטבלה צפוי לחזור מהתנאי. חיפוש email ייחודי הוא סלקטיבי מאוד; תנאי <code>is_active = true</code> שמחזיר 90% מהטבלה כמעט אינו מסנן.</p>
+<pre><code>-- סלקטיבי: צפויה שורה אחת
+SELECT * FROM users WHERE email = $1;
+
+-- לא סלקטיבי אם כמעט כולם active
+SELECT * FROM users WHERE is_active = true;</code></pre>
+<p>השאלה הנכונה אינה "האם יש WHERE?" אלא: <strong>כמה שורות יוחזרו, כמה רחבה כל שורה, האם צריך מיון, והאם הנתונים כבר נמצאים ב־cache?</strong></p>
+
+<h3>איך בוחרים סדר ב־Composite Index?</h3>
+<p>הכלל "העמודה הכי סלקטיבית ראשונה" הוא קיצור דרך בלבד ואינו תמיד נכון. מתחילים מה־workload:</p>
+<pre><code>SELECT id, created_at
+FROM orders
+WHERE user_id = $1 AND status = 'pending'
+ORDER BY created_at DESC
+LIMIT 20;</code></pre>
+<p>אינדקס אפשרי:</p>
+<pre><code>CREATE INDEX idx_orders_user_status_created
+ON orders (user_id, status, created_at DESC);</code></pre>
+<p><code>user_id</code> ו־<code>status</code> הם equality predicates, ולאחריהם <code>created_at</code> מספק את סדר התוצאה. כך ניתן למצוא את הטווח המתאים ולקרוא את 20 הרשומות הראשונות בלי Sort נפרד. אם ה־API מריץ גם <code>WHERE status = ...</code> בלי user_id, ייתכן שנדרש index אחר; האינדקס הקיים לא נבחר לפי רשימת עמודות "שימושיות", אלא לפי query patterns אמיתיים.</p>
+
+<h3>Range condition עוצר חלק מהניצול לסינון</h3>
+<pre><code>CREATE INDEX idx_orders_user_date_status
+ON orders (user_id, created_at, status);
+
+WHERE user_id = 7
+  AND created_at &gt;= now() - interval '30 days'
+  AND status = 'paid';</code></pre>
+<p>PostgreSQL יכול להשתמש ב־<code>user_id</code> ובטווח של <code>created_at</code> כדי לאתר אזור באינדקס. אחרי שנכנסנו לטווח, <code>status</code> שאחריו לרוב אינו מצמצם את גבולות הסריקה באותה יעילות ויכול להפוך ל־filter. לכן סדר העמודות צריך לשקף equality, range ו־ordering — לא רק selectivity.</p>
+
+<h3>Index Only Scan אינו אומר "לא ניגש לעולם לטבלה"</h3>
+<pre><code>CREATE INDEX idx_orders_user_created_cover
+ON orders (user_id, created_at DESC)
+INCLUDE (status, total);</code></pre>
+<p><code>INCLUDE</code> שומר payload בעלים אך אינו הופך אותו לחלק ממפתח החיפוש. אם כל העמודות שה־query צריכה נמצאות באינדקס, PostgreSQL <em>עשוי</em> לבחור Index Only Scan. עדיין עליו לדעת אם גרסת השורה גלויה ל־transaction. ה־<strong>visibility map</strong> מסמן pages שבהם כל tuples גלויים; אם page אינו מסומן, נדרשת heap fetch. לכן ב־EXPLAIN ANALYZE חשוב לבדוק <code>Heap Fetches</code>.</p>
+
+<h3>Indexes ו־Writes</h3>
+<p>כל index נוסף מוסיף עבודה ל־INSERT ול־DELETE, ולעיתים גם ל־UPDATE. ב־PostgreSQL, עדכון שאינו משנה עמודה מאונדקסת עשוי להשתמש ב־<strong>HOT update</strong> ולחסוך entries חדשים באינדקס, אם יש מקום ב־page. יותר מדי indexes מקטינים את הסיכוי לאופטימיזציות, מגדילים WAL, מאריכים vacuum ותופסים cache. לכן מוחקים index מיותר רק לאחר בדיקת שימוש, כפילויות ותלות של constraints.</p>
+
+<h3>מתי כל סוג Index מתאים?</h3>
+<table>
+<tr><th>סוג</th><th>מתאים ל־</th><th>לא לבחור אוטומטית כאשר</th></tr>
+<tr><td>B-tree</td><td>שוויון, טווח, ordering, prefix</td><td>מחפשים substring באמצע טקסט או containment ב־JSONB</td></tr>
+<tr><td>GIN</td><td>JSONB, arrays, full-text, membership</td><td>יש write-heavy workload בלי צורך אמיתי; הוא יקר יותר לעדכון</td></tr>
+<tr><td>GiST</td><td>טווחים, גאומטריה, nearest-neighbor בהתאם ל־operator class</td><td>חיפוש equality רגיל</td></tr>
+<tr><td>BRIN</td><td>טבלה עצומה שמסודרת פיזית לפי זמן/ערך</td><td>הערכים מפוזרים אקראית; BRIN מסכם ranges ולא מצביע לכל שורה</td></tr>
+<tr><td>Hash</td><td>equality בלבד</td><td>B-tree נותן equality וגם טווחים ואין סיבה מיוחדת לצמצם</td></tr>
+</table>
+
 <hr>
 
 <h2 id="s13">13. Query Planner ו-EXPLAIN</h2>
@@ -601,6 +758,49 @@ EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'a@x.com';
 <p><strong>הרגל של מפתח טוב:</strong> כששאילתה איטית, אל תנחש — הרץ <code>EXPLAIN ANALYZE</code>. הוא מראה לך בדיוק איפה הזמן הולך ואם האינדקסים בשימוש. זה ההבדל בין "הוספתי אינדקס ואני מקווה שעזר" ל"ראיתי Seq Scan, הוספתי אינדקס, ועכשיו זה Index Scan ופי 100 מהר יותר".</p>
 </blockquote>
 
+<h3>איך קוראים Execution Plan — מבפנים החוצה</h3>
+<p>Plan הוא עץ. כל node מבקש שורות מה־children שלו, ולכן מתחילים מהשורה המוזחת ביותר ועולים כלפי חוץ. לדוגמה:</p>
+<pre><code>Nested Loop  (actual time=0.040..4.900 rows=120 loops=1)
+  -&gt; Index Scan on users  (actual rows=10 loops=1)
+        Index Cond: (country = 'IL')
+  -&gt; Index Scan on orders (actual rows=12 loops=10)
+        Index Cond: (user_id = users.id)</code></pre>
+<p>ה־scan של orders רץ 10 פעמים — פעם לכל user. כדי להבין את העבודה הכוללת, מסתכלים על <code>rows × loops</code>: כאן כ־120 שורות. Nested Loop מצוין כשהצד החיצוני קטן ולצד הפנימי יש lookup יעיל; הוא עלול להיות אסון אם הצד החיצוני גדול והפנימי נסרק שוב ושוב.</p>
+
+<h3>Cost אינו זמן</h3>
+<p><code>cost=0.43..125.70</code> הוא ציון פנימי ביחידות יחסיות, לא milliseconds. המספר הראשון הוא startup cost והשני הוא total cost משוער. ה־planner משווה plans לפי cost שמבוסס על estimates והגדרות כמו עלות I/O ו־CPU. רק <code>EXPLAIN ANALYZE</code> מוסיף <code>actual time</code>, אבל הוא גם <strong>מריץ</strong> את השאילתה.</p>
+
+<blockquote><p><strong>זהירות:</strong> <code>EXPLAIN ANALYZE UPDATE/DELETE</code> מבצע את השינוי. בסביבת ניסוי אפשר לעטוף ב־<code>BEGIN</code> ואז <code>ROLLBACK</code>. ב־Production מתחילים ב־EXPLAIN רגיל או בודקים על replica/סביבה בטוחה.</p></blockquote>
+
+<h3>Buffer I/O — האם חיכינו לדיסק?</h3>
+<pre><code>EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+SELECT id, total
+FROM orders
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;</code></pre>
+<ul>
+<li><code>shared hit</code> — page נמצא ב־PostgreSQL buffer cache.</li>
+<li><code>shared read</code> — היה צורך לקרוא page מהאחסון.</li>
+<li><code>temp read/written</code> — sort/hash גלש לקבצים זמניים, לעיתים בגלל מעט <code>work_mem</code> או יותר מדי נתונים.</li>
+</ul>
+<p>Query יכולה להיות מהירה בהרצה השנייה כי הנתונים התחממו ב־cache. לכן משווים באופן עקבי ולא מסיקים ממדידה יחידה.</p>
+
+<h3>Estimated Rows מול Actual Rows</h3>
+<p>אם planner מעריך 10 שורות אך בפועל מקבל 100,000, הוא עלול לבחור Nested Loop במקום Hash Join או להקצות מעט מדי זיכרון. הסיבות האפשריות:</p>
+<ul><li>סטטיסטיקות ישנות — מריצים <code>ANALYZE</code> ובודקים autovacuum.</li><li>עמודות תלויות זו בזו אך planner מעריך אותן כאילו הן עצמאיות — לעיתים עוזרות extended statistics.</li><li>distribution skewed או ערך חריג.</li><li>ביטוי/פונקציה שהסטטיסטיקות הרגילות אינן מתארות היטב.</li></ul>
+
+<h3>אסטרטגיות JOIN פיזיות</h3>
+<table>
+<tr><th>אלגוריתם</th><th>מתי הוא מתאים</th><th>סימן לבעיה</th></tr>
+<tr><td>Nested Loop</td><td>מעט שורות חיצוניות ו־index lookup פנימי</td><td>child יקר עם loops עצום</td></tr>
+<tr><td>Hash Join</td><td>equality join על sets בינוניים/גדולים</td><td>hash batches או temp I/O רבים</td></tr>
+<tr><td>Merge Join</td><td>קלטים ממוינים ו־equality/range מתאים</td><td>Sort יקר רק כדי לאפשר את ה־join</td></tr>
+</table>
+
+<h3>תהליך מסודר לדיבוג Query איטית</h3>
+<ol><li>שמור את ה־SQL וה־parameters האמיתיים; אותו query עם ערכים שונים יכול לקבל selectivity שונה.</li><li>בדוק זמן כולל, rows returned וכמות הקריאות — אולי הבעיה היא N+1 ולא query יחידה.</li><li>הרץ <code>EXPLAIN (ANALYZE, BUFFERS)</code> בסביבה בטוחה.</li><li>קרא את העץ מלמטה, וחפש node עם זמן, rows×loops או buffers גדולים.</li><li>השווה estimate ל־actual ובדוק statistics.</li><li>תקן את הסיבה: query, index, schema, pagination או כמות נתונים. אל תכריח planner לפני שהבנת מדוע בחר כך.</li><li>מדוד שוב ובדוק גם את מחיר ה־writes וה־storage.</li></ol>
+
 <hr>
 
 <h2 id="s14">14. Transactions, ACID ו-Isolation Levels</h2>
@@ -618,7 +818,7 @@ COMMIT;                                                   -- מאשר הכל ב�
 <h3>ACID — ארבע ההבטחות</h3>
 <ul>
 <li><strong>Atomicity (אטומיות)</strong> — הכל או כלום. אין מצב ביניים.</li>
-<li><strong>Consistency (עקביות)</strong> — ה-DB עובר ממצב תקין למצב תקין; constraints נשמרים.</li>
+<li><strong>Consistency (עקביות)</strong> — transaction תקינה שומרת את כללי המערכת. ה־DB אוכף constraints שהוגדרו בו, אבל invariant עסקי שלא הוגדר ב־constraint או בלוגיקה transaction-ית לא נשמר מעצמו.</li>
 <li><strong>Isolation (בידוד)</strong> — transactions מקבילות לא דורסות זו את זו (ראה למטה).</li>
 <li><strong>Durability (עמידות)</strong> — אחרי COMMIT, המידע שמור גם אם יש קריסה/הפסקת חשמל.</li>
 </ul>
@@ -635,15 +835,81 @@ COMMIT;                                                   -- מאשר הכל ב�
 <tr><th>Isolation Level</th><th>Dirty</th><th>Non-repeatable</th><th>Phantom</th></tr>
 <tr><td>READ UNCOMMITTED</td><td>אפשרי</td><td>אפשרי</td><td>אפשרי</td></tr>
 <tr><td>READ COMMITTED</td><td>❌ נמנע</td><td>אפשרי</td><td>אפשרי</td></tr>
-<tr><td>REPEATABLE READ</td><td>❌</td><td>❌ נמנע</td><td>אפשרי*</td></tr>
+<tr><td>REPEATABLE READ</td><td>❌</td><td>❌ נמנע</td><td>❌ נמנע ב־PostgreSQL snapshot isolation</td></tr>
 <tr><td>SERIALIZABLE</td><td>❌</td><td>❌</td><td>❌ נמנע</td></tr>
 </table>
 
-<p>ברירת המחדל ב-Postgres היא <strong>READ COMMITTED</strong>. (הערה: ב-Postgres, REPEATABLE READ מונע גם phantoms בפועל, בזכות מימוש MVCC). ככל שעולים ברמה — יותר בטוח אבל יותר locks והתנגשויות. בוחרים לפי הצורך: לרוב READ COMMITTED מספיק; SERIALIZABLE לפעולות פיננסיות קריטיות.</p>
+<p>ברירת המחדל ב-Postgres היא <strong>READ COMMITTED</strong>. PostgreSQL ממפה <code>READ UNCOMMITTED</code> לאותה התנהגות של READ COMMITTED ואינו מאפשר dirty reads. ב־PostgreSQL, REPEATABLE READ מונע גם phantom reads רגילים בזכות snapshot isolation. רמה חזקה יותר אינה פשוט "יותר locks": PostgreSQL נשען במידה רבה על MVCC, וב־SERIALIZABLE משתמש גם ב־predicate-style conflict tracking ועלול לבטל transaction עם serialization failure. היישום חייב לדעת לבצע retry.</p>
 
 <pre><code>BEGIN ISOLATION LEVEL SERIALIZABLE;
   -- ...
 COMMIT;</code></pre>
+
+<h3>MVCC — איך קוראים וכותבים במקביל?</h3>
+<p><strong>MVCC (Multi-Version Concurrency Control)</strong> הוא המנגנון שמאפשר לקוראים ולכותבים לעבוד במקביל בלי לנעול כל SELECT. במקום לדרוס שורה במקום, UPDATE יוצר <strong>גרסת tuple חדשה</strong> ומסמן את הישנה ככזו שהוחלפה.</p>
+<p>ברמה רעיונית, לכל tuple יש מידע על transactions:</p>
+<ul><li><code>xmin</code> — transaction שיצרה את הגרסה.</li><li><code>xmax</code> — transaction שמחקה או החליפה אותה, אם קיימת.</li></ul>
+<p>Transaction קוראת לפי <strong>snapshot</strong>: תמונה לוגית של אילו transactions כבר committed, אילו עדיין פעילות ואילו גרסאות שורות מותר לה לראות. לכן reader יכול להמשיך לראות את הגרסה הישנה בזמן writer יוצר חדשה.</p>
+
+<pre><code>-- הערך ההתחלתי: stock = 10
+
+Transaction A                    Transaction B
+BEGIN;                           BEGIN;
+SELECT stock; -- רואה 10         UPDATE ... SET stock = 9;
+                                  COMMIT;
+SELECT stock; -- תלוי isolation
+COMMIT;</code></pre>
+<ul>
+<li>ב־READ COMMITTED כל statement מקבל snapshot חדש, ולכן ה־SELECT השני של A יכול לראות 9.</li>
+<li>ב־REPEATABLE READ ה־transaction שומרת snapshot עקבי, ולכן A ממשיכה לראות 10 בתוך אותה transaction.</li>
+</ul>
+
+<h3>למה צריך VACUUM?</h3>
+<p>הגרסאות הישנות אינן יכולות להימחק מיד: transaction ותיקה אולי עדיין רואה אותן. לאחר שאף snapshot אינו זקוק להן, <code>VACUUM</code> מסמן את המקום לשימוש חוזר ומעדכן visibility information. Transaction שנשארת פתוחה זמן רב יכולה למנוע ניקוי, ליצור table/index bloat ולהקשות על autovacuum. לכן ב־Backend חשוב להימנע מ־idle transactions ולשמור transaction קצרה.</p>
+
+<h3>READ COMMITTED — Snapshot לכל Statement</h3>
+<p>זו ברירת המחדל ומתאימה לרוב פעולות CRUD, אבל קריאה ואז כתיבה בקוד עלולות ליצור race:</p>
+<pre><code>-- A ו-B קוראות stock=1
+SELECT stock FROM products WHERE id = 7;
+-- שתיהן מחליטות בקוד שאפשר לקנות
+UPDATE products SET stock = 0 WHERE id = 7;
+-- שתי ההזמנות עלולות להצליח לוגית למרות שהיה פריט אחד.</code></pre>
+<p>הפתרון המועדף כאשר אפשר הוא statement אטומי שמבקש מה־DB לבדוק ולשנות יחד:</p>
+<pre><code>UPDATE products
+SET stock = stock - 1
+WHERE id = $1 AND stock &gt;= 1
+RETURNING id, stock;</code></pre>
+<p>אם לא חזרה שורה, אין מלאי. אין חלון זמן בין check ל־act. זה לרוב פשוט ומהיר יותר מ־SELECT ואז lock.</p>
+
+<h3>REPEATABLE READ — Snapshot אחד ו־Serialization Failure אפשרי</h3>
+<p>כל הקריאות רואות תמונה עקבית מתחילת ה־transaction, אבל זה לא אומר שכל business invariant מוגן. אם transaction מנסה לעדכן שורה ששונתה מאז ה־snapshot, PostgreSQL עשוי לבטל אותה עם <code>could not serialize access due to concurrent update</code>. צריך לבטל את כל ה־transaction ולנסות מחדש, לא רק להריץ שוב את statement האחרונה.</p>
+
+<h3>SERIALIZABLE — כאילו transactions רצו אחת אחרי השנייה</h3>
+<p>זו ההבטחה החזקה: התוצאה חייבת להתאים לסדר סדרתי חוקי כלשהו. PostgreSQL משתמש ב־Serializable Snapshot Isolation ומזהה דפוסי תלות מסוכנים. הוא לא בהכרח חוסם מראש; לעיתים הוא מאפשר עבודה מקבילית ואז מבטל transaction אחת כדי למנוע תוצאה שאינה serializable.</p>
+<pre><code>retry transaction up to a small bounded limit:
+  BEGIN ISOLATION LEVEL SERIALIZABLE
+  perform all reads and writes
+  COMMIT
+if serialization_failure:
+  rollback, backoff with jitter, retry the whole unit</code></pre>
+<p>Retry חייב להיות בטוח: אל תשלח email, חיוב חיצוני או message בלתי־הפיך באמצע transaction שניתן להריץ מחדש. לפעולות חיצוניות משתמשים בדפוסים כמו transactional outbox ו־idempotency key.</p>
+
+<h3>Anomalies שחשוב להכיר</h3>
+<table>
+<tr><th>Anomaly</th><th>מה קורה</th><th>פתרון אפשרי</th></tr>
+<tr><td>Lost Update</td><td>שני workers מחשבים ערך מאותה גרסה ואחד דורס את השני</td><td>atomic UPDATE, row lock או optimistic version check</td></tr>
+<tr><td>Non-repeatable Read</td><td>אותה שורה משתנה בין שתי קריאות</td><td>REPEATABLE READ אם נדרש snapshot קבוע</td></tr>
+<tr><td>Phantom</td><td>predicate מחזיר סט שונה בגלל INSERT/DELETE מקביל</td><td>ב־PostgreSQL RR נותן snapshot; invariants מורכבים עשויים לדרוש Serializable</td></tr>
+<tr><td>Write Skew</td><td>שתי transactions קוראות כמה שורות וכותבות שורות שונות, וביחד שוברות invariant</td><td>SERIALIZABLE, explicit locking של משאב משותף או modeling אחר</td></tr>
+</table>
+
+<h3>Optimistic Concurrency Control</h3>
+<p>במקום להחזיק lock בזמן שהאפליקציה חושבת, מוסיפים <code>version</code>:</p>
+<pre><code>UPDATE documents
+SET body = $1, version = version + 1
+WHERE id = $2 AND version = $3
+RETURNING version;</code></pre>
+<p>אפס שורות אומר שמישהו שינה בינתיים. זה מתאים להתנגשויות נדירות ולעריכה אנושית. בהתנגשויות תכופות, retries רבים עלולים להיות יקרים ואז pessimistic locking או statement אטומי עשויים להתאים יותר.</p>
 
 <h3>Locking ו-Deadlocks</h3>
 <p>כדי לאכוף בידוד, ה-DB נועל שורות. <code>SELECT ... FOR UPDATE</code> נועל שורות שאתה עומד לעדכן, כדי שאף אחד אחר לא ייגע בהן עד ה-COMMIT:</p>
@@ -653,6 +919,52 @@ COMMIT;</code></pre>
 COMMIT;</code></pre>
 
 <p><strong>Deadlock</strong> קורה כששתי transactions מחכות זו לזו: A נעל שורה 1 ורוצה את 2, B נעל 2 ורוצה את 1 — תקיעה הדדית. ה-DB מזהה את זה ומבטל אחת מהן אוטומטית (מחזיר שגיאה). ההגנה: <strong>תמיד נעל משאבים באותו סדר</strong> בכל הקוד (למשל תמיד לפי id עולה), וזה מונע את מעגל ההמתנה.</p>
+
+<h3>איזה Locks קיימים בפועל?</h3>
+<p>כל statement נוטל גם table-level lock mode, אך השם "table lock" לא אומר בהכרח שכל גישה נחסמת. לדוגמה UPDATE לוקח mode שמאפשר SELECT רגיל אך מתנגש עם פעולות DDL מסוימות. בנוסף קיימים row-level locks לשורות שמשנים או נועלים במפורש.</p>
+<table>
+<tr><th>פקודה</th><th>כוונה</th></tr>
+<tr><td><code>FOR UPDATE</code></td><td>השורה צפויה להתעדכן/להימחק; החזקת lock חזקה עד סוף transaction</td></tr>
+<tr><td><code>FOR NO KEY UPDATE</code></td><td>עדכון שאינו משנה key רלוונטי; חלש מעט יותר</td></tr>
+<tr><td><code>FOR SHARE</code></td><td>הגנה משותפת חזקה יותר לקריאה תלויה</td></tr>
+<tr><td><code>FOR KEY SHARE</code></td><td>מגן key מפני מחיקה/שינוי שפוגע ב־FK, תוך מתן concurrency רחבה יותר</td></tr>
+</table>
+
+<h3>NOWAIT ו־SKIP LOCKED</h3>
+<pre><code>-- נכשל מיד במקום לחכות
+SELECT * FROM jobs WHERE id = $1 FOR UPDATE NOWAIT;
+
+-- workers לוקחים jobs פנויים ומדלגים על נעולים
+SELECT id
+FROM jobs
+WHERE status = 'pending'
+ORDER BY created_at
+FOR UPDATE SKIP LOCKED
+LIMIT 10;</code></pre>
+<p><code>SKIP LOCKED</code> שימושי ל־queue workers, אך אינו מתאים למסך משתמש שדורש תמונה מלאה: הוא מסתיר זמנית שורות נעולות ולכן התוצאה אינה snapshot עסקי מלא.</p>
+
+<h3>Deadlock — Timeline מלא</h3>
+<pre><code>Transaction A                         Transaction B
+BEGIN;                                BEGIN;
+UPDATE accounts WHERE id = 1;         UPDATE accounts WHERE id = 2;
+-- A מחזיקה lock על 1                -- B מחזיקה lock על 2
+UPDATE accounts WHERE id = 2;         UPDATE accounts WHERE id = 1;
+-- A מחכה ל-B                         -- B מחכה ל-A: cycle</code></pre>
+<p>PostgreSQL ממתין לפי <code>deadlock_timeout</code>, בודק wait graph, מזהה cycle ומבטל transaction אחת. השנייה ממשיכה. גם עם תכנון טוב deadlock יכול לקרות, ולכן Backend צריך:</p>
+<ol><li>לנעול משאבים בסדר עקבי.</li><li>לשמור transactions קצרות ולא לבצע network calls בתוכן.</li><li>להחזיק indexes מתאימים כדי שה־UPDATE לא יסרוק וינעל עבודה מיותרת.</li><li>לטפל ב־deadlock/serialization error ככשל transient ולבצע retry bounded עם backoff.</li></ol>
+
+<h3>Blocking אינו Deadlock</h3>
+<p>אם A מחזיקה lock ו־B ממתינה לה, אך A יכולה להתקדם ולבצע COMMIT, זו חסימה רגילה. Deadlock דורש מעגל המתנה. לא פותרים כל blocking ב־kill; קודם בודקים מי blocker, כמה זמן transaction פתוחה, ומה הקוד שמחזיק אותה.</p>
+
+<h3>גבולות Transaction נכונים ב־Backend</h3>
+<ul>
+<li>הכנס ל־transaction רק פעולות DB שחייבות להיות atomic.</li>
+<li>אל תפתח transaction לפני validation שאינו תלוי ב־DB.</li>
+<li>אל תקרא API חיצוני כאשר locks מוחזקים.</li>
+<li>השתמש ב־constraint כהגנה סופית: UNIQUE למניעת כפילות, CHECK לערכים ו־FK לקשרים.</li>
+<li>הגדר <code>lock_timeout</code> ו־<code>statement_timeout</code> מתאימים במקום להמתין ללא גבול.</li>
+<li>לאחר שגיאה בתוך PostgreSQL transaction, היא במצב aborted עד <code>ROLLBACK</code> או rollback ל־savepoint.</li>
+</ul>
 
 <blockquote>
 <p><strong>קשר ל-NestJS:</strong> TypeORM/Prisma עוטפים transactions ב-API נוח (<code>dataSource.transaction(...)</code>). אבל ההבנה של isolation levels ו-deadlocks היא שלך — ה-ORM לא יבחר בשבילך את רמת הבידוד הנכונה או ימנע deadlock מעיצוב גרוע. באגי concurrency הם מהקשים ביותר לדבג, אז שווה להבין אותם מראש.</p>
