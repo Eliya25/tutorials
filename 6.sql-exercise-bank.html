@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="120 תרגילי SQL ו-PostgreSQL מדורגים מהבסיס ועד joins, indexes, transactions ו-production">
+<title>SQL Exercise Bank — ‏120 תרגילים מדורגים</title>
+<style>
+:root{--ink:#17221b;--green:#15803d;--soft:#f0fdf4;--line:#cce7d5;--easy:#3f8b5b;--medium:#b57913;--hard:#b54152;--prod:#315eb5;--warn:#fff8e7}*{box-sizing:border-box}body{margin:auto;max-width:1080px;padding:34px 22px 80px;color:var(--ink);font:17px/1.75 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--green);padding-bottom:14px}h2{margin-top:2.5em;color:var(--green);border-bottom:2px solid var(--line);padding-bottom:8px}h3{margin:.2em 0}.hero,.rules,.gate,.lab{border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0}.hero,.rules{background:var(--soft)}.warn{background:var(--warn);border-color:#ead7a5}.exercise{border:1px solid var(--line);border-right:5px solid var(--green);border-radius:11px;padding:15px 18px;margin:12px 0}.exercise p{margin:6px 0}.easy{border-right-color:var(--easy)}.medium{border-right-color:var(--medium)}.hard{border-right-color:var(--hard)}.prod{border-right-color:var(--prod)}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#eef3ef;color:#a12636;padding:2px 5px;border-radius:4px}pre{background:#17221b;color:#edfff2;padding:16px;border-radius:9px;overflow:auto}.nav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:24px}.nav a{text-decoration:none;color:var(--green);border:1px solid var(--line);border-radius:999px;padding:6px 11px}.toc{columns:2;background:#fbfffc;border:1px solid var(--line);border-radius:12px;padding:18px 30px}.toc a{color:#11662f}.check{font-weight:700;color:#27653d}.meta{font-size:.94rem;color:#53635a}.lab{border-right:6px solid var(--prod)}details{background:var(--soft);padding:8px 11px;border-radius:8px;margin-top:8px}summary{cursor:pointer;font-weight:650}table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--line);padding:8px;text-align:right}@media(max-width:650px){body{padding:20px 14px}.toc{columns:1}.exercise{padding:13px}}</style></head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="6.sql-tutorial.html">מדריך SQL</a><a href="7.databases-tutorial.html">Databases לעומק</a><a href="0.problem-solving-tutorial.html">שיטת פתרון</a></nav>
+<section class="hero"><h1>SQL Exercise Bank — ‏120 תרגילים ו־8 מעבדות</h1><p>מסלול מעשי ל־PostgreSQL: מה־<code>SELECT</code> הראשון ועד data modeling, joins, subqueries, window functions, indexes, execution plans, transactions, locking ופתרון בעיות Production.</p></section>
+
+<section class="rules"><h2 style="margin-top:0">איך עובדים עם החוברת</h2><ol><li>קרא רק את הדרישה וכתוב תחילה במילים: מהי שורת התוצאה ומהן הטבלאות הדרושות?</li><li>כתוב query בעצמך. אל תבקש מ־AI פתרון לפני ניסיון אמיתי.</li><li>בדוק גם edge cases: טבלה ריקה, <code>NULL</code>, כפילויות, לקוח בלי הזמנות והזמנה בלי תשלום.</li><li>לפני <code>UPDATE</code> או <code>DELETE</code>, כתוב את אותו <code>WHERE</code> בתוך <code>SELECT</code>. עבוד ב־database מקומי בלבד.</li><li>בסוף רשום: מה ציפיתי, מה קיבלתי, למה, ואיך הייתי בודק את זה בקוד Backend.</li></ol><p><strong>קצב:</strong> 3–4 תרגילים ביום ברמות הראשונות; 1–2 תרגילים עמוקים ברמות המתקדמות. מעבדה יכולה לקחת כמה מפגשים.</p></section>
+
+<section class="warn rules"><h2 style="margin-top:0">סביבת התרגול</h2><p>הדיאלקט הוא PostgreSQL. השתמש ב־database נפרד בשם <code>sql_practice</code>. אל תריץ את תרגילי השינוי על מידע אמיתי.</p>
+<pre><code>createdb sql_practice
+psql sql_practice</code></pre>
+<p>בנה schema של חנות אינטרנטית עם הטבלאות הבאות. את ה־DDL המלא תכתוב בעצמך בתרגילים 1–10:</p>
+<table><tr><th>טבלה</th><th>עמודות מרכזיות</th></tr>
+<tr><td><code>users</code></td><td>id, email, full_name, country, birth_date, is_active, created_at</td></tr>
+<tr><td><code>categories</code></td><td>id, name, parent_id</td></tr>
+<tr><td><code>products</code></td><td>id, category_id, sku, name, price, stock_quantity, metadata, is_active, created_at</td></tr>
+<tr><td><code>orders</code></td><td>id, user_id, status, shipping_country, created_at, updated_at</td></tr>
+<tr><td><code>order_items</code></td><td>order_id, product_id, quantity, unit_price, discount_percent</td></tr>
+<tr><td><code>payments</code></td><td>id, order_id, amount, status, provider, external_id, paid_at</td></tr>
+<tr><td><code>inventory_movements</code></td><td>id, product_id, quantity_delta, reason, created_at</td></tr>
+<tr><td><code>reviews</code></td><td>id, user_id, product_id, rating, body, created_at</td></tr></table>
+<p class="meta">צור לפחות 30 users,‏ 40 products,‏ 100 orders ונתונים מכוונים: משתמש ללא הזמנות, מוצר שלא נמכר, הזמנה ללא תשלום, תשלום שנכשל, ערכי NULL ומחירים זהים.</p></section>
+
+<div class="toc"><ol><li><a href="#l1">Schema, types ו־constraints</a></li><li><a href="#l2">SELECT, filtering ו־NULL</a></li><li><a href="#l3">Sorting, functions ו־CRUD</a></li><li><a href="#l4">Aggregations</a></li><li><a href="#l5">JOINs</a></li><li><a href="#l6">Subqueries ו־set operations</a></li><li><a href="#l7">CTEs ו־window functions</a></li><li><a href="#l8">Data modeling ו־advanced PostgreSQL</a></li><li><a href="#l9">Indexes ו־EXPLAIN</a></li><li><a href="#l10">Transactions, locking ו־concurrency</a></li><li><a href="#l11">Security ו־Production</a></li><li><a href="#labs">8 מעבדות מסכמות</a></li></ol></div>
+
+<h2 id="l1">רמה 1 — Schema, Types ו־Constraints</h2>
+<article class="exercise easy"><h3>1. Database ראשון</h3><p>צור database נפרד ו־schema בשם <code>store</code>. הגדר אותו ב־<code>search_path</code> של ה־session והסבר database מול schema.</p></article>
+<article class="exercise easy"><h3>2. טבלת Users</h3><p>צור <code>users</code> עם identity primary key,‏ email חובה וייחודי, שם חובה ו־<code>created_at</code> עם ברירת מחדל.</p></article>
+<article class="exercise easy"><h3>3. טיפוסים נכונים</h3><p>בחר טיפוסים ל־email, מחיר, תאריך לידה, metadata וזמן יצירה. הסבר למה כסף אינו <code>FLOAT</code> ולמה אירועים משתמשים ב־<code>TIMESTAMPTZ</code>.</p></article>
+<article class="exercise easy"><h3>4. Products ו־CHECK</h3><p>צור products כך שמחיר ומלאי לא יוכלו להיות שליליים, SKU יהיה ייחודי ו־active יקבל true כברירת מחדל.</p></article>
+<article class="exercise easy"><h3>5. Foreign Key ראשון</h3><p>צור categories וקשר product לקטגוריה. החלט האם category יכולה להיות NULL ומה יקרה במחיקת קטגוריה.</p></article>
+<article class="exercise easy"><h3>6. Orders</h3><p>צור orders עם FK ל־users ו־status שמוגבל לערכים חוקיים באמצעות CHECK. הסבר יתרון וחיסרון לעומת PostgreSQL enum.</p></article>
+<article class="exercise easy"><h3>7. Many-to-Many</h3><p>צור order_items כטבלת קישור. בחר primary key מורכב או surrogate key והגן על quantity ו־discount.</p></article>
+<article class="exercise easy"><h3>8. Payments</h3><p>צור payments כך ש־external_id יהיה ייחודי, amount חיובי וסטטוס מוגבל. החלט אם להזמנה מותר יותר מתשלום אחד.</p></article>
+<article class="exercise easy"><h3>9. ALTER TABLE</h3><p>הוסף ל־users עמודת phone אופציונלית, הוסף constraint, שנה ברירת מחדל ואז הסר את העמודה. עשה הכול על סביבת התרגול.</p></article>
+<article class="exercise easy"><h3>10. Seed Data</h3><p>הכנס נתוני seed שמכסים edge cases. השתמש ב־multi-row INSERT והוכח שכל constraint חוסם לפחות קלט לא חוקי אחד.</p></article>
+<section class="gate"><h3>שער 1</h3><p class="check">לפני שממשיכים, אתה צריך להסביר PK, FK, UNIQUE, CHECK, NOT NULL ו־DEFAULT, ולבחור type בלי לנחש.</p></section>
+
+<h2 id="l2">רמה 2 — SELECT, Filtering ו־NULL</h2>
+<article class="exercise easy"><h3>11. SELECT ראשון</h3><p>הצג את השם והמחיר של כל המוצרים. תן aliases ברורים לעמודות.</p></article>
+<article class="exercise easy"><h3>12. WHERE</h3><p>מצא מוצרים פעילים שמחירם מעל סכום נתון. כתוב גרסה עם literal וגרסה שמתאימה ל־parameterized query.</p></article>
+<article class="exercise easy"><h3>13. AND, OR וסוגריים</h3><p>מצא מוצר פעיל שהוא זול או חסר במלאי. כתוב query שגוי בלי סוגריים, חזה את ההבדל ואז תקן.</p></article>
+<article class="exercise easy"><h3>14. BETWEEN ו־IN</h3><p>מצא הזמנות בטווח תאריכים ובאחד משלושה statuses. בדוק האם גבולות <code>BETWEEN</code> כלולים.</p></article>
+<article class="exercise easy"><h3>15. LIKE ו־ILIKE</h3><p>מצא שמות שמכילים טקסט ללא תלות באותיות גדולות. הוסף מוצר שמכיל את התווים <code>%</code> או <code>_</code> וחפש אותם מילולית.</p></article>
+<article class="exercise easy"><h3>16. NULL אינו ערך רגיל</h3><p>מצא users ללא birth_date. נסה תחילה <code>= NULL</code>, תעד את התוצאה ותקן עם התחביר הנכון.</p></article>
+<article class="exercise easy"><h3>17. Three-Valued Logic</h3><p>חזה אילו שורות יחזרו מ־<code>WHERE country &lt;&gt; 'IL'</code> כאשר country הוא NULL. כתוב query שכולל גם אותן.</p></article>
+<article class="exercise easy"><h3>18. COALESCE</h3><p>הצג country, ואם הוא NULL הצג “לא ידוע”. הסבר האם COALESCE משנה את הנתון או רק את תוצאת השאילתה.</p></article>
+<article class="exercise easy"><h3>19. DISTINCT</h3><p>הצג מדינות משלוח ייחודיות. השווה מספר שורות עם ובלי DISTINCT והסבר מתי DISTINCT מסתיר JOIN שגוי.</p></article>
+<article class="exercise easy"><h3>20. CASE</h3><p>סווג products ל־cheap, medium, expensive. ודא שכל מחיר נכנס בדיוק לקטגוריה אחת.</p></article>
+
+<h2 id="l3">רמה 3 — Sorting, Functions ו־CRUD בטוח</h2>
+<article class="exercise easy"><h3>21. ORDER BY</h3><p>מיין מוצרים קודם לפי מחיר יורד ואז לפי name עולה. הוסף שני מוצרים באותו מחיר ובדוק deterministic ordering.</p></article>
+<article class="exercise easy"><h3>22. LIMIT ו־OFFSET</h3><p>החזר עמוד שני של 10 מוצרים. שנה נתון בין שתי קריאות והסבר למה offset pagination עלולה לדלג או להכפיל.</p></article>
+<article class="exercise medium"><h3>23. Keyset Pagination</h3><p>ממש pagination לפי <code>(created_at,id)</code> במקום OFFSET. כתוב תנאי שמביא את העמוד הבא ללא חפיפות.</p></article>
+<article class="exercise easy"><h3>24. String Functions</h3><p>נקה spaces משמות, הצג email באותיות קטנות ובנה label משם ו־id בלי לשנות את הטבלה.</p></article>
+<article class="exercise easy"><h3>25. Date Functions</h3><p>מצא הזמנות מהחודש הנוכחי, קבץ זמן ליום והצג את גיל ההזמנה באמצעות interval.</p></article>
+<article class="exercise easy"><h3>26. INSERT ... RETURNING</h3><p>צור product והחזר מיד id, sku ו־created_at. הסבר למה Backend צריך RETURNING ולא query נוסף.</p></article>
+<article class="exercise medium"><h3>27. UPSERT</h3><p>קלוט מוצר לפי SKU: אם הוא קיים עדכן מחיר ומלאי, אחרת צור אותו. השתמש ב־<code>ON CONFLICT</code>.</p></article>
+<article class="exercise easy"><h3>28. UPDATE בטוח</h3><p>העלה מחיר לקטגוריה מסוימת באחוז נתון. לפני השינוי הרץ SELECT זהה בתוך transaction ובצע rollback.</p></article>
+<article class="exercise easy"><h3>29. DELETE בטוח</h3><p>מחק reviews ישנות של user ניסוי בלבד. הוכח מראש כמה שורות יימחקו והשתמש ב־RETURNING.</p></article>
+<article class="exercise medium"><h3>30. Soft Delete</h3><p>הוסף <code>deleted_at</code>, “מחק” user, וכתוב query שמחזיר רק רשומות חיות. מנה יתרונות וסיכונים לעומת DELETE.</p></article>
+
+<h2 id="l4">רמה 4 — Aggregations</h2>
+<article class="exercise medium"><h3>31. COUNT</h3><p>השווה <code>COUNT(*)</code>,‏ <code>COUNT(country)</code> ו־<code>COUNT(DISTINCT country)</code>. הסבר את השפעת NULL.</p></article>
+<article class="exercise medium"><h3>32. SUM ו־AVG</h3><p>חשב שווי מלאי כולל ומחיר ממוצע. ודא שכפל אינו נוצר בגלל JOIN.</p></article>
+<article class="exercise medium"><h3>33. GROUP BY</h3><p>הצג מספר מוצרים ומחיר ממוצע לכל category_id.</p></article>
+<article class="exercise medium"><h3>34. HAVING</h3><p>מצא קטגוריות עם לפחות חמישה מוצרים ומחיר ממוצע מעל סף. הסבר WHERE מול HAVING לפי סדר הביצוע.</p></article>
+<article class="exercise medium"><h3>35. Conditional Aggregation</h3><p>הצג בשורה אחת כמה orders נמצאות בכל status באמצעות FILTER או CASE.</p></article>
+<article class="exercise medium"><h3>36. הכנסה להזמנה</h3><p>חשב לכל order את הסכום: quantity × unit_price × discount. טפל ב־NULL באופן מפורש.</p></article>
+<article class="exercise medium"><h3>37. הכנסות יומיות</h3><p>חשב revenue יומי מתשלומים מוצלחים בלבד. הסבר מדוע אי אפשר לסכום orders ו־payments יחד בלי להבין cardinality.</p></article>
+<article class="exercise medium"><h3>38. Rollup</h3><p>הצג הכנסות לפי שנה וחודש וגם subtotal שנתי ו־grand total באמצעות GROUPING SETS או ROLLUP.</p></article>
+<article class="exercise medium"><h3>39. אחוז מתוך הכול</h3><p>חשב איזה אחוז מההכנסה מגיע מכל provider בלי query נפרד באפליקציה.</p></article>
+<article class="exercise medium"><h3>40. באג Aggregation</h3><p>נתונה שאילתה שבוחרת <code>users.email</code> בלי לקבץ אותו. הסבר למה היא לא חוקית וכתוב שתי כוונות אפשריות עם פתרונות שונים.</p></article>
+<section class="gate"><h3>שער 2</h3><p class="check">אתה מוכן ל־JOINs כשאתה יודע להגדיר מה מייצגת כל שורת תוצאה ומדוע GROUP BY לא “מסיר כפילויות”.</p></section>
+
+<h2 id="l5">רמה 5 — JOINs לעומק</h2>
+<article class="exercise medium"><h3>41. INNER JOIN</h3><p>הצג order id יחד עם שם ו־email של בעל ההזמנה. לפני הכתיבה, זהה מי הטבלה השמאלית ומה תנאי הקשר.</p></article>
+<article class="exercise medium"><h3>42. LEFT JOIN</h3><p>הצג את כל המשתמשים ומספר ההזמנות שלהם, כולל משתמשים עם אפס. בדוק מה קורה אם COUNT סופר את העמודה הלא נכונה.</p></article>
+<article class="exercise medium"><h3>43. תנאי ב־ON מול WHERE</h3><p>מצא את כל users וההזמנות ששולמו בלבד. כתוב שתי גרסאות שמעבירות את תנאי status בין ON ל־WHERE והסבר מדוע התוצאות שונות.</p></article>
+<article class="exercise medium"><h3>44. Products שלא נמכרו</h3><p>מצא products שלא מופיעים בשום order_item באמצעות LEFT JOIN ו־NULL test.</p></article>
+<article class="exercise medium"><h3>45. Multi-Table JOIN</h3><p>הצג order, user, items, products ותשלום. קבע מראש מה ה־grain של התוצאה ואילו כפילויות הן אמיתיות.</p></article>
+<article class="exercise medium"><h3>46. Many-to-Many</h3><p>הצג את כל המוצרים שרכש user מסוים ואת הכמות הכוללת מכל מוצר.</p></article>
+<article class="exercise medium"><h3>47. SELF JOIN</h3><p>הצג category יחד עם שם parent category שלה, כולל קטגוריות root.</p></article>
+<article class="exercise medium"><h3>48. CROSS JOIN</h3><p>צור matrix של כל countries מול כל statuses וספור orders בכל תא, כולל אפסים.</p></article>
+<article class="exercise hard"><h3>49. Join Explosion</h3><p>חבר orders גם ל־items וגם ל־payments וסכום הכנסות. הוכח כיצד rows מוכפלות ותקן באמצעות pre-aggregation.</p></article>
+<article class="exercise hard"><h3>50. FULL OUTER JOIN</h3><p>צור שתי טבלאות staging קטנות והשווה records שנמצאות רק במקור A, רק ב־B ובשניהם.</p></article>
+<article class="exercise hard"><h3>51. LATERAL JOIN</h3><p>החזר לכל user את שלוש ההזמנות האחרונות שלו באמצעות <code>LATERAL</code>. השווה לפתרון window function.</p></article>
+<article class="exercise hard"><h3>52. Join Design Review</h3><p>קיבלת query עם חמישה JOINs ו־DISTINCT. הסר DISTINCT, זהה את הקשר שיוצר duplication ותקן את המודל או השאילתה.</p></article>
+
+<h2 id="l6">רמה 6 — Subqueries ו־Set Operations</h2>
+<article class="exercise medium"><h3>53. Scalar Subquery</h3><p>מצא products שמחירם מעל המחיר הממוצע של כלל המוצרים.</p></article>
+<article class="exercise medium"><h3>54. Correlated Subquery</h3><p>מצא products שמחירם מעל הממוצע של הקטגוריה שלהם. הסבר כמה פעמים לוגית תת־השאילתה תלויה בשורה החיצונית.</p></article>
+<article class="exercise medium"><h3>55. EXISTS</h3><p>מצא users שיש להם לפחות order אחת ששולמה. כתוב עם EXISTS והסבר למה אין צורך להחזיר עמודות מתת־השאילתה.</p></article>
+<article class="exercise medium"><h3>56. NOT EXISTS</h3><p>מצא products שמעולם לא נרכשו. השווה ל־LEFT JOIN anti-join.</p></article>
+<article class="exercise hard"><h3>57. NOT IN ו־NULL</h3><p>הכנס NULL לסט הבדיקה והראה כיצד <code>NOT IN</code> עלול להחזיר אפס שורות. תקן עם NOT EXISTS.</p></article>
+<article class="exercise medium"><h3>58. IN מול EXISTS</h3><p>כתוב את אותה דרישה בשתי הדרכים ובדוק EXPLAIN. אל תקבע מראש איזו מהירה יותר; הסבר תפקיד planner ונתונים.</p></article>
+<article class="exercise medium"><h3>59. UNION ו־UNION ALL</h3><p>אחד רשימות emails משני מקורות. הוסף כפילויות והשווה correctness ועלות הסרת כפילויות.</p></article>
+<article class="exercise medium"><h3>60. INTERSECT</h3><p>מצא users שגם רכשו וגם כתבו review.</p></article>
+<article class="exercise medium"><h3>61. EXCEPT</h3><p>מצא users פעילים שלא ביצעו אף הזמנה בחצי השנה האחרונה.</p></article>
+<article class="exercise hard"><h3>62. Relational Division</h3><p>מצא users שרכשו כל מוצר בקטגוריה מסוימת. פתר עם NOT EXISTS כפול.</p></article>
+
+<h2 id="l7">רמה 7 — CTEs ו־Window Functions</h2>
+<article class="exercise medium"><h3>63. CTE לקריאות</h3><p>פרק query של revenue לפי country לשלבים named. ודא שה־CTE משפר הבנה ולא מסתיר grain.</p></article>
+<article class="exercise hard"><h3>64. Recursive CTE</h3><p>החזר עץ category מהשורש, עם depth ו־path מלא. הוסף הגנה רעיונית מפני cycle.</p></article>
+<article class="exercise medium"><h3>65. ROW_NUMBER</h3><p>מספר הזמנות לכל user מהחדשה לישנה.</p></article>
+<article class="exercise medium"><h3>66. Top N per Group</h3><p>מצא שלושה products הנמכרים ביותר בכל category באמצעות ROW_NUMBER או DENSE_RANK.</p></article>
+<article class="exercise medium"><h3>67. RANK מול DENSE_RANK</h3><p>צור ties במכירות והשווה את המספור. קבע איזו פונקציה מתאימה ל־leaderboard.</p></article>
+<article class="exercise medium"><h3>68. Running Total</h3><p>חשב revenue מצטבר לפי יום. הגדר במפורש ORDER BY ו־window frame.</p></article>
+<article class="exercise hard"><h3>69. ROWS מול RANGE</h3><p>צור כמה תשלומים באותו timestamp והשווה running total עם frames שונים.</p></article>
+<article class="exercise medium"><h3>70. LAG</h3><p>חשב שינוי revenue לעומת היום הקודם, גם בסכום וגם באחוזים. טפל ביום הראשון ובחלוקה באפס.</p></article>
+<article class="exercise medium"><h3>71. LEAD</h3><p>לכל שינוי status בטבלת history שתיצור, הצג status הבא וכמה זמן נמשך הנוכחי.</p></article>
+<article class="exercise hard"><h3>72. Sessionization</h3><p>קבץ events של user ל־sessions כאשר פער מעל 30 דקות מתחיל session חדשה.</p></article>
+<article class="exercise hard"><h3>73. Rolling Average</h3><p>חשב moving average של שבעה ימים. הסבר מה קורה בתחילת הטווח כשאין שבע שורות.</p></article>
+<article class="exercise hard"><h3>74. Cohort בסיסי</h3><p>קבץ users לפי חודש הרשמה וחשב כמה ביצעו רכישה בחודש 0, 1 ו־2.</p></article>
+
+<h2 id="l8">רמה 8 — Data Modeling ו־PostgreSQL מתקדם</h2>
+<article class="exercise hard"><h3>75. Normalization</h3><p>קיבלת טבלה אחת עם order, customer ו־product חוזרים. פרק ל־3NF וציין functional dependencies.</p></article>
+<article class="exercise hard"><h3>76. Denormalization</h3><p>החלט אם לשמור <code>orders.total_amount</code>. פרט correctness, read performance ודרך שמירה על consistency.</p></article>
+<article class="exercise hard"><h3>77. Natural מול Surrogate Key</h3><p>השווה email, SKU ו־identity כ־PK. בחר לכל entity ונמק לפי יציבות, גודל ו־foreign keys.</p></article>
+<article class="exercise hard"><h3>78. Referential Actions</h3><p>בחר ON DELETE ל־orders→users, order_items→orders ו־reviews→products. אל תשתמש ב־CASCADE אוטומטית ללא הסבר.</p></article>
+<article class="exercise hard"><h3>79. JSONB</h3><p>שמור attributes משתנים של product ב־metadata, חפש לפי key וערך, ועדכן key אחד. הסבר מתי עדיפה עמודה רגילה.</p></article>
+<article class="exercise hard"><h3>80. Arrays</h3><p>שמור tags זמניים ב־array, חפש overlap ו־containment. לאחר מכן תכנן מתי לעבור לטבלת relation.</p></article>
+<article class="exercise hard"><h3>81. Generated Column</h3><p>צור עמודה מחושבת שמתאימה לחיפוש או display והסבר stored generated column מול חישוב ב־query.</p></article>
+<article class="exercise hard"><h3>82. View</h3><p>צור view של order summary עם סכום items וסטטוס payment. בדוק כיצד שינוי בטבלאות משתקף.</p></article>
+<article class="exercise hard"><h3>83. Materialized View</h3><p>צור daily_sales materialized view, רענן אותה והשווה freshness מול ביצועים.</p></article>
+<article class="exercise hard"><h3>84. Full-Text Search</h3><p>בנה חיפוש PostgreSQL על product name ו־description עם tsvector ו־ranking.</p></article>
+
+<h2 id="l9">רמה 9 — Indexes ו־EXPLAIN</h2>
+<article class="exercise hard"><h3>85. B-tree ראשון</h3><p>טען נתונים רבים, חפש orders לפי user_id והשווה EXPLAIN ANALYZE לפני ואחרי index.</p></article>
+<article class="exercise hard"><h3>86. Sequential Scan אינו תמיד רע</h3><p>חפש ערך שמחזיר אחוז גדול מהטבלה והסבר למה planner עשוי להעדיף seq scan.</p></article>
+<article class="exercise hard"><h3>87. Composite Index</h3><p>עצב index לשאילתה <code>WHERE user_id=? AND status=? ORDER BY created_at DESC</code>. בדוק leftmost prefix עם וריאציות.</p></article>
+<article class="exercise hard"><h3>88. Index Order</h3><p>השווה indexes על <code>(user_id,status)</code> ועל <code>(status,user_id)</code> לפי שלוש שאילתות שונות.</p></article>
+<article class="exercise hard"><h3>89. Covering Index</h3><p>השתמש ב־INCLUDE כדי לאפשר index-only scan. הסבר מדוע visibility map משפיעה ב־PostgreSQL.</p></article>
+<article class="exercise hard"><h3>90. Partial Index</h3><p>צור index רק להזמנות pending. הסבר מתי planner יכול ומתי אינו יכול להשתמש בו.</p></article>
+<article class="exercise hard"><h3>91. Expression Index</h3><p>אכוף email ייחודי ללא תלות ב־case באמצעות index על expression. בדוק קלט מתנגש.</p></article>
+<article class="exercise hard"><h3>92. GIN ל־JSONB</h3><p>צור GIN index ל־metadata והשווה operators ותוכנית ביצוע לפני ואחרי.</p></article>
+<article class="exercise hard"><h3>93. Selectivity</h3><p>הסבר מדוע index על boolean לרוב חלש, ואז תכנן partial index אם query נפוץ מצדיק זאת.</p></article>
+<article class="exercise hard"><h3>94. Statistics</h3><p>שנה distribution, הרץ ANALYZE ובדוק estimated rows מול actual rows. הסבר כיצד estimates שגויים פוגעים ב־plan.</p></article>
+<article class="exercise hard"><h3>95. EXPLAIN Reading</h3><p>ב־plan עם join זהה scan type, join algorithm, estimated/actual rows, loops, cost וזמן. מצא את צוואר הבקבוק.</p></article>
+<article class="exercise prod"><h3>96. Slow Query Clinic</h3><p>קח query עם function על indexed column, leading wildcard ו־N+1. אבחן כל בעיה ותן תיקון מדיד.</p></article>
+<section class="gate"><h3>שער 3</h3><p class="check">אל תציע index לפי תחושת בטן: כתוב query pattern, cardinality, selectivity, עלות writes והוכחה מ־EXPLAIN ANALYZE.</p></section>
+
+<h2 id="l10">רמה 10 — Transactions, Locking ו־Concurrency</h2>
+<article class="exercise hard"><h3>97. COMMIT ו־ROLLBACK</h3><p>עדכן שתי טבלאות ב־transaction, גרום לשלב השני להיכשל והוכח ש־rollback מבטל הכול.</p></article>
+<article class="exercise hard"><h3>98. העברת מלאי</h3><p>העבר יחידות בין שני warehouses באופן atomic. הגדר invariants שחייבים להישמר.</p></article>
+<article class="exercise hard"><h3>99. Lost Update</h3><p>פתח שני sessions שקוראים אותו stock ואז מעדכנים. שחזר lost update ותעד timeline.</p></article>
+<article class="exercise hard"><h3>100. Atomic UPDATE</h3><p>מנע overselling באמצעות UPDATE יחיד עם תנאי <code>stock_quantity &gt;= ?</code> ובדוק affected rows.</p></article>
+<article class="exercise hard"><h3>101. SELECT FOR UPDATE</h3><p>נעל product ב־session אחד ונסה לעדכן מהשני. בדוק blocking ו־lock timeout.</p></article>
+<article class="exercise hard"><h3>102. Deadlock</h3><p>ב־DB ניסוי בלבד, נעל שתי שורות בסדר הפוך בשני sessions ושחזר deadlock. תקן באמצעות lock ordering קבוע.</p></article>
+<article class="exercise hard"><h3>103. Read Committed</h3><p>הדגם non-repeatable read ב־isolation ברירת המחדל של PostgreSQL והסבר statement snapshot.</p></article>
+<article class="exercise hard"><h3>104. Repeatable Read</h3><p>הרץ את אותו תרחיש תחת Repeatable Read. תעד מה נשאר קבוע ואילו serialization failures אפשריים.</p></article>
+<article class="exercise hard"><h3>105. Serializable</h3><p>בנה write skew עסקי והרץ ב־Serializable. הוסף retry loop ברמת pseudocode.</p></article>
+<article class="exercise prod"><h3>106. Idempotent Payment</h3><p>תכנן קליטת webhook עם external_id ייחודי כך ש־retry לא ייצור תשלום כפול. שלב constraint ו־transaction.</p></article>
+<article class="exercise prod"><h3>107. Outbox Pattern</h3><p>שמור order ואירוע לפרסום באותה transaction. הסבר איזה כשל dual-write נמנע ומה עדיין צריך worker לפתור.</p></article>
+<article class="exercise prod"><h3>108. Transaction Scope</h3><p>מצא transaction שמבצעת HTTP call בזמן שהיא מחזיקה lock. עצב מחדש כדי לקצר lock duration בלי לשבור consistency.</p></article>
+
+<h2 id="l11">רמה 11 — Security, תחזוקה ו־Production</h2>
+<article class="exercise prod"><h3>109. SQL Injection</h3><p>הסבר כיצד string concatenation עם קלט user נשברת, וכתוב parameterized query בסגנון Node <code>$1</code> ובסגנון Python placeholder.</p></article>
+<article class="exercise prod"><h3>110. Least Privilege</h3><p>צור role לקריאה בלבד ו־role לאפליקציה ללא CREATE/DROP. בדוק הרשאות בפועל.</p></article>
+<article class="exercise prod"><h3>111. Row-Level Security</h3><p>תכנן policy שמאפשרת tenant לראות רק את השורות שלו. הסבר מדוע session context חייב להיות מהימן.</p></article>
+<article class="exercise prod"><h3>112. Migration בטוחה</h3><p>תכנן הוספת עמודה NOT NULL לטבלה גדולה בשיטת expand/backfill/contract בלי downtime.</p></article>
+<article class="exercise prod"><h3>113. Unique Race</h3><p>שני requests בודקים email ואז מכניסים. הסבר למה check באפליקציה אינו מספיק ואיך constraint פותר.</p></article>
+<article class="exercise prod"><h3>114. N+1</h3><p>API טוען 100 orders ואז items לכל אחת. ספר queries, תקן ב־JOIN או batch query והשווה payload duplication.</p></article>
+<article class="exercise prod"><h3>115. Connection Pool</h3><p>חשב תרחיש שבו 20 instances × pool של 20 חורגים מ־max_connections. עצב budget ו־timeouts.</p></article>
+<article class="exercise prod"><h3>116. Query Timeout</h3><p>הגדר statement timeout ל־session ניסוי והרץ query איטית מבוקרת. הסבר timeout מול cancellation באפליקציה.</p></article>
+<article class="exercise prod"><h3>117. Bloat ו־VACUUM</h3><p>עדכן שורות שוב ושוב, בדוק dead tuples והסבר MVCC, autovacuum ו־VACUUM ANALYZE.</p></article>
+<article class="exercise prod"><h3>118. Backup אינו Restore</h3><p>צור dump ל־DB הניסוי ושחזר ל־database חדש. אמת counts ו־constraints; backup נחשב רק אחרי restore test.</p></article>
+<article class="exercise prod"><h3>119. Incident Investigation</h3><p>API איטי. בנה סדר בדיקה: pool saturation, active queries, locks, query plan, I/O, CPU ו־recent deploy.</p></article>
+<article class="exercise prod"><h3>120. Query Review</h3><p>בחר query אמיתית מפרויקט שלך וכתוב review: correctness, NULL, cardinality, injection, indexes, transaction, pagination ו־observability.</p></article>
+
+<h2 id="labs">8 מעבדות מסכמות</h2>
+<section class="lab"><h3>מעבדה 1 — Store Setup</h3><p>בנה את כל ה־schema, seed data ו־constraints מאפס. צור ERD והסבר את cardinality של כל קשר. <strong>תוצר:</strong> קובצי schema.sql, seed.sql ו־README.</p></section>
+<section class="lab"><h3>מעבדה 2 — Query Challenge</h3><p>ענה על 20 שאלות עסקיות: top customers, unsold products, repeat buyers, average basket, failed payments ו־retention. <strong>תוצר:</strong> queries עם expected result ו־edge cases.</p></section>
+<section class="lab"><h3>מעבדה 3 — JOIN Detective</h3><p>קבל חמש שאילתות עם missing join condition, filter ב־WHERE, duplicate multiplication ו־wrong COUNT. אתר ותקן כל באג. <strong>תוצר:</strong> before/after והסבר grain.</p></section>
+<section class="lab"><h3>מעבדה 4 — Analytics Dashboard</h3><p>בנה views לדוח revenue יומי, funnel statuses, top products, cohorts ו־moving average. <strong>תוצר:</strong> queries שמתאימות ל־API dashboard.</p></section>
+<section class="lab"><h3>מעבדה 5 — Performance Clinic</h3><p>טען לפחות 100K orders, אסוף EXPLAIN ANALYZE, תכנן indexes ושפר שלוש שאילתות. <strong>תוצר:</strong> plans לפני/אחרי ומדידה, לא רק טענה.</p></section>
+<section class="lab"><h3>מעבדה 6 — Checkout Concurrent</h3><p>ממש transaction ל־checkout: validate stock, decrement atomic, create order/items/payment intent ו־outbox. שחזר שני buyers על הפריט האחרון. <strong>תוצר:</strong> invariants ו־concurrency test.</p></section>
+<section class="lab"><h3>מעבדה 7 — Production Migration</h3><p>שנה מודל address קיים ל־טבלה נפרדת בלי לשבור גרסה ישנה של האפליקציה. <strong>תוצר:</strong> expand/backfill/dual-read-or-write/contract ו־rollback plan.</p></section>
+<section class="lab"><h3>מעבדה 8 — SQL Backend Capstone</h3><p>בנה API קטן ב־Django או Node שמציג catalog, יוצר checkout idempotent ומחזיר order history עם keyset pagination. <strong>תוצר:</strong> migrations, parameterized queries/ORM SQL logs, tests, indexes ו־README שמגן על כל החלטה.</p></section>
+
+<section class="rules"><h2 style="margin-top:0">Checklist לכל פתרון</h2><ul><li>מה מייצגת כל שורה בתוצאה?</li><li>האם NULL וכפילויות מטופלים בכוונה?</li><li>האם JOIN cardinality נכונה?</li><li>האם שינוי נתונים מוגן ב־constraint וב־transaction?</li><li>האם קלט חיצוני parameterized?</li><li>האם index מוצדק לפי query ו־EXPLAIN?</li><li>האם אני מסוגל להסביר את הפתרון בלי לקרוא אותו?</li></ul></section>
+<nav class="nav"><a href="index.html">מרכז הלמידה</a><a href="6.sql-tutorial.html">חזרה למדריך SQL</a></nav>
+</body></html>
