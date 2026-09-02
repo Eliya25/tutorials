@@ -1,0 +1,152 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="100 תרגילי TypeScript מדורגים מהבסיס ועד generics, advanced types ו-backend production">
+<title>TypeScript Exercise Bank — ‏100 תרגילים מדורגים</title><style>
+:root{--ink:#17202a;--blue:#3178c6;--soft:#eef6ff;--line:#cbdcf0;--easy:#38885b;--medium:#ad7819;--hard:#b33e54;--prod:#315eb5;--warn:#fff7df}*{box-sizing:border-box}body{margin:auto;max-width:1080px;padding:34px 22px 80px;color:var(--ink);font:17px/1.75 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--blue);padding-bottom:14px}h2{margin-top:2.5em;color:var(--blue);border-bottom:2px solid var(--line);padding-bottom:8px}h3{margin:.2em 0}.hero,.rules,.gate,.lab{border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0}.hero,.rules{background:var(--soft)}.warn{background:var(--warn);border-color:#e7d08f}.exercise{border:1px solid var(--line);border-right:5px solid var(--blue);border-radius:11px;padding:15px 18px;margin:12px 0}.exercise p{margin:6px 0}.easy{border-right-color:var(--easy)}.medium{border-right-color:var(--medium)}.hard{border-right-color:var(--hard)}.prod{border-right-color:var(--prod)}code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#edf2f7;color:#a5263b;padding:2px 5px;border-radius:4px}pre{background:#17202a;color:#eef7ff;padding:16px;border-radius:9px;overflow:auto}.nav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:24px}.nav a{text-decoration:none;color:var(--blue);border:1px solid var(--line);border-radius:999px;padding:6px 11px}.toc{columns:2;background:#fbfdff;border:1px solid var(--line);border-radius:12px;padding:18px 30px}.toc a{color:#235d98}.check{font-weight:700;color:#28613e}.lab{border-right:6px solid var(--prod)}.meta{font-size:.94rem;color:#526273}details{background:var(--soft);padding:8px 11px;border-radius:8px;margin-top:8px}summary{cursor:pointer;font-weight:650}@media(max-width:650px){body{padding:20px 14px}.toc{columns:1}.exercise{padding:13px}}</style></head><body>
+<nav class="nav"><a href="index.html">← מרכז הלמידה</a><a href="3.typescript-tutorial.html">מדריך TypeScript</a><a href="2.javascript-practice.html">תרגול JavaScript</a><a href="0.problem-solving-tutorial.html">שיטת פתרון</a></nav>
+<section class="hero"><h1>TypeScript Exercise Bank — ‏100 תרגילים ו־8 מעבדות</h1><p>מסלול מעשי מהטיפוס הראשון ועד modeling, narrowing, generics, advanced types, async, runtime validation ו־Backend type-safe. המטרה: לכתוב קוד שאתה מסוגל להסביר ולהגן עליו, לא להשתיק את ה־compiler.</p></section>
+<section class="rules"><h2 style="margin-top:0">איך עובדים</h2><ol><li>הפעל <code>strict</code>. אל תשתמש ב־<code>any</code>,‏ <code>as any</code> או <code>@ts-ignore</code> אלא אם התרגיל דורש לנתח אותם.</li><li>לפני הקוד כתוב מהו shape של הנתונים, מה יכול להיכשל ומה צריך להיות ידוע בזמן compile לעומת runtime.</li><li>נסה להבין את הודעת השגיאה לפני שאתה משנה קוד. העתק למחברת את המשפט המרכזי מהשגיאה במילים שלך.</li><li>הרץ <code>tsc --noEmit</code> ובדיקות. קוד שמתקמפל אך נכשל בזמן ריצה אינו פתרון.</li><li>אל תבקש פתרון מ־AI לפני ניסיון. אם נתקעת, בקש hint אחד בלבד.</li></ol><p><strong>קצב:</strong> 3–4 תרגילים קלים ביום; 1–2 מתקדמים. בכל פתרון בדוק correctness, readability ו־runtime behavior.</p></section>
+<section class="rules warn"><h2 style="margin-top:0">הקמת סביבת מעבדה</h2><pre><code>mkdir typescript-practice
+cd typescript-practice
+npm init -y
+npm install -D typescript tsx @types/node vitest
+npx tsc --init
+mkdir src tests
+npx tsc --noEmit</code></pre><p>הפעל לפחות: <code>strict</code>,‏ <code>noUncheckedIndexedAccess</code>,‏ <code>exactOptionalPropertyTypes</code>,‏ <code>noImplicitOverride</code> ו־<code>useUnknownInCatchVariables</code>. אל תעתיק <code>tsconfig</code> בלי להבין כל flag.</p></section>
+<div class="toc"><ol><li><a href="#l1">Compiler, inference ו־primitives</a></li><li><a href="#l2">Arrays, tuples ו־objects</a></li><li><a href="#l3">Functions ו־contracts</a></li><li><a href="#l4">Unions ו־narrowing</a></li><li><a href="#l5">Generics</a></li><li><a href="#l6">Advanced types</a></li><li><a href="#l7">Classes, modules ו־architecture</a></li><li><a href="#l8">Async, errors ו־runtime boundaries</a></li><li><a href="#l9">Backend type safety</a></li><li><a href="#l10">Tooling, testing ו־production</a></li><li><a href="#labs">8 מעבדות מסכמות</a></li></ol></div>
+
+<h2 id="l1">רמה 1 — Compiler, Inference ו־Primitive Types</h2>
+<article class="exercise easy"><h3>1. Compile ראשון</h3><p>צור <code>src/index.ts</code>, הרץ עם <code>tsx</code> ובדוק עם <code>tsc --noEmit</code>. הסבר transpilation מול type checking.</p></article>
+<article class="exercise easy"><h3>2. Type Inference</h3><p>הגדר string, number ו־boolean בלי annotations. נסה להציב טיפוס אחר והסבר מה TypeScript הסיק.</p></article>
+<article class="exercise easy"><h3>3. Annotation מיותר</h3><p>קבל קוד שבו כל local variable annotated. הסר annotations שה־compiler מסיק בלי לאבד מידע.</p></article>
+<article class="exercise easy"><h3>4. Literal Widening</h3><p>השווה <code>let status = 'pending'</code>,‏ <code>const status = 'pending'</code> ו־annotation literal. בדוק את הטיפוס בכל מקרה.</p></article>
+<article class="exercise easy"><h3>5. any מול unknown</h3><p>כתוב פונקציה שמקבלת ערך חיצוני פעם כ־any ופעם כ־unknown. הראה איזו גרסה מאפשרת bug ואיזו מחייבת בדיקה.</p></article>
+<article class="exercise easy"><h3>6. null ו־undefined</h3><p>מודל user עם nickname חסר. כתוב פונקציה שמחזירה display name בלי non-null assertion.</p></article>
+<article class="exercise easy"><h3>7. void</h3><p>כתוב logger שאינו מחזיר ערך. השווה פונקציה שמוצהרת <code>void</code> לפונקציה שמסיקה undefined.</p></article>
+<article class="exercise easy"><h3>8. never</h3><p>כתוב פונקציה שתמיד זורקת ופונקציה עם infinite loop. בדוק מדוע הטיפוס הוא never ולא void.</p></article>
+<article class="exercise easy"><h3>9. Type Erasure</h3><p>קמפל interface ו־type alias ל־JavaScript. זהה מה נעלם והסבר למה אי אפשר לבדוק interface עם <code>instanceof</code>.</p></article>
+<article class="exercise easy"><h3>10. Read the Error</h3><p>צור שלוש שגיאות assignability שונות. לכל אחת כתוב: expected type, actual type והנתיב המדויק שבו הם מתנגשים.</p></article>
+<section class="gate"><h3>שער 1</h3><p class="check">אתה מוכן להמשיך כשאתה יודע להסביר שה־compiler אינו runtime guard, ומעדיף inference כשאין צורך בחוזה מפורש.</p></section>
+
+<h2 id="l2">רמה 2 — Arrays, Tuples ו־Object Modeling</h2>
+<article class="exercise easy"><h3>11. Typed Arrays</h3><p>כתוב פונקציה שמקבלת users ומחזירה active emails. אסור לשנות את המערך המקורי.</p></article>
+<article class="exercise easy"><h3>12. noUncheckedIndexedAccess</h3><p>קרא index שאולי אינו קיים וטפל ב־undefined בלי <code>!</code>.</p></article>
+<article class="exercise easy"><h3>13. Readonly Array</h3><p>שנה API כך שיקבל <code>readonly Product[]</code>. אתר mutation שה־compiler חוסם והחזר עותק חדש.</p></article>
+<article class="exercise easy"><h3>14. Tuple</h3><p>מודל coordinate ו־HTTP result קצר כ־tuples. הוסף labels והסבר מתי object יהיה ברור יותר.</p></article>
+<article class="exercise easy"><h3>15. Object Type</h3><p>הגדר Product עם id, name, price ו־active. כתוב formatter שלא תלוי בשדות מיותרים.</p></article>
+<article class="exercise easy"><h3>16. Optional Property</h3><p>מודל address אופציונלי. הבדל בין property שלא קיימת לבין property מסוג <code>string | undefined</code> תחת exactOptionalPropertyTypes.</p></article>
+<article class="exercise easy"><h3>17. readonly Property</h3><p>הגן על id ו־createdAt משינוי. בדוק מה readonly מונע בזמן compile ומה JavaScript עדיין יכול לעשות בזמן runtime.</p></article>
+<article class="exercise easy"><h3>18. Interface מול Type</h3><p>מודל User בשתי הדרכים. הרחב interface ויצור union באמצעות type. כתוב מתי הבחירה באמת משנה.</p></article>
+<article class="exercise medium"><h3>19. Structural Typing</h3><p>העבר object עם שדות נוספים לפונקציה שמבקשת shape קטן. אחר כך העבר object literal ישירות והסבר excess property checking.</p></article>
+<article class="exercise medium"><h3>20. Record בטוח</h3><p>בנה lookup של products לפי id. טפל בכך שמפתח עשוי לא להימצא; אל תניח שכל string קיים.</p></article>
+
+<h2 id="l3">רמה 3 — Functions ו־Contracts</h2>
+<article class="exercise easy"><h3>21. Parameters ו־Return</h3><p>כתוב calculateTotal עם input/output מפורשים בגבול module. הימנע annotation מיותר בתוך הגוף.</p></article>
+<article class="exercise easy"><h3>22. Optional מול Default</h3><p>כתוב paginate עם page size ברירת מחדל. השווה parameter אופציונלי לפרמטר עם default.</p></article>
+<article class="exercise easy"><h3>23. Rest Parameters</h3><p>כתוב sumPrices שמקבל מספר משתנה של prices ומונע string.</p></article>
+<article class="exercise medium"><h3>24. Function Type</h3><p>הגדר predicate ו־mapper כ־type aliases והשתמש בהם ב־filter/map מותאמים.</p></article>
+<article class="exercise medium"><h3>25. Callback Contract</h3><p>כתוב retry שמקבל operation. הגדר במפורש מספר attempts והתנהגות שגיאה בלי any.</p></article>
+<article class="exercise medium"><h3>26. Overloads</h3><p>כתוב parseInput שמקבל string או Buffer ומחזיר תוצאה מתאימה. השווה overloads ל־union פשוט.</p></article>
+<article class="exercise medium"><h3>27. this Parameter</h3><p>אתר callback שמאבד this. תקן עם arrow function או explicit this type והסבר runtime מול type system.</p></article>
+<article class="exercise medium"><h3>28. Higher-Order Function</h3><p>כתוב withTiming ששומר על פרמטרים ו־return type של הפונקציה המקורית.</p></article>
+<article class="exercise medium"><h3>29. Dependency Contract</h3><p>הגדר Clock עם method אחד והזרק fake clock לבדיקה. אל תעביר Date ישירות לכל הקוד.</p></article>
+<article class="exercise medium"><h3>30. API Surface</h3><p>קבל פונקציה שמחזירה object פנימי גדול. עצב return type קטן ויציב שמסתיר implementation details.</p></article>
+
+<h2 id="l4">רמה 4 — Unions, Literals ו־Narrowing</h2>
+<article class="exercise medium"><h3>31. Union ראשון</h3><p>פונקציה מקבלת string או number id. בצע narrowing בלי casting.</p></article>
+<article class="exercise medium"><h3>32. Literal Union</h3><p>החלף status חופשי ב־<code>'pending' | 'paid' | 'cancelled'</code>. ודא שערך לא חוקי נחסם.</p></article>
+<article class="exercise medium"><h3>33. typeof Narrowing</h3><p>עבד input שהוא string, number או undefined והחזר representation אחיד.</p></article>
+<article class="exercise medium"><h3>34. in Operator</h3><p>הבחן בין EmailNotification ו־SmsNotification לפי property ייחודית.</p></article>
+<article class="exercise medium"><h3>35. instanceof</h3><p>טפל ב־Date וב־Error class אמיתי. הסבר מדוע instanceof אינו עובד עם interface.</p></article>
+<article class="exercise medium"><h3>36. Custom Type Guard</h3><p>כתוב <code>isUser(value: unknown): value is User</code> שבודק shape מינימלי בזמן runtime.</p></article>
+<article class="exercise medium"><h3>37. Assertion Function</h3><p>כתוב assertion ל־environment variable חובה. לאחר הקריאה ה־compiler צריך לדעת שזה string.</p></article>
+<article class="exercise medium"><h3>38. Discriminated Union</h3><p>מודל result כ־success/data או failure/error. כתוב consumer ללא optional fields.</p></article>
+<article class="exercise hard"><h3>39. Exhaustiveness</h3><p>הוסף variant חדש ל־PaymentState. גרום ל־switch להיכשל compile עד שכל המצבים מטופלים באמצעות never.</p></article>
+<article class="exercise hard"><h3>40. State Machine</h3><p>מודל transitions חוקיים של order. מנע shipped→pending כבר ב־API של הפונקציה ככל שניתן.</p></article>
+<section class="gate"><h3>שער 2</h3><p class="check">אתה מוכן ל־generics כשאתה יודע למודל states ולצמצם unknown בלי assertions שמספרות ל־compiler סיפור לא מוכח.</p></section>
+
+<h2 id="l5">רמה 5 — Generics</h2>
+<article class="exercise medium"><h3>41. Identity Generic</h3><p>כתוב identity ששומר את הטיפוס המדויק. השווה ל־unknown ול־any.</p></article>
+<article class="exercise medium"><h3>42. Generic Pair</h3><p>כתוב Pair&lt;K,V&gt; והשתמש ב־string/number וב־id/User.</p></article>
+<article class="exercise medium"><h3>43. first</h3><p>כתוב first ל־readonly array. ה־return type חייב להכיר אפשרות מערך ריק.</p></article>
+<article class="exercise medium"><h3>44. Constraint</h3><p>כתוב getId שמקבל רק אובייקט עם id, בלי לאבד שדות נוספים.</p></article>
+<article class="exercise medium"><h3>45. keyof</h3><p>כתוב getProperty שמחזיר את הטיפוס המדויק של property ולא union של כל values.</p></article>
+<article class="exercise medium"><h3>46. Generic Repository</h3><p>הגדר Repository&lt;T,Id&gt; עם findById/save/delete. טפל ב־not found במפורש.</p></article>
+<article class="exercise medium"><h3>47. ApiResponse</h3><p>מודל response generic עם metadata pagination. מנע מצב success ללא data.</p></article>
+<article class="exercise hard"><h3>48. Generic Defaults</h3><p>בנה Event&lt;Payload=undefined&gt;. אירוע ללא payload לא יחייב argument; אירוע עם payload כן.</p></article>
+<article class="exercise hard"><h3>49. Preserve Signature</h3><p>כתוב wrapper ל־logging ששומר parameter tuple, return type ו־async behavior.</p></article>
+<article class="exercise hard"><h3>50. Over-Generic Design</h3><p>קבל service עם חמישה type parameters שאין ביניהם קשר. פשט אותו והסבר מתי generic מוסיף קשר ומתי רק מורכבות.</p></article>
+
+<h2 id="l6">רמה 6 — Advanced Types</h2>
+<article class="exercise hard"><h3>51. keyof ו־Indexed Access</h3><p>הפק union של User keys וטיפוס הערך של <code>User['email']</code>. בנה selector בטוח.</p></article>
+<article class="exercise hard"><h3>52. typeof</h3><p>הגדר config value עם <code>as const</code> והפק ממנו union של environments בלי לשכפל strings.</p></article>
+<article class="exercise hard"><h3>53. Partial</h3><p>מודל update DTO עם Partial, ואז מנע עדכון id/createdAt באמצעות Omit.</p></article>
+<article class="exercise hard"><h3>54. Pick ו־Omit</h3><p>צור PublicUser שלא חושף passwordHash. הסבר למה type בלבד לא מסיר property מ־object בזמן runtime.</p></article>
+<article class="exercise hard"><h3>55. Required ו־Readonly</h3><p>הפוך draft config ל־validated config מלא ו־readonly אחרי validation.</p></article>
+<article class="exercise hard"><h3>56. Mapped Type</h3><p>צור Errors&lt;T&gt; שממפה כל field ל־string[] אופציונלי.</p></article>
+<article class="exercise hard"><h3>57. Key Remapping</h3><p>צור getter methods מטיפוס model באמצעות mapped type ו־template literal keys.</p></article>
+<article class="exercise hard"><h3>58. Conditional Type</h3><p>כתוב UnwrapPromise&lt;T&gt;. בדוק Promise&lt;User&gt; מול User.</p></article>
+<article class="exercise hard"><h3>59. infer</h3><p>הפק element type ממערך ו־return type מפונקציה באמצעות infer, ואז השווה ל־utility types מובנים.</p></article>
+<article class="exercise hard"><h3>60. Distributive Conditional</h3><p>בדוק conditional על union והראה כיצד לעטוף ב־tuple כדי למנוע distribution כשזה נדרש.</p></article>
+<article class="exercise hard"><h3>61. Template Literal Type</h3><p>הגדר event names כמו <code>user.created</code> מתוך entity/action unions.</p></article>
+<article class="exercise hard"><h3>62. Branded Types</h3><p>צור UserId ו־OrderId שלא ניתנים להחלפה בטעות, עם constructors שעוברים runtime validation.</p></article>
+<article class="exercise hard"><h3>63. satisfies</h3><p>הגדר route map שבודק התאמה לחוזה אך שומר literal inference. השווה annotation ול־as assertion.</p></article>
+<article class="exercise hard"><h3>64. as const</h3><p>צור permission list immutable והפק ממנו Permission union. הסבר shallow readonly.</p></article>
+<article class="exercise hard"><h3>65. Type Challenge מעשי</h3><p>מודל typed event bus שבו event name קובע במדויק את payload של publish ושל subscribe.</p></article>
+
+<h2 id="l7">רמה 7 — Classes, Modules ו־Architecture</h2>
+<article class="exercise medium"><h3>66. Class Contract</h3><p>כתוב Money class שמגן על amount/currency. מנע חיבור מטבעות שונים בזמן runtime.</p></article>
+<article class="exercise medium"><h3>67. Access Modifiers</h3><p>השווה private של TypeScript ל־<code>#private</code> של JavaScript ובדוק output runtime.</p></article>
+<article class="exercise medium"><h3>68. Implements</h3><p>ממש EmailSender ו־FakeEmailSender תחת interface קטן.</p></article>
+<article class="exercise hard"><h3>69. Abstract Class</h3><p>בנה base Job עם template method. השווה composition והחלט איזו גישה מתאימה.</p></article>
+<article class="exercise medium"><h3>70. Parameter Properties</h3><p>כתוב service עם constructor injection וקצר אותו באמצעות parameter properties בלי לפגוע בקריאות.</p></article>
+<article class="exercise medium"><h3>71. Module Boundaries</h3><p>פצל domain, application ו־infrastructure. מנע מה־domain לייבא database adapter.</p></article>
+<article class="exercise medium"><h3>72. import type</h3><p>המר imports שמשמשים רק כטיפוסים ל־import type ובדוק JavaScript output.</p></article>
+<article class="exercise hard"><h3>73. ESM מול CommonJS</h3><p>הקם project קטן ב־Node ESM. הסבר package type, module/moduleResolution ו־file extensions.</p></article>
+<article class="exercise hard"><h3>74. Circular Dependency</h3><p>צור מעגל imports, צפה בהתנהגות ופרק אותו באמצעות dependency inversion או shared contract.</p></article>
+<article class="exercise hard"><h3>75. Decorator Boundary</h3><p>כתוב method decorator לימודי ל־timing. הסבר מה decorator עושה בזמן runtime ומה metadata אינו מספק לבד.</p></article>
+
+<h2 id="l8">רמה 8 — Async, Errors ו־Runtime Boundaries</h2>
+<article class="exercise medium"><h3>76. Promise Return</h3><p>כתוב async function עם return type מפורש. צור שגיאה של Promise&lt;Promise&lt;T&gt;&gt; רעיונית והסבר flattening.</p></article>
+<article class="exercise medium"><h3>77. Promise.all</h3><p>טען user ו־orders במקביל ושמור tuple inference. הסבר fail-fast.</p></article>
+<article class="exercise hard"><h3>78. Promise.allSettled</h3><p>עבד כמה providers כאשר failure אחד לא צריך לבטל הכול. Narrow לפי status.</p></article>
+<article class="exercise medium"><h3>79. unknown ב־catch</h3><p>טפל ב־Error, string וערך לא צפוי בלי assertion עיוור.</p></article>
+<article class="exercise hard"><h3>80. Result Type</h3><p>החלף exception צפויה ב־Result discriminated union. קבע אילו failures עדיין צריכים throw.</p></article>
+<article class="exercise hard"><h3>81. fetch אינו Type-Safe</h3><p>קבל JSON מ־fetch כ־unknown, אמת אותו ורק אז החזר User. אסור <code>as User</code>.</p></article>
+<article class="exercise hard"><h3>82. Runtime Schema</h3><p>התקן Zod או כתוב validator קטן. הפק/התאם static type ובדוק payload שגוי.</p></article>
+<article class="exercise hard"><h3>83. Environment Variables</h3><p>בנה loadConfig שמאמת PORT, DATABASE_URL ו־NODE_ENV פעם אחת ומחזיר config typed מלא.</p></article>
+<article class="exercise hard"><h3>84. AbortSignal</h3><p>כתוב client async שמקבל AbortSignal. הבדל cancellation בזמן runtime מה־Promise type.</p></article>
+<article class="exercise hard"><h3>85. Async Iterator</h3><p>בנה async generator שמחזיר records בעמודים. עצור נכון ודאג לשחרור resource.</p></article>
+
+<h2 id="l9">רמה 9 — TypeScript ב־Backend אמיתי</h2>
+<article class="exercise prod"><h3>86. Request Boundary</h3><p>קבל body כ־unknown, validate, map ל־command ורק אז קרא service. הפרד DTO מ־domain model.</p></article>
+<article class="exercise prod"><h3>87. Response DTO</h3><p>מפה User entity ל־PublicUserDTO והוכח ש־passwordHash לא נמצא ב־object runtime.</p></article>
+<article class="exercise prod"><h3>88. Typed Route Params</h3><p>אמת id מה־URL והמר ל־branded id. אל תסתפק ב־annotation על string.</p></article>
+<article class="exercise prod"><h3>89. Repository Boundary</h3><p>הגדר interface ב־application layer ומימוש memory + PostgreSQL skeleton. טפל ב־not found ובכשל DB בנפרד.</p></article>
+<article class="exercise prod"><h3>90. Domain Errors</h3><p>צור union של validation/conflict/not-found ו־exhaustive mapper ל־HTTP statuses.</p></article>
+<article class="exercise prod"><h3>91. Authentication Context</h3><p>מודל unauthenticated מול authenticated request בלי property אופציונלית שנגישה בכל מקום.</p></article>
+<article class="exercise prod"><h3>92. Authorization</h3><p>בנה can(user, action, resource) עם literal unions. זכור שהחלטת הרשאה חייבת לרוץ runtime.</p></article>
+<article class="exercise prod"><h3>93. Event Contracts</h3><p>הגדר order events עם version ו־payload. ודא consumer מטפל בגרסה לא מוכרת.</p></article>
+<article class="exercise prod"><h3>94. ORM Generated Types</h3><p>קבל entity generated עם relations אופציונליות. אל תניח relation loaded; עצב projection/query return type ברור.</p></article>
+<article class="exercise prod"><h3>95. External Provider Adapter</h3><p>עטוף SDK שהטיפוסים שלו רחבים. validate response, map errors וחשוף interface יציב לאפליקציה.</p></article>
+
+<h2 id="l10">רמה 10 — Tooling, Testing ו־Production</h2>
+<article class="exercise prod"><h3>96. Strict tsconfig</h3><p>הפעל flags אחד־אחד בפרויקט קטן. לכל שגיאה סווג bug אמיתי, assumption חסר או typing לא מדויק.</p></article>
+<article class="exercise prod"><h3>97. Type Tests</h3><p>כתוב assertions מסוג <code>@ts-expect-error</code> למקרים שחייבים להיכשל. ודא שהבדיקה נכשלת אם האיסור נעלם.</p></article>
+<article class="exercise prod"><h3>98. Runtime Tests</h3><p>בדוק validator עם valid/invalid/boundary payloads. הסבר למה compile success אינו מחליף test.</p></article>
+<article class="exercise prod"><h3>99. Unsafe Code Audit</h3><p>חפש any, assertions, non-null, ts-ignore ו־unchecked JSON. לכל שימוש: הוכחה, validation או redesign.</p></article>
+<article class="exercise prod"><h3>100. Refactoring Capstone</h3><p>קח module JavaScript קיים והעבר ל־strict TypeScript בשלבים. אל תשנה behavior; הוסף characterization tests לפני refactor.</p></article>
+<section class="gate"><h3>שער סיום</h3><p class="check">אתה מוכן לעבוד עם TypeScript ב־Backend כשאתה יודע למודל states, לאמת גבולות runtime, לקרוא שגיאות compiler ולהסביר היכן type safety נגמרת.</p></section>
+
+<h2 id="labs">8 מעבדות מסכמות</h2>
+<section class="lab"><h3>מעבדה 1 — Strict Migration</h3><p>העבר utility library קטנה מ־JavaScript ל־strict TypeScript בלי any. <strong>תוצר:</strong> tsconfig, tests ודוח assumptions שהתגלו.</p></section>
+<section class="lab"><h3>מעבדה 2 — Domain Modeling</h3><p>מודל order lifecycle עם discriminated unions, branded IDs, Money ו־exhaustive transitions. <strong>תוצר:</strong> domain module שאינו תלוי ב־HTTP או DB.</p></section>
+<section class="lab"><h3>מעבדה 3 — Typed Event Bus</h3><p>בנה publish/subscribe שבו event name קובע payload, כולל unsubscribe ו־async handlers. <strong>תוצר:</strong> implementation, type tests ו־runtime tests.</p></section>
+<section class="lab"><h3>מעבדה 4 — API Boundary</h3><p>בנה endpoint ליצירת user: unknown input, runtime schema, DTO mapping, service result ו־safe response. <strong>תוצר:</strong> tests ל־invalid payload ולדליפת secret.</p></section>
+<section class="lab"><h3>מעבדה 5 — External API Client</h3><p>בנה client עם timeout, AbortSignal, retries מוגבלים, validation ו־typed errors. <strong>תוצר:</strong> fake transport ובדיקות failure modes.</p></section>
+<section class="lab"><h3>מעבדה 6 — Repository Architecture</h3><p>בנה service עם Repository interface, memory adapter ו־PostgreSQL adapter skeleton. <strong>תוצר:</strong> אותו contract test לשני adapters.</p></section>
+<section class="lab"><h3>מעבדה 7 — Background Job System</h3><p>מודל job states ו־payload map לכמה job types. טפל ב־retry/dead-letter ובאירוע לא מוכר. <strong>תוצר:</strong> worker typed עם tests.</p></section>
+<section class="lab"><h3>מעבדה 8 — Backend Capstone</h3><p>בנה API קטן ב־Node/NestJS: auth context, validation, domain errors, repository, logging ו־tests. <strong>תוצר:</strong> strict build ללא any/ts-ignore והסבר היכן מתבצעת כל בדיקת runtime.</p></section>
+
+<section class="rules"><h2 style="margin-top:0">Review Checklist לכל פתרון</h2><ul><li>האם הטיפוס מתאר מצבים חוקיים ומונע מצבים בלתי־אפשריים?</li><li>האם השתמשתי ב־unknown בגבול חיצוני ואימתי runtime?</li><li>האם assertion מבוססת על הוכחה או רק משתיקה שגיאה?</li><li>האם generic שומר קשר אמיתי בין input ל־output?</li><li>האם undefined, empty array ו־failure מטופלים?</li><li>האם ה־JavaScript שנוצר מתנהג נכון?</li><li>האם tests בודקים runtime ו־type tests בודקים contracts?</li><li>האם מפתח אחר יבין את ה־API בלי לקרוא implementation?</li></ul></section>
+<nav class="nav"><a href="index.html">מרכז הלמידה</a><a href="3.typescript-tutorial.html">חזרה למדריך TypeScript</a></nav>
+</body></html>
