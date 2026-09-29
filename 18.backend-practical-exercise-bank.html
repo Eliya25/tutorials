@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="21 תרגילי Backend מעשיים ב-Node.js, Python ו-PostgreSQL: debugging, concurrency, reliability ו-production">
+<title>Backend Practical Exercise Bank — 21 תרגילים מעשיים</title>
+<style>
+:root{--ink:#17202a;--green:#116149;--soft:#eaf6f1;--line:#cfe0d9;--easy:#3a8f68;--medium:#bc7a12;--hard:#b23b4d;--prod:#315eb5;--lab:#6d46a8;--cap:#8a5b09}
+*{box-sizing:border-box}
+body{margin:auto;max-width:1080px;padding:34px 22px 80px;color:var(--ink);font:17px/1.75 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+h1{font-size:clamp(2rem,5vw,3rem);line-height:1.15;border-bottom:4px solid var(--green);padding-bottom:14px}
+h2{margin-top:2.5em;color:var(--green);border-bottom:2px solid var(--line);padding-bottom:8px}
+h3{margin:.35em 0}
+.hero,.rules,.gate,.phase{border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0;background:#fff}
+.hero,.rules{background:var(--soft)}
+.exercise{border:1px solid var(--line);border-right:5px solid var(--green);border-radius:11px;padding:16px 18px;margin:14px 0;background:#fff}
+.exercise.easy{border-right-color:var(--easy)}.exercise.medium{border-right-color:var(--medium)}.exercise.hard{border-right-color:var(--hard)}.exercise.prod{border-right-color:var(--prod)}.exercise.lab{border-right-color:var(--lab)}.exercise.capstone{border-right-color:var(--cap)}
+.ex-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.num{font-weight:800;color:var(--green);margin-left:8px}.stack{font-weight:700}.difficulty{font-size:.82rem;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:#56665f}
+code,pre{direction:ltr;text-align:left;unicode-bidi:isolate;font-family:Consolas,Menlo,monospace}code{background:#eef1f0;color:#9b1830;padding:2px 5px;border-radius:4px}
+.nav{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:24px}.nav a{text-decoration:none;color:var(--green);border:1px solid var(--line);border-radius:999px;padding:6px 11px}
+.toc{columns:2;background:#f7faf9;border:1px solid var(--line);border-radius:12px;padding:18px 30px}.toc a{color:var(--green)}
+details{background:var(--soft);padding:8px 11px;border-radius:8px;margin-top:8px}summary{cursor:pointer;font-weight:700}.review{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line)}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.badge{border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:#fff;font-size:.9rem}
+@media(max-width:650px){body{padding:20px 14px}.toc{columns:1}.exercise{padding:13px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+<a href="index.html">← מרכז הלמידה</a>
+<a href="4.nodejs-tutorial.html">Node.js</a>
+<a href="17.python-advanced-tutorial.html">Python Backend</a>
+<a href="6.sql-tutorial.html">SQL</a>
+<a href="7.databases-tutorial.html">Databases</a>
+<a href="10.system-design-tutorial.html">System Design</a>
+</nav>
+
+<section class="hero">
+<h1>Backend Practical Exercise Bank — ‏21 תרגילים מעשיים</h1>
+<p>מסלול שמטרתו להפוך ידע תיאורטי ב־Node.js, Python, PostgreSQL ו־Production Engineering ליכולת לבנות, לשבור, לדבג ולהסביר מערכות Backend אמיתיות.</p>
+<div class="badges"><span class="badge">Node.js + TypeScript</span><span class="badge">Python Backend</span><span class="badge">PostgreSQL</span><span class="badge">Concurrency</span><span class="badge">Reliability</span><span class="badge">Production</span></div>
+</section>
+
+<section class="rules">
+<h2 style="margin-top:0">איך לעבוד עם המסלול</h2>
+<ol>
+<li>לכל תרגיל הקצה 30–60 דקות. אל תנסה לבנות מערכת ענקית.</li>
+<li>לפני קוד: כתוב את ה־invariant או ה־failure שאתה מנסה למנוע.</li>
+<li>נסה לבד לפחות 25 דקות לפני שאתה מבקש solution או approach מלא.</li>
+<li>אל תסתפק ב־happy path: שחזר במכוון את ה־bug או ה־race condition.</li>
+<li>סיום אמיתי = אתה יכול להסביר למה הבעיה קרתה, לא רק להראות endpoint שעובד.</li>
+<li>בתרגילי concurrency, נסה להפעיל שני requests במקביל ולא רק להסביר תאורטית.</li>
+<li>אחרי כל תרגיל כתוב 3 שורות: מה נשבר, איך תיקנת, ומה משתנה עם כמה instances.</li>
+</ol>
+</section>
+
+<div class="toc">
+<ol>
+<li><a href="#phase1">שלב 1 — API & State: תרגילים 1–3</a></li>
+<li><a href="#phase2">שלב 2 — Transactions & Concurrency: 4, 7, 13</a></li>
+<li><a href="#phase3">שלב 3 — Reliability & Distributed Systems: 5–10, 12, 14–15</a></li>
+<li><a href="#phase4">שלב 4 — Production Runtime: 11</a></li>
+<li><a href="#labs">מעבדות המשך: 16–21</a></li>
+</ol>
+</div>
+
+<h2 id="phase1">שלב 1 — API, Validation ו־State</h2>
+
+
+<article class="exercise easy">
+  <div class="ex-head">
+    <div>
+      <span class="num">#1</span>
+      <span class="stack">Node.js</span>
+    </div>
+    <span class="difficulty">Foundations</span>
+  </div>
+  <h3>Safe Task API</h3>
+  <p><strong>מטרה:</strong> לבנות API קטן שמכריח אותך לחשוב על validation, parsing ו־HTTP semantics במקום רק לגרום ל־route לעבוד.</p>
+  <p><strong>בנה:</strong> <code>POST /tasks</code>, ‏<code>GET /tasks</code> ו־<code>GET /tasks?priority=3</code>. ‏title חייב להיות string לא ריק ו־priority מספר שלם 1–5. החזר 201 ביצירה ו־400 לקלט לא תקין.</p>
+  <details><summary>Starter guidance</summary><p>שמור את הנתונים ב־array בזיכרון. הפרד validation מה־route. לפני שאתה נוגע ב־query parameter, בדוק איזה type Express באמת נותן לך.</p></details>
+  <details><summary>Debugging scenario</summary><p>ה־task שומר <code>priority: 3</code>, אבל <code>req.query.priority</code> מגיע כ־string ולכן השוואה strict מחזירה false. אל תפתור עם coercion עיוור; בצע parsing ו־validation.</p></details>
+  <details><summary>Interview challenge</summary><p>למה <code>let nextId = 1</code> מפסיק להיות strategy תקין כשיש כמה processes מאחורי Load Balancer?</p></details>
+  <details><summary>Bonus</summary><p>הוסף pagination פשוט ונסה להחליט איך אתה מחזיר שגיאה ל־<code>?priority=hello</code>.</p></details>
+  <div class="review"><strong>Review:</strong> validation מפורש, parsing תקין, status codes נכונים, והסבר ברור למה state ו־IDs בזיכרון אינם גלובליים.</div>
+</article>
+
+<article class="exercise easy">
+  <div class="ex-head">
+    <div>
+      <span class="num">#2</span>
+      <span class="stack">Python</span>
+    </div>
+    <span class="difficulty">Foundations</span>
+  </div>
+  <h3>URL Shortener</h3>
+  <p><strong>מטרה:</strong> לתרגל API state, redirects, uniqueness וחשיבה על race conditions.</p>
+  <p><strong>בנה:</strong> עם FastAPI או Flask: ‏<code>POST /shorten</code> שמקבל URL, יוצר code קצר, ו־<code>GET /{code}</code> שעושה redirect. URL ריק/לא תקין נדחה ו־code לא קיים מחזיר 404.</p>
+  <details><summary>Starter guidance</summary><p>התחל עם <code>dict</code>. החלט מראש מה הכיוון של המיפוי: code → URL. הפרד code generation, validation ו־route.</p></details>
+  <details><summary>Debugging scenario</summary><p>אם שמרת <code>urls[url] = code</code> אבל ב־redirect אתה עושה <code>urls.get(code)</code>, עקוב אחרי state בפועל והסבר למה תמיד תקבל not found.</p></details>
+  <details><summary>Interview challenge</summary><p>שני requests מייצרים במקרה אותו code ושניהם מבצעים check לפני insert. למה check-then-write אינו atomic?</p></details>
+  <details><summary>Bonus</summary><p>הוסף <code>GET /stats/{code}</code> ומספר redirects.</p></details>
+  <div class="review"><strong>Review:</strong> redirect עובד, collision לא דורס state קיים, ואתה מסוגל להסביר למה DB uniqueness חזק יותר מבדיקת if.</div>
+</article>
+
+<article class="exercise medium">
+  <div class="ex-head">
+    <div>
+      <span class="num">#3</span>
+      <span class="stack">Node.js</span>
+    </div>
+    <span class="difficulty">Intermediate</span>
+  </div>
+  <h3>In-Memory Rate Limiter</h3>
+  <p><strong>מטרה:</strong> לתרגל middleware, time windows ו־shared state.</p>
+  <p><strong>בנה:</strong> Middleware ל־Express: עד 5 requests לכל IP בתוך 60 שניות. בקשה שישית תחזיר 429.</p>
+  <details><summary>Starter guidance</summary><p>השתמש ב־<code>Map</code> ושמור לכל IP לפחות count ו־windowStart. אל תשתמש בספריית rate limiting.</p></details>
+  <details><summary>Debugging scenario</summary><p>אחרי <code>const user = map.get(ip)</code> אתה עושה <code>map.set(...)</code> ואז <code>user.count++</code>. למה המשתנה המקומי עדיין undefined?</p></details>
+  <details><summary>Interview challenge</summary><p>מה נשבר כש־Node A ו־Node B מחזיקים Map נפרד? למה shared store ו־atomic increment חשובים?</p></details>
+  <details><summary>Bonus</summary><p>הוסף <code>Retry-After</code> ו־remaining requests.</p></details>
+  <div class="review"><strong>Review:</strong> החלון מתאפס, IPs נפרדים, 429 נכון, והסבר ברור של horizontal scaling.</div>
+</article>
+
+<h2 id="phase2">שלב 2 — Transactions ו־Concurrency</h2>
+
+<article class="exercise medium">
+  <div class="ex-head">
+    <div>
+      <span class="num">#4</span>
+      <span class="stack">Python + DB</span>
+    </div>
+    <span class="difficulty">Intermediate</span>
+  </div>
+  <h3>Money Transfer Transaction</h3>
+  <p><strong>מטרה:</strong> להבין Atomicity ו־business invariants בעזרת העברת כסף בין accounts.</p>
+  <p><strong>בנה:</strong> <code>POST /transfer</code> עם source, destination ו־amount. דחה amount ≤ 0, אותו account, account חסר או insufficient funds. Debit ו־credit חייבים להצליח או להיכשל יחד.</p>
+  <details><summary>Starter guidance</summary><p>הפרד route מלוגיקת transfer. פתח transaction אחת סביב read/validate/update/commit. בדוק rollback אמיתי על exception.</p></details>
+  <details><summary>Debugging scenario</summary><p>אם committed את הורדת הכסף ואז קרסה הפעולה לפני הזיכוי, איזה state נשאר? למה try/except בלי transaction לא מספיק?</p></details>
+  <details><summary>Interview challenge</summary><p>שתי העברות של 80 קוראות balance=100 בו־זמנית. למה transaction לבדה לא בהכרח מונעת overspending? חקור row locking או atomic update.</p></details>
+  <details><summary>Bonus</summary><p>שמור transfer history באותה transaction.</p></details>
+  <div class="review"><strong>Review:</strong> אין partial state, אין negative balance, ואתה יודע להסביר Atomicity, isolation ו־row locking.</div>
+</article>
+
+<article class="exercise hard">
+  <div class="ex-head">
+    <div>
+      <span class="num">#7</span>
+      <span class="stack">Node.js + PostgreSQL</span>
+    </div>
+    <span class="difficulty">Advanced</span>
+  </div>
+  <h3>Prevent Lost Updates</h3>
+  <p><strong>מטרה:</strong> להגן על inventory תחת concurrent purchases.</p>
+  <p><strong>בנה:</strong> <code>POST /products/:id/purchase</code>. quantity תקין מפחית stock; insufficient stock מחזיר 409; אסור stock שלילי.</p>
+  <details><summary>Starter guidance</summary><p>נסה קודם read-check-write נאיבי ואז בנה בדיקת concurrency שמפעילה שני requests כמעט יחד.</p></details>
+  <details><summary>Debugging scenario</summary><p>stock=5 ושתי רכישות של 3 קוראות 5 וכותבות 2. הנתון הסופי נראה חוקי אבל העסק מכר 6 מתוך 5.</p></details>
+  <details><summary>Interview challenge</summary><p>פתור עם <code>SELECT ... FOR UPDATE</code> או atomic conditional <code>UPDATE ... WHERE stock &gt;= ... RETURNING</code>. הסבר trade-off.</p></details>
+  <details><summary>Bonus</summary><p>מדוד מה request שני עושה בזמן שהראשון מחזיק lock.</p></details>
+  <div class="review"><strong>Review:</strong> אין oversell, אתה יכול לשחזר Lost Update ולהסביר pessimistic מול atomic SQL.</div>
+</article>
+
+<article class="exercise hard">
+  <div class="ex-head">
+    <div>
+      <span class="num">#13</span>
+      <span class="stack">Node.js + PostgreSQL</span>
+    </div>
+    <span class="difficulty">Advanced</span>
+  </div>
+  <h3>Optimistic Concurrency Control</h3>
+  <p><strong>מטרה:</strong> למנוע silent overwrite באמצעות version column.</p>
+  <p><strong>בנה:</strong> <code>PUT /users/:id</code> מקבל version. update על version 7 מצליח ומעלה ל־8; update נוסף עם version 7 מקבל 409.</p>
+  <details><summary>Starter guidance</summary><p>אל תעשה SELECT ואז compare ואז UPDATE. תן ל־version להשתתף ב־WHERE של ה־UPDATE עצמו.</p></details>
+  <details><summary>Debugging scenario</summary><p>שני requests קוראים version=7 ושניהם עוברים application-side check לפני update.</p></details>
+  <details><summary>Interview challenge</summary><p>מתי optimistic locking עדיף על <code>FOR UPDATE</code>, ומתי contention גבוה גורם לו להיות פחות מתאים?</p></details>
+  <details><summary>Bonus</summary><p>החזר structured VERSION_CONFLICT והחלט כיצד client מתאושש.</p></details>
+  <div class="review"><strong>Review:</strong> stale updates נכשלים atomically, ואתה יודע להסביר optimistic מול pessimistic locking.</div>
+</article>
+
+<h2 id="phase3">שלב 3 — Reliability, Idempotency ו־Distributed Systems</h2>
+
+<article class="exercise medium">
+  <div class="ex-head">
+    <div>
+      <span class="num">#5</span>
+      <span class="stack">Node.js</span>
+    </div>
+    <span class="difficulty">Intermediate</span>
+  </div>
+  <h3>Idempotency Key Fundamentals</h3>
+  <p><strong>מטרה:</strong> להבין למה retries ברשת יכולים ליצור duplicate operations.</p>
+  <p><strong>בנה:</strong> <code>POST /orders</code> עם header ‏<code>Idempotency-Key</code>. retry עם אותו key מחזיר את אותה תוצאה ולא יוצר order חדש. בגרסה הזאת מותר Map.</p>
+  <details><summary>Starter guidance</summary><p>שמור key → result. שמור גם fingerprint של payload כדי לזהות שימוש באותו key לבקשה שונה.</p></details>
+  <details><summary>Debugging scenario</summary><p>שני requests מגיעים יחד: שניהם עושים <code>has(key) → false</code>, שניהם יוצרים order ורק אחר כך set. הסבר את race.</p></details>
+  <details><summary>Interview challenge</summary><p>מה קורה כשה־retry מגיע ל־instance אחר? השווה PostgreSQL UNIQUE, Redis ו־transaction.</p></details>
+  <details><summary>Bonus</summary><p>דחה same key + different payload.</p></details>
+  <div class="review"><strong>Review:</strong> אתה מבין retry ambiguity, duplicate creation, ומדוע local memory אינו production guarantee.</div>
+</article>
+
+<article class="exercise medium">
+  <div class="ex-head">
+    <div>
+      <span class="num">#6</span>
+      <span class="stack">Python</span>
+    </div>
+    <span class="difficulty">Intermediate</span>
+  </div>
+  <h3>Background Job Queue + Retry</h3>
+  <p><strong>מטרה:</strong> להבין pending/processing/completed, retry ו־delivery semantics בלי Celery.</p>
+  <p><strong>בנה:</strong> <code>POST /jobs</code>, worker קטן, ו־<code>GET /jobs/{id}</code>. failure מגדיל attempts; אחרי 3 כישלונות status הופך failed.</p>
+  <details><summary>Starter guidance</summary><p>הפרד HTTP API, job storage ו־worker. אל תבצע את העבודה בתוך ה־POST עצמו.</p></details>
+  <details><summary>Debugging scenario</summary><p>ה־worker ביצע side effect, למשל שלח email, ואז קרס לפני שסימן completed. למה retry יכול לבצע את הפעולה פעמיים?</p></details>
+  <details><summary>Interview challenge</summary><p>הסבר at-most-once, at-least-once ולמה exactly-once side effects קשים במערכת מבוזרת.</p></details>
+  <details><summary>Bonus</summary><p>הפוך side effect ל־idempotent בעזרת job id.</p></details>
+  <div class="review"><strong>Review:</strong> failure אחד לא מפיל worker, retries bounded, ואתה יודע להסביר ambiguous outcome אחרי crash.</div>
+</article>
+
+<article class="exercise hard">
+  <div class="ex-head">
+    <div>
+      <span class="num">#8</span>
+      <span class="stack">Python</span>
+    </div>
+    <span class="difficulty">Advanced</span>
+  </div>
+  <h3>Cache with TTL</h3>
+  <p><strong>מטרה:</strong> להבין cache hit/miss, expiration, stale data ו־cache stampede.</p>
+  <p><strong>בנה:</strong> <code>GET /users/{id}</code> שקורא DB איטי ומחזיק cache ל־30 שניות.</p>
+  <details><summary>Starter guidance</summary><p>שמור value ו־expires_at. entry קיים אינו מספיק — צריך לבדוק גם expiration.</p></details>
+  <details><summary>Debugging scenario</summary><p>100 requests מגיעים בדיוק אחרי שה־entry פג וכולם עושים DB query. זה Cache Stampede.</p></details>
+  <details><summary>Interview challenge</summary><p>איך single-flight locking או stale-while-revalidate מפחיתים stampede? מה משתנה עם כמה instances?</p></details>
+  <details><summary>Bonus</summary><p>הוסף <code>PUT /users/{id}</code> והחלט אם invalidate או update cache.</p></details>
+  <div class="review"><strong>Review:</strong> TTL תקין, stale behavior מודע, והסבר ברור למה local cache אינו shared.</div>
+</article>
+
+<article class="exercise hard">
+  <div class="ex-head">
+    <div>
+      <span class="num">#9</span>
+      <span class="stack">Node.js + PostgreSQL</span>
+    </div>
+    <span class="difficulty">Advanced</span>
+  </div>
+  <h3>Refresh Token Rotation</h3>
+  <p><strong>מטרה:</strong> לתרגל token rotation, reuse detection ו־concurrent refresh.</p>
+  <p><strong>בנה:</strong> <code>POST /auth/refresh</code>. שמור hash בלבד; token ישן הופך used/revoked; נוצר refresh token חדש ו־access token חדש באותה פעולה לוגית.</p>
+  <details><summary>Starter guidance</summary><p>מפה את הזרימה לפני הקוד: lookup → validate session/expiry → lock/claim token → create replacement → commit.</p></details>
+  <details><summary>Debugging scenario</summary><p>שני requests משתמשים באותו RT1 ושניהם רואים שהוא עדיין usable לפני שאחד מהם מסמן אותו. מתקבלים RT2 ו־RT3.</p></details>
+  <details><summary>Interview challenge</summary><p>אם attacker השתמש ב־RT1 ראשון והלקוח האמיתי מציג אחר כך את RT1 הישן, איך reuse detection עוזר ומה כדאי לבטל?</p></details>
+  <details><summary>Bonus</summary><p>נהל token family או replacement chain.</p></details>
+  <div class="review"><strong>Review:</strong> raw token לא נשמר, concurrent refresh בטוח, ואתה מבין reuse detection.</div>
+</article>
+
+<article class="exercise hard">
+  <div class="ex-head">
+    <div>
+      <span class="num">#10</span>
+      <span class="stack">Python + DB</span>
+    </div>
+    <span class="difficulty">Advanced</span>
+  </div>
+  <h3>Reliable Webhook Receiver</h3>
+  <p><strong>מטרה:</strong> לטפל ב־duplicate delivery, retries ו־external trust boundary.</p>
+  <p><strong>בנה:</strong> <code>POST /webhooks/payment</code>. ‏payment.completed מעדכן order ל־paid ושומר event_id כמעובד.</p>
+  <details><summary>Starter guidance</summary><p>שים UNIQUE על event_id ותכנן transaction שמכילה גם business update וגם recording של event.</p></details>
+  <details><summary>Debugging scenario</summary><p>order committed, process crashed לפני שמירת event. provider שולח retry. למה partial commit בעייתי?</p></details>
+  <details><summary>Interview challenge</summary><p>שני copies של אותו event מגיעים בו־זמנית. למה <code>if event_exists</code> אינו מספיק?</p></details>
+  <details><summary>Bonus</summary><p>אמת HMAC signature מתוך header ו־secret ב־environment variable.</p></details>
+  <div class="review"><strong>Review:</strong> duplicate delivery harmless, uniqueness DB-backed, transaction מונעת partial state.</div>
+</article>
+
+<article class="exercise prod">
+  <div class="ex-head">
+    <div>
+      <span class="num">#12</span>
+      <span class="stack">Python</span>
+    </div>
+    <span class="difficulty">Production</span>
+  </div>
+  <h3>Distributed Rate Limiting</h3>
+  <p><strong>מטרה:</strong> לחזור ל־rate limiting מזווית של distributed state ו־atomicity.</p>
+  <p><strong>בנה:</strong> FastAPI <code>POST /login</code>: 5 requests לכל IP ב־60 שניות. קודם in-memory, אחר כך design production.</p>
+  <details><summary>Starter guidance</summary><p>התחל ב־dict כדי להבין fixed window. אחר כך תכנן איך Redis/atomic increment ישנו את הארכיטקטורה.</p></details>
+  <details><summary>Debugging scenario</summary><p>שתי בקשות קוראות count=4 וכותבות 5. בפועל הגיעו שתיים, אבל state התקדם רק פעם אחת.</p></details>
+  <details><summary>Interview challenge</summary><p>כיצד משתמש יכול לעבור global limit כשהבקשות מתחלקות בין Python A ו־Python B?</p></details>
+  <details><summary>Bonus</summary><p>השווה Fixed Window, Sliding Window ו־Token Bucket.</p></details>
+  <div class="review"><strong>Review:</strong> אתה מבין lost update, shared store ו־algorithm trade-offs.</div>
+</article>
+
+<article class="exercise prod">
+  <div class="ex-head">
+    <div>
+      <span class="num">#14</span>
+      <span class="stack">Python</span>
+    </div>
+    <span class="difficulty">Production</span>
+  </div>
+  <h3>External API Timeout + Retry</h3>
+  <p><strong>מטרה:</strong> להגן על השירות שלך מ־dependency איטי או כושל.</p>
+  <p><strong>בנה:</strong> FastAPI <code>GET /weather/{city}</code> שקורא service מדומה. timeout של 2 שניות; failure אינו תוקע את השרת.</p>
+  <details><summary>Starter guidance</summary><p>גרום ל־dependency לפעמים לענות מהר, לפעמים לאט ולפעמים לזרוק error. רק אחר כך הוסף timeout.</p></details>
+  <details><summary>Debugging scenario</summary><p>מאות requests מחכים ל־dependency של 30 שניות. השירות לא crashed אבל resources וה־latency מתפוצצים.</p></details>
+  <details><summary>Interview challenge</summary><p>למה retry-until-success יכול ליצור Retry Storm? אילו 4xx/5xx/timeouts היית retry ומתי לא?</p></details>
+  <details><summary>Bonus</summary><p>עד שני retries עם exponential backoff + jitter.</p></details>
+  <div class="review"><strong>Review:</strong> calls bounded, retry policy selective, ואתה יודע להסביר backoff, jitter ו־circuit breaker.</div>
+</article>
+
+<article class="exercise prod">
+  <div class="ex-head">
+    <div>
+      <span class="num">#15</span>
+      <span class="stack">Node.js + PostgreSQL</span>
+    </div>
+    <span class="difficulty">Production</span>
+  </div>
+  <h3>Durable Idempotent Order Creation</h3>
+  <p><strong>מטרה:</strong> לקחת idempotency מ־Map ולהפוך אותה ל־DB-backed correctness guarantee.</p>
+  <p><strong>בנה:</strong> <code>POST /orders</code> עם Idempotency-Key. retry מחזיר אותו logical result; concurrent duplicates לא יוצרים שתי הזמנות; same key + different payload נדחה.</p>
+  <details><summary>Starter guidance</summary><p>תכנן schema לפני route: איפה נשמר key, fingerprint/result ומהו UNIQUE constraint? החלט מה transaction boundary.</p></details>
+  <details><summary>Debugging scenario</summary><p>השרת committed order אבל response אבד. הלקוח retry. מבחינתו לא ידוע אם הפעולה הראשונה הצליחה.</p></details>
+  <details><summary>Interview challenge</summary><p>כיצד database constraint + transaction מונעים duplicate גם כששני requests מתחילים יחד?</p></details>
+  <details><summary>Bonus</summary><p>כלול stock mutation ב־transaction והזרק failure באמצע כדי לבדוק שאין partial state.</p></details>
+  <div class="review"><strong>Review:</strong> uniqueness DB-backed, retries safe, payload mismatch explicit, failure injection לא משאירה state חלקי.</div>
+</article>
+
+<h2 id="phase4">שלב 4 — Production Runtime</h2>
+
+<article class="exercise prod">
+  <div class="ex-head">
+    <div>
+      <span class="num">#11</span>
+      <span class="stack">Node.js + PostgreSQL</span>
+    </div>
+    <span class="difficulty">Production</span>
+  </div>
+  <h3>Graceful Shutdown</h3>
+  <p><strong>מטרה:</strong> להבין lifecycle של service בזמן deployment/restart.</p>
+  <p><strong>בנה:</strong> Express service שמטפל ב־SIGTERM: מפסיק לקבל requests חדשים, מאפשר ל־in-flight requests לסיים, סוגר pool ואז יוצא.</p>
+  <details><summary>Starter guidance</summary><p>שמור reference מ־<code>app.listen()</code>. חשוב על הסדר בין HTTP server לבין DB pool.</p></details>
+  <details><summary>Debugging scenario</summary><p>אם אתה עושה <code>pool.end()</code> ו־<code>process.exit()</code> מיד, request קיים שעוד צריך query ייכשל.</p></details>
+  <details><summary>Interview challenge</summary><p>מה אם request תקוע לנצח? הוסף bounded graceful timeout. הסבר SIGTERM מול SIGKILL.</p></details>
+  <details><summary>Bonus</summary><p><code>GET /ready</code> מחזיר 503 מהרגע שה־shutdown מתחיל.</p></details>
+  <div class="review"><strong>Review:</strong> cleanup בסדר נכון, shutdown bounded, readiness משקפת lifecycle.</div>
+</article>
+
+<h2 id="labs">מעבדות המשך — להעמקה אחרי 1–15</h2>
+
+<article class="exercise lab">
+  <div class="ex-head">
+    <div>
+      <span class="num">#16</span>
+      <span class="stack">PostgreSQL</span>
+    </div>
+    <span class="difficulty">Lab</span>
+  </div>
+  <h3>Deadlock Investigation</h3>
+  <p><strong>מטרה:</strong> לראות deadlock אמיתי ולא רק לקרוא עליו.</p>
+  <p><strong>בנה:</strong> פתח שתי transactions שנועלות שתי rows בסדר הפוך עד PostgreSQL מזהה deadlock ומבטלת אחת.</p>
+  <details><summary>Starter guidance</summary><p>כתוב מראש את סדר הנעילות בכל transaction. שמור IDs קבועים כדי שהניסוי יהיה reproducible.</p></details>
+  <details><summary>Debugging scenario</summary><p>בדוק את הודעת השגיאה ואת state של שתי ה־transactions אחרי שה־DB פותר את ה־deadlock.</p></details>
+  <details><summary>Interview challenge</summary><p>למה lock ordering עקבי מפחית deadlocks, ומתי retry של transaction שנכשלה הוא safe?</p></details>
+  <details><summary>Bonus</summary><p>הוסף timeout למדידה ובדוק מה משתנה כאשר שתי transactions נועלות rows באותו סדר.</p></details>
+  <div class="review"><strong>Review:</strong> אתה מסוגל לייצר deadlock, להסביר wait cycle ולתכנן ordering/retry.</div>
+</article>
+
+<article class="exercise lab">
+  <div class="ex-head">
+    <div>
+      <span class="num">#17</span>
+      <span class="stack">Node.js</span>
+    </div>
+    <span class="difficulty">Lab</span>
+  </div>
+  <h3>Event Loop Blocking</h3>
+  <p><strong>מטרה:</strong> לחבר Node event loop ל־production latency.</p>
+  <p><strong>בנה:</strong> צור endpoint CPU-heavy ו־health endpoint קל. שלח עומס לשניהם ומדוד latency.</p>
+  <details><summary>Starter guidance</summary><p>אל תשתמש בהתחלה ב־worker_threads. המטרה הראשונה היא לראות את הבעיה.</p></details>
+  <details><summary>Debugging scenario</summary><p>למה health endpoint איטי למרות שהוא כמעט לא עושה עבודה?</p></details>
+  <details><summary>Interview challenge</summary><p>מתי להעביר עבודה ל־worker thread, process אחר, queue או service אחר?</p></details>
+  <details><summary>Bonus</summary><p>העבר את העבודה ל־worker_threads והשווה latency.</p></details>
+  <div class="review"><strong>Review:</strong> אתה מבין CPU-bound מול I/O-bound ואת ההשפעה על event loop.</div>
+</article>
+
+<article class="exercise lab">
+  <div class="ex-head">
+    <div>
+      <span class="num">#18</span>
+      <span class="stack">Python</span>
+    </div>
+    <span class="difficulty">Lab</span>
+  </div>
+  <h3>Async vs Blocking I/O</h3>
+  <p><strong>מטרה:</strong> להבין למה <code>async def</code> לבדו לא הופך קוד ל־non-blocking.</p>
+  <p><strong>בנה:</strong> ב־FastAPI כתוב route async שמבצע blocking sleep/I/O, והשווה לגרסה async-friendly תחת כמה requests במקביל.</p>
+  <details><summary>Starter guidance</summary><p>מדוד זמנים לפני שינוי הקוד. אל תנחש לפי syntax.</p></details>
+  <details><summary>Debugging scenario</summary><p>למה requests אחרים מתעכבים כאשר קריאה blocking מתבצעת בתוך event loop?</p></details>
+  <details><summary>Interview challenge</summary><p>מתי להשתמש async library, thread pool או worker process?</p></details>
+  <details><summary>Bonus</summary><p>הוסף timeout/cancellation.</p></details>
+  <div class="review"><strong>Review:</strong> אתה יודע להסביר event loop, blocking call ו־concurrency model של Python.</div>
+</article>
+
+<article class="exercise lab">
+  <div class="ex-head">
+    <div>
+      <span class="num">#19</span>
+      <span class="stack">PostgreSQL</span>
+    </div>
+    <span class="difficulty">Lab</span>
+  </div>
+  <h3>Index + Query Plan Lab</h3>
+  <p><strong>מטרה:</strong> ללמוד לקרוא query plan במקום להוסיף index אוטומטית.</p>
+  <p><strong>בנה:</strong> צור table גדולה, הרץ query ללא index, בדוק <code>EXPLAIN (ANALYZE, BUFFERS)</code>, הוסף index מתאים והשווה.</p>
+  <details><summary>Starter guidance</summary><p>בחר query עם filter אמיתי ונתונים מספיק רבים. רשום execution time ו־plan לפני ואחרי.</p></details>
+  <details><summary>Debugging scenario</summary><p>אם PostgreSQL ממשיך לבחור Seq Scan גם אחרי index, חקור selectivity וגודל table לפני שאתה מסיק שה־index 'לא עובד'.</p></details>
+  <details><summary>Interview challenge</summary><p>מה המחיר של index בכתיבות, storage ו־maintenance? למה יותר indexes אינם תמיד טובים?</p></details>
+  <details><summary>Bonus</summary><p>נסה composite index ושנה order של columns.</p></details>
+  <div class="review"><strong>Review:</strong> אתה מבין Seq Scan/Index Scan, selectivity וה־trade-off של indexes.</div>
+</article>
+
+<article class="exercise lab">
+  <div class="ex-head">
+    <div>
+      <span class="num">#20</span>
+      <span class="stack">Production API</span>
+    </div>
+    <span class="difficulty">Lab</span>
+  </div>
+  <h3>Observability</h3>
+  <p><strong>מטרה:</strong> להפסיק לשאול רק 'האם זה עובד' ולהתחיל לשאול 'איך אדע שהוא נכשל בפרודקשן'.</p>
+  <p><strong>בנה:</strong> בחר endpoint מתרגיל קודם והוסף structured logs, request/correlation ID, latency measurement וסיווג errors.</p>
+  <details><summary>Starter guidance</summary><p>הגדר מראש אילו שאלות אתה רוצה להיות מסוגל לענות: כמה requests? כמה failures? כמה זמן? לאיזה user/request?</p></details>
+  <details><summary>Debugging scenario</summary><p>צור failure אמיתי ובדוק אם מהלוגים בלבד אפשר להבין מה קרה בלי debugger.</p></details>
+  <details><summary>Interview challenge</summary><p>מה ההבדל בין logs, metrics ו־traces? איזו telemetry מתאימה לכל שאלה?</p></details>
+  <details><summary>Bonus</summary><p>הוסף metrics plan: request count, error rate, p95 latency ו־dependency latency.</p></details>
+  <div class="review"><strong>Review:</strong> ה־telemetry מאפשרת לזהות, לקשר ולחקור failure אמיתי.</div>
+</article>
+
+<article class="exercise capstone">
+  <div class="ex-head">
+    <div>
+      <span class="num">#21</span>
+      <span class="stack">Full-Stack Capstone</span>
+    </div>
+    <span class="difficulty">Capstone</span>
+  </div>
+  <h3>Operations Dashboard</h3>
+  <p><strong>מטרה:</strong> לחבר Backend אמיתי ל־UI קטן בלי להפוך את הפרויקט לפרויקט Frontend.</p>
+  <p><strong>בנה:</strong> בחר domain אחד מהתרגילים — Orders, Jobs או Webhooks. Backend ב־Node.js או Python עם PostgreSQL; UI קטן שמציג list/detail/status ומאפשר פעולה אחת. הוסף pagination, validation, loading/error states ו־API errors עקביים.</p>
+  <details><summary>Starter guidance</summary><p>התחל מה־API contract וה־DB invariants. רק אחרי שה־backend עובד ובדוק, בנה UI מינימלי. שמור business logic בשרת.</p></details>
+  <details><summary>Debugging scenario</summary><p>גרום ל־409/429/500 אמיתיים ובדוק שה־UI לא מציג 'success' בטעות ושאפשר להבין מה קרה.</p></details>
+  <details><summary>Interview challenge</summary><p>איפה צריכה להיות validation? מה ה־frontend יכול לבדוק לנוחות ומה חייב להיאכף ב־backend? איך היית מריץ כמה instances?</p></details>
+  <details><summary>Bonus</summary><p>Docker Compose ל־app + PostgreSQL, health/readiness ו־README עם architecture diagram.</p></details>
+  <div class="review"><strong>Review:</strong> מערכת end-to-end קטנה, business rules בשרת, errors נכונים, tests בסיסיים ותיעוד production-minded.</div>
+</article>
+
+<section class="gate">
+<h2 style="margin-top:0">Definition of Done לכל תרגיל</h2>
+<ul>
+<li>ה־happy path עובד.</li>
+<li>שחזרת לפחות failure אחד אמיתי.</li>
+<li>כתבת validation ו־error handling מפורשים.</li>
+<li>אתה מסוגל להסביר את ה־race/failure בלי להסתכל בקוד.</li>
+<li>בדקת מה משתנה עם כמה processes או instances כשזה רלוונטי.</li>
+<li>אתה יודע איזה guarantee מגיע מהאפליקציה ואיזה מה־Database/Redis/OS.</li>
+</ul>
+</section>
+
+<section class="rules">
+<h2 style="margin-top:0">סדר מומלץ</h2>
+<p><strong>1–3</strong> לבסיס API ו־state → <strong>4, 7, 13</strong> ל־transactions/concurrency → <strong>5, 9, 10, 15</strong> ל־idempotency/auth/webhooks → <strong>6, 8, 12, 14</strong> ל־queues/cache/resilience → <strong>11</strong> ל־service lifecycle → <strong>16–21</strong> כמעבדות production.</p>
+<p>אל תנסה “לסיים את הרשימה”. המטרה היא להפוך כל failure mode לכלי שאתה מזהה ומסביר בפרויקט או בראיון.</p>
+</section>
+
+<nav class="nav"><a href="index.html">מרכז הלמידה</a><a href="0.problem-solving-tutorial.html">שיטת פתרון</a><a href="10.system-design-tutorial.html">System Design</a></nav>
+</body></html>
